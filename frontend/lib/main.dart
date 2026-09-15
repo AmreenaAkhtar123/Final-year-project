@@ -38,7 +38,7 @@ class MindMateApp extends StatelessWidget {
         scaffoldBackgroundColor: AppColors.background,
       ),
 
-      home: const HomeScreen(),
+      home: const SplashScreen(),
 
       routes: {
         '/login': (context) => const LoginScreen(),

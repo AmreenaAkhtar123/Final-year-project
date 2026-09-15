@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../core/constants/app_colors.dart';
 import 'profile_screen.dart';
 import 'check_in_screen.dart';
+import 'insights_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -36,12 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             const CheckInScreen(),
 
-            _buildPlaceholder(
-              icon: Icons.insights_outlined,
-              title: 'Your Insights',
-              subtitle:
-              'Your mood, wellbeing and progress insights will appear here.',
-            ),
+            const InsightsScreen(),
 
             const ProfileScreen(),
           ],
@@ -1086,7 +1082,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
-
   // ============================================================
   // PLACEHOLDER
   // ============================================================
