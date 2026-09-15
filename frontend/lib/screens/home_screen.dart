@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../core/constants/app_colors.dart';
+import 'profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -31,24 +32,22 @@ class _HomeScreenState extends State<HomeScreen> {
           index: _selectedIndex,
           children: [
             _buildHome(),
+
             _buildPlaceholder(
               icon: Icons.favorite_outline_rounded,
               title: 'Daily Check-in',
               subtitle:
               'Take a moment to understand how you are feeling today.',
             ),
+
             _buildPlaceholder(
               icon: Icons.insights_outlined,
               title: 'Your Insights',
               subtitle:
               'Your mood, wellbeing and progress insights will appear here.',
             ),
-            _buildPlaceholder(
-              icon: Icons.person_outline_rounded,
-              title: 'Your Profile',
-              subtitle:
-              'Manage your account, privacy and wellbeing preferences.',
-            ),
+
+            const ProfileScreen(),
           ],
         ),
       ),
