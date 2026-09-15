@@ -504,14 +504,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: _isLoading
                         ? null
                         : () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Sign up screen coming next.',
-                          ),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
+                      Navigator.pushNamed(context, '/signup');
                     },
                     child: const Text.rich(
                       TextSpan(
