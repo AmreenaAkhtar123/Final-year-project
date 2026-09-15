@@ -12,15 +12,68 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+  late Animation<double> _logoAnimation;
+  late Animation<double> _heartAnimation;
+  late Animation<double> _taglineAnimation;
+  late Animation<double> _decorAnimation;
+  late Animation<double> _bottomCircleAnimation;
 
+  @override
   @override
   void initState() {
     super.initState();
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..forward();
+      duration: const Duration(milliseconds: 1600),
+    );
+
+    _logoAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(
+        0.00,
+        0.55,
+        curve: Curves.easeOutCubic,
+      ),
+    );
+
+    _heartAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(
+        0.30,
+        0.70,
+        curve: Curves.easeOutBack,
+      ),
+    );
+
+    _taglineAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(
+        0.50,
+        1.00,
+        curve: Curves.easeOutCubic,
+      ),
+    );
+
+    _decorAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(
+        0.00,
+        0.80,
+        curve: Curves.easeOut,
+      ),
+    );
+
+    _bottomCircleAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(
+        0.25,
+        1.00,
+        curve: Curves.easeOutCubic,
+      ),
+    );
+
+    _controller.forward();
   }
 
   @override
@@ -54,12 +107,15 @@ class _SplashScreenState extends State<SplashScreen>
                 Positioned(
                   top: height * 0.070,
                   left: -width * 0.62,
-                  child: IgnorePointer(
-                    child: SizedBox(
-                      width: width * 2.24,
-                      height: width * 2.24,
-                      child: CustomPaint(
-                        painter: _TopLargeCirclePainter(),
+                  child: FadeTransition(
+                    opacity: _decorAnimation,
+                    child: IgnorePointer(
+                      child: SizedBox(
+                        width: width * 2.24,
+                        height: width * 2.24,
+                        child: CustomPaint(
+                          painter: _TopLargeCirclePainter(),
+                        ),
                       ),
                     ),
                   ),
@@ -135,37 +191,44 @@ class _SplashScreenState extends State<SplashScreen>
                 Positioned(
                   right: -width * 0.27,
                   bottom: -height * 0.045,
-                  child: IgnorePointer(
-                    child: Container(
-                      width: width * 0.70,
-                      height: width * 0.70,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-
-                        gradient: RadialGradient(
-                          center: const Alignment(0.25, 0.15),
-                          radius: 0.85,
-                          colors: [
-                            AppColors.mint.withValues(alpha: 0.42),
-                            AppColors.lightMint.withValues(alpha: 0.28),
-                            AppColors.lightMint.withValues(alpha: 0.08),
-                            AppColors.lightMint.withValues(alpha: 0.0),
-                          ],
-                          stops: const [
-                            0.0,
-                            0.45,
-                            0.75,
-                            1.0,
-                          ],
-                        ),
-
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.mint.withValues(alpha: 0.12),
-                            blurRadius: 35,
-                            spreadRadius: 8,
+                  child: ScaleTransition(
+                    scale: Tween<double>(
+                      begin: 0.75,
+                      end: 1.0,
+                    ).animate(_bottomCircleAnimation),
+                    child: FadeTransition(
+                      opacity: _bottomCircleAnimation,
+                      child: IgnorePointer(
+                        child: Container(
+                          width: width * 0.70,
+                          height: width * 0.70,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              center: const Alignment(0.25, 0.15),
+                              radius: 0.85,
+                              colors: [
+                                AppColors.mint.withValues(alpha: 0.42),
+                                AppColors.lightMint.withValues(alpha: 0.28),
+                                AppColors.lightMint.withValues(alpha: 0.08),
+                                AppColors.lightMint.withValues(alpha: 0.0),
+                              ],
+                              stops: const [
+                                0.0,
+                                0.45,
+                                0.75,
+                                1.0,
+                              ],
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.mint.withValues(alpha: 0.12),
+                                blurRadius: 35,
+                                spreadRadius: 8,
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
@@ -193,32 +256,59 @@ class _SplashScreenState extends State<SplashScreen>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Image.asset(
-                          'assets/images/logo.png',
-                          width: width * 0.72,
-                          fit: BoxFit.contain,
+                        FadeTransition(
+                          opacity: _logoAnimation,
+                          child: ScaleTransition(
+                            scale: Tween<double>(
+                              begin: 0.82,
+                              end: 1.0,
+                            ).animate(_logoAnimation),
+                            child: Image.asset(
+                              'assets/images/logo.png',
+                              width: width * 0.72,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
                         ),
 
                         SizedBox(height: height * 0.075),
 
-                        const Icon(
-                          Icons.favorite_border_rounded,
-                          size: 30,
-                          color: AppColors.mint,
-                          weight: 1,
+                        FadeTransition(
+                          opacity: _heartAnimation,
+                          child: ScaleTransition(
+                            scale: Tween<double>(
+                              begin: 0.5,
+                              end: 1.0,
+                            ).animate(_heartAnimation),
+                            child: const Icon(
+                              Icons.favorite_border_rounded,
+                              size: 30,
+                              color: AppColors.mint,
+                              weight: 1,
+                            ),
+                          ),
                         ),
 
                         SizedBox(height: height * 0.035),
 
-                        const Text(
-                          'AI Companion for\na Better You',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: AppColors.navy,
-                            fontSize: 19,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 1.8,
-                            height: 1.55,
+                        FadeTransition(
+                          opacity: _taglineAnimation,
+                          child: SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(0, 0.25),
+                              end: Offset.zero,
+                            ).animate(_taglineAnimation),
+                            child: const Text(
+                              'AI Companion for\na Better You',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: AppColors.navy,
+                                fontSize: 19,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 1.8,
+                                height: 1.55,
+                              ),
+                            ),
                           ),
                         ),
                       ],
