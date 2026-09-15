@@ -162,11 +162,17 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
+    const String demoEmail = 'demo@mindmate.com';
+    const String demoPassword = 'Mindmate@123';
+
+    final enteredEmail = _emailController.text.trim();
+    final enteredPassword = _passwordController.text;
+
     setState(() {
       _isLoading = true;
     });
 
-    // Temporary delay until backend authentication is connected.
+    // Temporary delay to simulate login processing.
     await Future.delayed(
       const Duration(seconds: 1),
     );
@@ -177,14 +183,23 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoading = false;
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Login information is valid.',
+    // Temporary fixed credentials.
+    if (enteredEmail.toLowerCase() == demoEmail &&
+        enteredPassword == demoPassword) {
+      Navigator.pushReplacementNamed(
+        context,
+        '/home',
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Incorrect email or password.',
+          ),
+          behavior: SnackBarBehavior.floating,
         ),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+      );
+    }
   }
 
   // =========================================================
