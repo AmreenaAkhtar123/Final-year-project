@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../core/constants/app_colors.dart';
 import 'profile_screen.dart';
+import 'check_in_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -33,12 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             _buildHome(),
 
-            _buildPlaceholder(
-              icon: Icons.favorite_outline_rounded,
-              title: 'Daily Check-in',
-              subtitle:
-              'Take a moment to understand how you are feeling today.',
-            ),
+            const CheckInScreen(),
 
             _buildPlaceholder(
               icon: Icons.insights_outlined,
@@ -405,7 +401,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 height: 47,
                 child: FilledButton(
                   onPressed: () {
-                    _showMessage('Daily check-in will open here.');
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CheckInScreen(),
+                      ),
+                    );
                   },
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.mint,
