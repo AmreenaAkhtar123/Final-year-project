@@ -5,6 +5,7 @@ import 'core/constants/app_colors.dart';
 import 'screens/splash_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/signup_screen.dart';
+import 'screens/auth/forgot_password_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,6 +41,8 @@ class MindMateApp extends StatelessWidget {
       routes: {
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignUpScreen(),
+        '/forgot-password': (context) =>
+        const ForgotPasswordScreen(),
       },
     );
   }
