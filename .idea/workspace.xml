@@ -5,8 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f21d4447-cc26-4919-8eac-2323aaaa6e0a" name="Changes" comment="Initializing the project and make the UI of splash screen">
+      <change afterPath="$PROJECT_DIR$/frontend/lib/screens/assessments/assessments_screen.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/lib/screens/assessments/depression_mood_screen.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/lib/screens/assessments/general_wellbeing_screen.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/lib/screens/assessments/student_wellbeing_screen.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/screens/ai_chat_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/screens/ai_chat_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/screens/assessment_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/screens/assessments/anxiety_stress_screen.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/lib/screens/home_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/screens/home_screen.dart" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -80,6 +84,11 @@
     "show.migrate.to.gradle.popup": "false"
   }
 }]]></component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\FYP-Project\fyp_project_mental_health\frontend\lib\screens\assessments" />
+    </key>
+  </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
       <changelist id="f21d4447-cc26-4919-8eac-2323aaaa6e0a" name="Changes" comment="" />

@@ -8,6 +8,7 @@ import 'check_in_screen.dart';
 import 'insights_screen.dart';
 import 'notifications_screen.dart';
 import 'ai_chat_screen.dart';
+import 'assessments/assessments_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -572,7 +573,12 @@ class _HomeScreenState extends State<HomeScreen> {
           iconColor: const Color(0xFF6B7FD7),
           background: const Color(0xFFF1F3FC),
           onTap: () {
-            _showMessage('Mental health assessment will open here.');
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const AssessmentsScreen(),
+              ),
+            );
           },
         ),
 
