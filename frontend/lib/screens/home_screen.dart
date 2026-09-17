@@ -9,6 +9,7 @@ import 'insights_screen.dart';
 import 'notifications_screen.dart';
 import 'ai_chat_screen.dart';
 import 'assessments/assessments_screen.dart';
+import 'mood_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -589,7 +590,12 @@ class _HomeScreenState extends State<HomeScreen> {
           iconColor: const Color(0xFFE29A45),
           background: const Color(0xFFFFF5E9),
           onTap: () {
-            _showMessage('Mood tracking will open here.');
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const MoodScreen(),
+              ),
+            );
           },
         ),
 
