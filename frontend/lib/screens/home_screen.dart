@@ -10,6 +10,7 @@ import 'notifications_screen.dart';
 import 'ai_chat_screen.dart';
 import 'assessments/assessments_screen.dart';
 import 'mood_screen.dart';
+import 'progress_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -606,7 +607,12 @@ class _HomeScreenState extends State<HomeScreen> {
           iconColor: const Color(0xFF5C8FA8),
           background: const Color(0xFFEDF5F8),
           onTap: () {
-            _showMessage('Progress reports will open here.');
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ProgressScreen(),
+              ),
+            );
           },
         ),
 
