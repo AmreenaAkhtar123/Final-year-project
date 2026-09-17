@@ -8,6 +8,14 @@ import 'screens/auth/signup_screen.dart';
 import 'screens/auth/forgot_password_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/ai_chat_screen.dart';
+import 'screens/assessment_screen.dart';
+import 'screens/emotion_detection_screen.dart';
+import 'screens/mood_screen.dart';
+import 'screens/notifications_screen.dart';
+import 'screens/safety_support_screen.dart';
+import 'screens/student_wellbeing_screen.dart';
+import 'screens/voice_analysis_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,7 +46,7 @@ class MindMateApp extends StatelessWidget {
         scaffoldBackgroundColor: AppColors.background,
       ),
 
-      home: const SplashScreen(),
+      home: const HomeScreen(),
 
       routes: {
         '/login': (context) => const LoginScreen(),
