@@ -7,6 +7,7 @@ import 'profile_screen.dart';
 import 'check_in_screen.dart';
 import 'insights_screen.dart';
 import 'notifications_screen.dart';
+import 'ai_chat_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -195,20 +196,27 @@ class _HomeScreenState extends State<HomeScreen> {
         // PROFILE
         // =========================================================
 
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: AppColors.lightMint,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: AppColors.borderMint,
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              _selectedIndex = 3;
+            });
+          },
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.lightMint,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: AppColors.borderMint,
+              ),
             ),
-          ),
-          child: const Icon(
-            Icons.person_outline_rounded,
-            color: AppColors.navy,
-            size: 23,
+            child: const Icon(
+              Icons.person_outline_rounded,
+              color: AppColors.navy,
+              size: 23,
+            ),
           ),
         ),
       ],
@@ -548,7 +556,12 @@ class _HomeScreenState extends State<HomeScreen> {
           iconColor: AppColors.mint,
           background: AppColors.lightMint,
           onTap: () {
-            _showMessage('AI Chat will be connected here.');
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const AiChatScreen(),
+              ),
+            );
           },
         ),
 
