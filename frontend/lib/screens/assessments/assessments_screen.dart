@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import 'anxiety_stress_screen.dart';
 import 'depression_mood_screen.dart';
+import 'student_wellbeing_screen.dart';
+import 'general_wellbeing_screen.dart';
 
 class AssessmentsScreen extends StatelessWidget {
   const AssessmentsScreen({super.key});
@@ -126,7 +128,12 @@ class AssessmentsScreen extends StatelessWidget {
                 context: context,
                 icon: Icons.school_outlined,
                 onTap: () {
-                  _showComingSoonMessage(context, 'Student Wellbeing');
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const StudentWellbeingScreen(),
+                    ),
+                  );
                 },
                 title: 'Student Wellbeing',
                 description:
@@ -143,7 +150,12 @@ class AssessmentsScreen extends StatelessWidget {
                 context: context,
                 icon: Icons.favorite_outline_rounded,
                 onTap: () {
-                  _showComingSoonMessage(context, 'General Wellbeing');
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const GeneralWellbeingScreen(),
+                    ),
+                  );
                 },
                 title: 'General Wellbeing',
                 description:
