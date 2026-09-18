@@ -12,6 +12,7 @@ import 'assessments/assessments_screen.dart';
 import 'mood_screen.dart';
 import 'progress_screen.dart';
 import 'voice_screen.dart';
+import 'emotion_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -624,7 +625,12 @@ class _HomeScreenState extends State<HomeScreen> {
           iconColor: const Color(0xFFAD76B5),
           background: const Color(0xFFF8EFF9),
           onTap: () {
-            _showMessage('Facial emotion detection will open here.');
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const EmotionScreen(),
+              ),
+            );
           },
         ),
 
