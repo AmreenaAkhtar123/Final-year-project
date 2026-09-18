@@ -1,7 +1,12 @@
+import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
+import 'dart:typed_data';
+import 'package:image/image.dart' as img;
+
 import '../core/constants/app_colors.dart';
+import 'emotion_result_screen.dart';
 
 class EmotionScreen extends StatefulWidget {
   const EmotionScreen({super.key});
@@ -19,11 +24,32 @@ class _EmotionScreenState extends State<EmotionScreen> {
   bool _isLoadingCamera = true;
   bool _cameraError = false;
   bool _isDetecting = false;
+  XFile? _capturedImage;
+  bool _isCapturing = false;
 
   @override
   void initState() {
     super.initState();
     _initializeCamera();
+  }
+  Future<XFile> _fixFrontCameraMirror(XFile original) async {
+    final isFrontCamera = _cameraController?.description.lensDirection ==
+        CameraLensDirection.front;
+
+    if (!isFrontCamera) return original;
+
+    final bytes = await original.readAsBytes();
+    final decoded = img.decodeImage(bytes);
+
+    if (decoded == null) return original;
+
+    final flipped = img.flipHorizontal(decoded);
+    final flippedBytes = Uint8List.fromList(img.encodeJpg(flipped, quality: 92));
+
+    final newPath = original.path.replaceFirst('.jpg', '_flipped.jpg');
+    final file = await File(newPath).writeAsBytes(flippedBytes);
+
+    return XFile(file.path);
   }
 
   Future<void> _initializeCamera() async {
@@ -122,26 +148,43 @@ class _EmotionScreenState extends State<EmotionScreen> {
     }
   }
 
-  Future<void> _detectEmotion() async {
-    if (!_isCameraInitialized || _isDetecting) {
+  Future<void> _captureFace() async {
+    if (!_isCameraInitialized ||
+        _cameraController == null ||
+        _isCapturing) {
       return;
     }
 
-    setState(() {
-      _isDetecting = true;
-    });
+    try {
+      setState(() {
+        _isCapturing = true;
+      });
 
-    await Future.delayed(
-      const Duration(milliseconds: 1200),
-    );
+      final rawImage = await _cameraController!.takePicture();
+      final fixedImage = await _fixFrontCameraMirror(rawImage);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      _isDetecting = false;
-    });
+      setState(() {
+        _capturedImage = fixedImage;
+        _isCapturing = false;
+      });
+    } catch (e) {
+      debugPrint('Image capture error: $e');
 
-    _showDemoResult();
+      if (!mounted) return;
+
+      setState(() {
+        _isCapturing = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not capture the image. Please try again.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   void _showDemoResult() {
@@ -633,6 +676,219 @@ class _EmotionScreenState extends State<EmotionScreen> {
   // ==============================================================
   // HEADER
   // ==============================================================
+  Widget _buildCapturedImagePreview() {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // ==========================================================
+        // CAPTURED IMAGE
+        // ==========================================================
+
+        Image.file(
+          File(_capturedImage!.path),
+          fit: BoxFit.cover,
+        ),
+
+        // ==========================================================
+        // SOFT OVERLAY
+        // ==========================================================
+
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.black.withValues(alpha: 0.35),
+                Colors.transparent,
+                Colors.black.withValues(alpha: 0.68),
+              ],
+              stops: const [
+                0.0,
+                0.48,
+                1.0,
+              ],
+            ),
+          ),
+        ),
+
+        // ==========================================================
+        // TOP LABEL
+        // ==========================================================
+
+        Positioned(
+          top: 16,
+          left: 16,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 8,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.35),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.check_circle_rounded,
+                  color: AppColors.mint,
+                  size: 15,
+                ),
+                SizedBox(width: 7),
+                Text(
+                  'Face captured',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // ==========================================================
+        // BOTTOM CONTENT
+        // ==========================================================
+
+        Positioned(
+          left: 20,
+          right: 20,
+          bottom: 18,
+          child: Column(
+            children: [
+              const Text(
+                'Does this look good?',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+
+              const SizedBox(height: 5),
+
+              Text(
+                'Your face is ready for emotion analysis.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.78),
+                  fontSize: 11.5,
+                ),
+              ),
+
+              const SizedBox(height: 15),
+
+              Row(
+                children: [
+                  // ------------------------------------------------
+                  // RETAKE
+                  // ------------------------------------------------
+
+                  Expanded(
+                    child: SizedBox(
+                      height: 46,
+                      child: OutlinedButton.icon(
+                        onPressed: _isCapturing
+                            ? null
+                            : _retakePhoto,
+                        icon: const Icon(
+                          Icons.refresh_rounded,
+                          size: 18,
+                        ),
+                        label: const Text(
+                          'Retake',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          side: BorderSide(
+                            color: Colors.white.withValues(
+                              alpha: 0.65,
+                            ),
+                          ),
+                          backgroundColor:
+                          Colors.black.withValues(alpha: 0.22),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 10),
+
+                  // ------------------------------------------------
+                  // CONTINUE
+                  // ------------------------------------------------
+
+                  Expanded(
+                    child: SizedBox(
+                      height: 46,
+                      child: ElevatedButton.icon(
+                        onPressed: _continueFromCapture,
+                        icon: const Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 18,
+                        ),
+                        label: const Text(
+                          'Continue',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.mint,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _retakePhoto() async {
+    if (!mounted) return;
+
+    setState(() {
+      _capturedImage = null;
+    });
+  }
+
+  void _continueFromCapture() {
+    if (_capturedImage == null) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const EmotionResultScreen(
+          emotion: 'Happy',
+          confidence: 0.92,
+        ),
+      ),
+    );
+  }
+
+
 
   Widget _buildHeader() {
     return Padding(
@@ -753,6 +1009,10 @@ class _EmotionScreenState extends State<EmotionScreen> {
   }
 
   Widget _buildCameraContent() {
+    if (_capturedImage != null) {
+      return _buildCapturedImagePreview();
+    }
+
     if (_isLoadingCamera) {
       return const Center(
         child: Column(
@@ -1098,8 +1358,8 @@ class _EmotionScreenState extends State<EmotionScreen> {
       ),
       child: ElevatedButton(
         onPressed:
-        _isCameraInitialized && !_isDetecting
-            ? _detectEmotion
+        _isCameraInitialized && !_isCapturing
+            ? _captureFace
             : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.mint,
@@ -1115,9 +1375,9 @@ class _EmotionScreenState extends State<EmotionScreen> {
         ),
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
-          child: _isDetecting
+          child: _isCapturing
               ? const Row(
-            key: ValueKey('analyzing'),
+            key: ValueKey('capturing'),
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SizedBox(
@@ -1130,7 +1390,7 @@ class _EmotionScreenState extends State<EmotionScreen> {
               ),
               SizedBox(width: 10),
               Text(
-                'Analyzing Expression...',
+                'Capturing Face...',
                 style: TextStyle(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w700,
@@ -1139,16 +1399,16 @@ class _EmotionScreenState extends State<EmotionScreen> {
             ],
           )
               : const Row(
-            key: ValueKey('detect'),
+            key: ValueKey('capture'),
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
-                Icons.auto_awesome_rounded,
+                Icons.camera_alt_rounded,
                 size: 20,
               ),
               SizedBox(width: 9),
               Text(
-                'Detect My Emotion',
+                'Capture Face',
                 style: TextStyle(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w700,
