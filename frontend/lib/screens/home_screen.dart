@@ -13,6 +13,7 @@ import 'mood_screen.dart';
 import 'progress_screen.dart';
 import 'voice_screen.dart';
 import 'emotion_screen.dart';
+import 'student_wellbeing_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -734,116 +735,129 @@ class _HomeScreenState extends State<HomeScreen> {
   // ============================================================
 
   Widget _buildStudentWellbeingCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF3F8F6),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: AppColors.borderMint,
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 55,
-            height: 55,
-            decoration: BoxDecoration(
-              color: AppColors.mint.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(17),
-            ),
-            child: const Icon(
-              Icons.school_outlined,
-              color: AppColors.mint,
-              size: 28,
-            ),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const StudentWellbeingScreen(),
           ),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF3F8F6),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: AppColors.borderMint,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 55,
+              height: 55,
+              decoration: BoxDecoration(
+                color: AppColors.mint.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(17),
+              ),
+              child: const Icon(
+                Icons.school_outlined,
+                color: AppColors.mint,
+                size: 28,
+              ),
+            ),
 
-          const SizedBox(width: 14),
+            const SizedBox(width: 14),
 
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Text(
-                      'STUDENT WELLBEING',
-                      style: TextStyle(
-                        color: AppColors.mint,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-
-                    const SizedBox(width: 6),
-
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.mint.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                      child: const Text(
-                        'NEW',
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Text(
+                        'STUDENT WELLBEING',
                         style: TextStyle(
                           color: AppColors.mint,
-                          fontSize: 7,
+                          fontSize: 9,
                           fontWeight: FontWeight.w800,
+                          letterSpacing: 0.8,
                         ),
                       ),
+
+                      const SizedBox(width: 6),
+
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.mint.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: const Text(
+                          'NEW',
+                          style: TextStyle(
+                            color: AppColors.mint,
+                            fontSize: 7,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 6),
+
+                  const Text(
+                    'Feeling overwhelmed with studies?',
+                    style: TextStyle(
+                      color: AppColors.navy,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
                     ),
-                  ],
-                ),
-
-                const SizedBox(height: 6),
-
-                const Text(
-                  'Feeling overwhelmed with studies?',
-                  style: TextStyle(
-                    color: AppColors.navy,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
                   ),
-                ),
 
-                const SizedBox(height: 4),
+                  const SizedBox(height: 4),
 
-                Text(
-                  'Check your stress, exam pressure and burnout level.',
-                  style: TextStyle(
-                    color: AppColors.navy.withValues(alpha: 0.53),
-                    fontSize: 10.5,
-                    height: 1.35,
+                  Text(
+                    'Check your stress, exam pressure and burnout level.',
+                    style: TextStyle(
+                      color: AppColors.navy.withValues(alpha: 0.53),
+                      fontSize: 10.5,
+                      height: 1.35,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
 
-          const SizedBox(width: 5),
+            const SizedBox(width: 5),
 
-          IconButton(
-            onPressed: () {
-              _showMessage(
-                'Student stress and burnout assessment will open here.',
-              );
-            },
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.white,
+            IconButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const StudentWellbeingScreen(),
+                  ),
+                );
+              },
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.white,
+              ),
+              icon: const Icon(
+                Icons.arrow_forward_rounded,
+                color: AppColors.navy,
+                size: 19,
+              ),
             ),
-            icon: const Icon(
-              Icons.arrow_forward_rounded,
-              color: AppColors.navy,
-              size: 19,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
