@@ -15,6 +15,7 @@ import 'voice_screen.dart';
 import 'emotion_screen.dart';
 import 'student_wellbeing_screen.dart';
 import 'weekly_wellbeing_screen.dart';
+import 'safety_support_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -1097,72 +1098,91 @@ class _HomeScreenState extends State<HomeScreen> {
   // ============================================================
 
   Widget _buildSafetyCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF7F4),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: const Color(0xFFF4DDD5),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const SafetySupportScreen(),
+          ),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF7F4),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: const Color(0xFFF4DDD5),
+          ),
         ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFE9E3),
-              borderRadius: BorderRadius.circular(15),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFE9E3),
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: const Icon(
+                Icons.shield_outlined,
+                color: Color(0xFFD67A65),
+                size: 24,
+              ),
             ),
-            child: const Icon(
-              Icons.shield_outlined,
-              color: Color(0xFFD67A65),
-              size: 24,
-            ),
-          ),
 
-          const SizedBox(width: 13),
+            const SizedBox(width: 13),
 
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Need support right now?',
-                  style: TextStyle(
-                    color: AppColors.navy,
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w800,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Need support right now?',
+                    style: TextStyle(
+                      color: AppColors.navy,
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                ),
 
-                const SizedBox(height: 4),
+                  const SizedBox(height: 4),
 
-                Text(
-                  'Access crisis support and emergency resources.',
-                  style: TextStyle(
-                    color: AppColors.navy.withValues(alpha: 0.52),
-                    fontSize: 10.5,
+                  Text(
+                    'Access crisis support and emergency resources.',
+                    style: TextStyle(
+                      color: AppColors.navy.withValues(alpha: 0.52),
+                      fontSize: 10.5,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
 
-          IconButton(
-            onPressed: () {
-              _showMessage(
-                'Crisis detection and emergency support will open here.',
-              );
-            },
-            icon: const Icon(
-              Icons.arrow_forward_rounded,
-              color: Color(0xFFD67A65),
+            const SizedBox(width: 5),
+
+            IconButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SafetySupportScreen(),
+                  ),
+                );
+              },
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.white,
+              ),
+              icon: const Icon(
+                Icons.arrow_forward_rounded,
+                color: Color(0xFFD67A65),
+                size: 19,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
