@@ -14,6 +14,7 @@ import 'progress_screen.dart';
 import 'voice_screen.dart';
 import 'emotion_screen.dart';
 import 'student_wellbeing_screen.dart';
+import 'weekly_wellbeing_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -867,98 +868,182 @@ class _HomeScreenState extends State<HomeScreen> {
   // ============================================================
 
   Widget _buildProgressCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: AppColors.borderMint,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const WeeklyWellbeingScreen(),
+          ),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: AppColors.borderMint,
+          ),
         ),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.bar_chart_rounded,
-                color: AppColors.mint,
-                size: 21,
-              ),
-
-              const SizedBox(width: 9),
-
-              const Expanded(
-                child: Text(
-                  'Weekly wellbeing',
-                  style: TextStyle(
-                    color: AppColors.navy,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
+        child: Column(
+          children: [
+            // ─────────────────────────────────────────────
+            // HEADER
+            // ─────────────────────────────────────────────
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.lightMint,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.bar_chart_rounded,
+                    color: AppColors.mint,
+                    size: 21,
                   ),
                 ),
-              ),
 
-              Text(
-                'This week',
-                style: TextStyle(
-                  color: AppColors.navy.withValues(alpha: 0.45),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
+                const SizedBox(width: 11),
 
-          const SizedBox(height: 22),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Weekly wellbeing',
+                        style: TextStyle(
+                          color: AppColors.navy,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
 
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildMiniBar('M', 0.52),
-              _buildMiniBar('T', 0.68),
-              _buildMiniBar('W', 0.45),
-              _buildMiniBar('T', 0.78),
-              _buildMiniBar('F', 0.72),
-              _buildMiniBar('S', 0.86),
-              _buildMiniBar('S', 0.72, active: true),
-            ],
-          ),
+                      SizedBox(height: 3),
 
-          const SizedBox(height: 18),
-
-          Container(
-            padding: const EdgeInsets.all(11),
-            decoration: BoxDecoration(
-              color: AppColors.lightMint,
-              borderRadius: BorderRadius.circular(13),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.auto_awesome_rounded,
-                  color: AppColors.mint,
-                  size: 16,
+                      Text(
+                        'Your week at a glance',
+                        style: TextStyle(
+                          color: Color(0xFF71808C),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
 
-                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.lightMint,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        'View',
+                        style: TextStyle(
+                          color: AppColors.navy.withValues(alpha: 0.65),
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
 
-                Expanded(
-                  child: Text(
-                    'Your mood has been more consistent this week.',
-                    style: TextStyle(
-                      color: AppColors.navy.withValues(alpha: 0.72),
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w500,
-                    ),
+                      const SizedBox(width: 4),
+
+                      const Icon(
+                        Icons.arrow_forward_rounded,
+                        color: AppColors.mint,
+                        size: 13,
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-          ),
-        ],
+
+            const SizedBox(height: 22),
+
+            // ─────────────────────────────────────────────
+            // WEEKLY BARS
+            // ─────────────────────────────────────────────
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildMiniBar('M', 0.52),
+                _buildMiniBar('T', 0.68),
+                _buildMiniBar('W', 0.45),
+                _buildMiniBar('T', 0.78),
+                _buildMiniBar('F', 0.72),
+                _buildMiniBar('S', 0.86),
+                _buildMiniBar(
+                  'S',
+                  0.72,
+                  active: true,
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 18),
+
+            // ─────────────────────────────────────────────
+            // WEEKLY INSIGHT
+            // ─────────────────────────────────────────────
+            Container(
+              padding: const EdgeInsets.all(11),
+              decoration: BoxDecoration(
+                color: AppColors.lightMint,
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: AppColors.mint.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.auto_awesome_rounded,
+                      color: AppColors.mint,
+                      size: 15,
+                    ),
+                  ),
+
+                  const SizedBox(width: 9),
+
+                  Expanded(
+                    child: Text(
+                      'Your mood has been more consistent this week.',
+                      style: TextStyle(
+                        color: AppColors.navy.withValues(alpha: 0.72),
+                        fontSize: 10.5,
+                        height: 1.35,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.mint,
+                    size: 18,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
