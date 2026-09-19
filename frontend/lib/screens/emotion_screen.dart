@@ -27,6 +27,27 @@ class _EmotionScreenState extends State<EmotionScreen> {
   XFile? _capturedImage;
   bool _isCapturing = false;
 
+  final List<Map<String, dynamic>> _emotionHistory = [
+    {
+      'emotion': 'Happy',
+      'emoji': '😊',
+      'confidence': 0.92,
+      'time': 'Today, 4:20 PM',
+    },
+    {
+      'emotion': 'Calm',
+      'emoji': '😌',
+      'confidence': 0.87,
+      'time': 'Yesterday, 8:15 PM',
+    },
+    {
+      'emotion': 'Anxious',
+      'emoji': '😟',
+      'confidence': 0.81,
+      'time': 'Sep 15, 6:40 PM',
+    },
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -635,7 +656,304 @@ class _EmotionScreenState extends State<EmotionScreen> {
     super.dispose();
   }
 
-  @override
+
+  Widget _buildEmotionHistory() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColors.borderMint,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(
+                Icons.history_rounded,
+                color: AppColors.mint,
+                size: 21,
+              ),
+              SizedBox(width: 9),
+              Text(
+                'Recent Emotion History',
+                style: TextStyle(
+                  color: AppColors.navy,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 15),
+          ..._emotionHistory.map(
+                (item) => _buildHistoryItem(item),
+          ),
+        ],
+      ),
+    );
+  }
+  void _showEmotionHistoryDetails(
+      Map<String, dynamic> item,
+      ) {
+    final confidence =
+    ((item['confidence'] as double) * 100).round();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.fromLTRB(22, 12, 22, 28),
+          decoration: const BoxDecoration(
+            color: AppColors.background,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(28),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 42,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.borderMint,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+
+              const SizedBox(height: 22),
+
+              Container(
+                width: 78,
+                height: 78,
+                decoration: const BoxDecoration(
+                  color: AppColors.lightMint,
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    item['emoji'],
+                    style: const TextStyle(
+                      fontSize: 40,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              Text(
+                item['emotion'],
+                style: const TextStyle(
+                  color: AppColors.navy,
+                  fontSize: 23,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+
+              const SizedBox(height: 4),
+
+              Text(
+                item['time'],
+                style: TextStyle(
+                  color: AppColors.navy.withValues(alpha: 0.55),
+                  fontSize: 11.5,
+                ),
+              ),
+
+              const SizedBox(height: 22),
+
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(17),
+                  border: Border.all(
+                    color: AppColors.borderMint,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.analytics_outlined,
+                      color: AppColors.mint,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Detection confidence',
+                        style: TextStyle(
+                          color: AppColors.navy,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '$confidence%',
+                      style: const TextStyle(
+                        color: AppColors.mint,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.lightMint.withValues(
+                    alpha: 0.55,
+                  ),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.lock_outline_rounded,
+                      color: AppColors.mint,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 9),
+                    Expanded(
+                      child: Text(
+                        'Emotion results are private and should be treated as an estimate, not a diagnosis.',
+                        style: TextStyle(
+                          color: AppColors.navy.withValues(
+                            alpha: 0.68,
+                          ),
+                          fontSize: 10.5,
+                          height: 1.45,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.mint,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: const Text(
+                    'Close',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildHistoryItem(Map<String, dynamic> item) {
+    final confidence =
+    ((item['confidence'] as double) * 100).round();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => _showEmotionHistoryDetails(item),
+          child: Padding(
+            padding: const EdgeInsets.all(6),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: const BoxDecoration(
+                    color: AppColors.lightMint,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      item['emoji'],
+                      style: const TextStyle(
+                        fontSize: 22,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item['emotion'],
+                        style: const TextStyle(
+                          color: AppColors.navy,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        item['time'],
+                        style: TextStyle(
+                          color: AppColors.navy.withValues(alpha: 0.52),
+                          fontSize: 10.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  '$confidence%',
+                  style: const TextStyle(
+                    color: AppColors.mint,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppColors.navy.withValues(alpha: 0.35),
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -659,6 +977,10 @@ class _EmotionScreenState extends State<EmotionScreen> {
                     _buildCameraCard(),
                     const SizedBox(height: 18),
                     _buildDetectButton(),
+
+                    const SizedBox(height: 20),
+                    _buildEmotionHistory(),
+
                     const SizedBox(height: 16),
                     _buildPrivacyCard(),
                     const SizedBox(height: 10),
