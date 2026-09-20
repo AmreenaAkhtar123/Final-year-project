@@ -17,6 +17,7 @@ import 'voice_screen.dart';
 import 'weekly_wellbeing_screen.dart';
 import 'exercise/body_scan_screen.dart';
 import 'exercise/thought_reset_screen.dart';
+import 'exercise/exam_pressure_reset_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -905,11 +906,18 @@ class _HomeFeed extends StatelessWidget {
               ),
             ),
 
-            _exerciseMiniCard(
-              emoji: '📚',
-              title: 'Exam Pressure Reset',
-              subtitle: 'Student stress support',
+            GestureDetector(
+              onTap: () => _open(
+                context,
+                const ExamPressureResetScreen(),
+              ),
+              child: _exerciseMiniCard(
+                emoji: '📚',
+                title: 'Exam Pressure Reset',
+                subtitle: 'Student stress support',
+              ),
             ),
+
             _exerciseMiniCard(
               emoji: '⚡',
               title: 'Stress Release',
