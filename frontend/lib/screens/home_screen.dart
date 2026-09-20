@@ -26,6 +26,7 @@ import 'exercise/focus_reset_screen.dart';
 import 'exercise/mood_lift_screen.dart';
 import 'exercise/grounding_screen.dart';
 import 'exercise/box_breathing_screen.dart';
+import 'exercise/digital_detox_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -1028,10 +1029,18 @@ class _HomeFeed extends StatelessWidget {
               ),
             ),
 
-            _exerciseMiniCard(
-              emoji: '📵',
-              title: 'Digital Detox',
-              subtitle: 'Pause screens and recharge',
+            GestureDetector(
+              onTap: () {
+                _open(
+                  context,
+                  const DigitalDetoxScreen(),
+                );
+              },
+              child: _exerciseMiniCard(
+                emoji: '📵',
+                title: 'Digital Detox',
+                subtitle: 'Create space away from your screen',
+              ),
             ),
           ],
         ),
