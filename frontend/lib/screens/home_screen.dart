@@ -24,6 +24,7 @@ import 'exercise/self_compassion_pause_screen.dart';
 import 'exercise/quick_reflection_screen.dart';
 import 'exercise/focus_reset_screen.dart';
 import 'exercise/mood_lift_screen.dart';
+import 'exercise/grounding_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -998,11 +999,20 @@ class _HomeFeed extends StatelessWidget {
               ),
             ),
 
-            _exerciseMiniCard(
-              emoji: '👀',
-              title: '5-4-3-2-1 Grounding',
-              subtitle: 'Return to the present',
+            GestureDetector(
+              onTap: () {
+                _open(
+                  context,
+                  const GroundingScreen(),
+                );
+              },
+              child: _exerciseMiniCard(
+                emoji: '🌿',
+                title: 'Grounding',
+                subtitle: 'Reconnect with the present',
+              ),
             ),
+
             _exerciseMiniCard(
               emoji: '🫁',
               title: 'Box Breathing',
