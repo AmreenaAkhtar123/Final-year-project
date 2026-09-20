@@ -20,6 +20,7 @@ import 'exercise/thought_reset_screen.dart';
 import 'exercise/exam_pressure_reset_screen.dart';
 import 'exercise/sleep_wind_down_screen.dart';
 import 'exercise/stress_release_screen.dart';
+import 'exercise/self_compassion_pause_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -943,11 +944,19 @@ class _HomeFeed extends StatelessWidget {
                 subtitle: 'Prepare for sleep',
               ),
             ),
-            _exerciseMiniCard(
-              emoji: '💚',
-              title: 'Self-Compassion Pause',
-              subtitle: 'Practice kinder self-talk',
+
+            GestureDetector(
+              onTap: () => _open(
+                context,
+                const SelfCompassionPauseScreen(),
+              ),
+              child: _exerciseMiniCard(
+                emoji: '💚',
+                title: 'Self-Compassion Pause',
+                subtitle: 'Practice kinder self-talk',
+              ),
             ),
+
             _exerciseMiniCard(
               emoji: '✍️',
               title: 'Quick Reflection',
