@@ -21,6 +21,7 @@ import 'exercise/exam_pressure_reset_screen.dart';
 import 'exercise/sleep_wind_down_screen.dart';
 import 'exercise/stress_release_screen.dart';
 import 'exercise/self_compassion_pause_screen.dart';
+import 'exercise/quick_reflection_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -957,11 +958,18 @@ class _HomeFeed extends StatelessWidget {
               ),
             ),
 
-            _exerciseMiniCard(
-              emoji: '✍️',
-              title: 'Quick Reflection',
-              subtitle: 'Understand what you feel',
+            GestureDetector(
+              onTap: () => _open(
+                context,
+                const QuickReflectionScreen(),
+              ),
+              child: _exerciseMiniCard(
+                emoji: '✍️',
+                title: 'Quick Reflection',
+                subtitle: 'Understand what you feel',
+              ),
             ),
+
             _exerciseMiniCard(
               emoji: '🎯',
               title: 'Focus Reset',
