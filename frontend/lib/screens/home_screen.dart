@@ -1,21 +1,20 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 
 import '../core/constants/app_colors.dart';
-import 'profile_screen.dart';
-import 'check_in_screen.dart';
-import 'insights_screen.dart';
-import 'notifications_screen.dart';
 import 'ai_chat_screen.dart';
 import 'assessments/assessments_screen.dart';
-import 'mood_screen.dart';
-import 'progress_screen.dart';
-import 'voice_screen.dart';
+import 'check_in_screen.dart';
 import 'emotion_screen.dart';
-import 'student_wellbeing_screen.dart';
-import 'weekly_wellbeing_screen.dart';
+import 'exercise/calm_grounding_screen.dart';
+import 'insights_screen.dart';
+import 'mood_screen.dart';
+import 'notifications_screen.dart';
+import 'profile_screen.dart';
+import 'progress_screen.dart';
 import 'safety_support_screen.dart';
+import 'student_wellbeing_screen.dart';
+import 'voice_screen.dart';
+import 'weekly_wellbeing_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,265 +26,236 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
-  final List<String> _titles = [
-    'Home',
-    'Check-in',
-    'Insights',
-    'Profile',
-  ];
+  void _open(Widget screen) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => screen),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-
       body: SafeArea(
         child: IndexedStack(
           index: _selectedIndex,
-          children: [
-            _buildHome(),
-
-            const CheckInScreen(),
-
-            const InsightsScreen(),
-
-            const ProfileScreen(),
+          children: const [
+            _HomeFeed(),
+            CheckInScreen(),
+            InsightsScreen(),
+            ProfileScreen(),
           ],
         ),
       ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: (index) {
+          setState(() => _selectedIndex = index);
+        },
+        backgroundColor: Colors.white,
+        elevation: 0,
+        height: 72,
+        indicatorColor: AppColors.lightMint,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home_rounded),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.favorite_outline_rounded),
+            selectedIcon: Icon(Icons.favorite_rounded),
+            label: 'Check-in',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.insights_outlined),
+            selectedIcon: Icon(Icons.insights_rounded),
+            label: 'Insights',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline_rounded),
+            selectedIcon: Icon(Icons.person_rounded),
+            label: 'Profile',
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-      bottomNavigationBar: _buildNavigationBar(),
+class _HomeFeed extends StatelessWidget {
+  const _HomeFeed();
+
+  void _open(BuildContext context, Widget screen) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => screen),
     );
   }
 
-  // ============================================================
-  // HOME
-  // ============================================================
-
-  Widget _buildHome() {
+  @override
+  Widget build(BuildContext context) {
     return CustomScrollView(
       physics: const BouncingScrollPhysics(),
       slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(22, 22, 22, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(),
-
-                const SizedBox(height: 28),
-
-                _buildGreeting(),
-
-                const SizedBox(height: 22),
-
-                _buildWellbeingCard(),
-
-                const SizedBox(height: 28),
-
-                _buildSectionHeader(
-                  title: 'Your MindMate tools',
-                  subtitle: 'Support for your everyday wellbeing',
-                ),
-
-                const SizedBox(height: 15),
-
-                _buildFeatureGrid(),
-
-                const SizedBox(height: 28),
-
-                _buildStudentWellbeingCard(),
-
-                const SizedBox(height: 28),
-
-                _buildSectionHeader(
-                  title: 'Your progress',
-                  subtitle: 'A quick look at your recent wellbeing',
-                ),
-
-                const SizedBox(height: 15),
-
-                _buildProgressCard(),
-
-                const SizedBox(height: 28),
-
-                _buildSafetyCard(),
-
-                const SizedBox(height: 24),
-
-                _buildPrivacyNote(),
-
-                const SizedBox(height: 30),
-              ],
-            ),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
+          sliver: SliverList(
+            delegate: SliverChildListDelegate([
+              _buildHeader(context),
+              const SizedBox(height: 25),
+              _buildGreeting(),
+              const SizedBox(height: 18),
+              _buildDailyPulse(context),
+              const SizedBox(height: 24),
+              _buildQuickOrbit(context),
+              const SizedBox(height: 28),
+              _buildExerciseSection(context),
+              const SizedBox(height: 28),
+              _buildStudentFocus(context),
+              const SizedBox(height: 28),
+              _buildWeeklyProgress(context),
+              const SizedBox(height: 28),
+              _buildSupportCard(context),
+              const SizedBox(height: 22),
+              _buildPrivacyNote(),
+            ]),
           ),
         ),
       ],
     );
   }
 
-  // ============================================================
-  // HEADER
-  // ============================================================
-
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Row(
       children: [
-        // =========================================================
-        // MINDMATE LOGO
-        // =========================================================
-
         Expanded(
-          child: Align(
+          child: Image.asset(
+            'assets/images/logo1.png',
+            width: 52,
+            height: 42,
             alignment: Alignment.centerLeft,
-            child: Image.asset(
-              'assets/images/logo1.png',
-              width: 50,
-              fit: BoxFit.contain,
-            ),
+            fit: BoxFit.contain,
           ),
         ),
-
-        // =========================================================
-        // NOTIFICATION
-        // =========================================================
-
-
-        GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const NotificationsScreen(),
-              ),
-            );
-          },
-          child: Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: AppColors.borderMint,
-              ),
-            ),
-            child: Stack(
-              children: [
-                const Center(
-                  child: Icon(
-                    Icons.notifications_none_rounded,
-                    color: AppColors.navy,
-                    size: 23,
-                  ),
-                ),
-
-                Positioned(
-                  top: 9,
-                  right: 9,
-                  child: Container(
-                    width: 7,
-                    height: 7,
-                    decoration: const BoxDecoration(
-                      color: AppColors.mint,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+        _circleButton(
+          icon: Icons.notifications_none_rounded,
+          badge: true,
+          onTap: () => _open(context, const NotificationsScreen()),
         ),
-
-        const SizedBox(width: 10),
-
-        // =========================================================
-        // PROFILE
-        // =========================================================
-
-        GestureDetector(
-          onTap: () {
-            setState(() {
-              _selectedIndex = 3;
-            });
-          },
-          child: Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.lightMint,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: AppColors.borderMint,
-              ),
-            ),
-            child: const Icon(
-              Icons.person_outline_rounded,
-              color: AppColors.navy,
-              size: 23,
-            ),
-          ),
+        const SizedBox(width: 9),
+        _profileButton(
+          onTap: () => _open(context, const ProfileScreen()),
         ),
       ],
     );
   }
 
-  // ============================================================
-  // GREETING
-  // ============================================================
+  Widget _circleButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    bool badge = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 43,
+        height: 43,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          border: Border.all(color: AppColors.borderMint),
+        ),
+        child: Stack(
+          children: [
+            Center(
+              child: Icon(icon, color: AppColors.navy, size: 22),
+            ),
+            if (badge)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  width: 7,
+                  height: 7,
+                  decoration: const BoxDecoration(
+                    color: AppColors.mint,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _profileButton({required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 43,
+        height: 43,
+        decoration: BoxDecoration(
+          color: AppColors.lightMint,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.borderMint),
+        ),
+        child: const Icon(
+          Icons.person_outline_rounded,
+          color: AppColors.navy,
+          size: 22,
+        ),
+      ),
+    );
+  }
 
   Widget _buildGreeting() {
-    return Column(
+    return const Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Good evening, 👋',
           style: TextStyle(
-            color: AppColors.navy.withValues(alpha: 0.60),
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
+            color: Color(0x991D2B3A),
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
           ),
         ),
-
-        const SizedBox(height: 5),
-
-        const Text(
-          'How are you feeling today?',
+        SizedBox(height: 5),
+        Text(
+          'Your mind deserves a moment.',
           style: TextStyle(
             color: AppColors.navy,
             fontSize: 27,
             fontWeight: FontWeight.w800,
-            height: 1.15,
-            letterSpacing: -0.7,
+            letterSpacing: -0.8,
+            height: 1.12,
           ),
         ),
       ],
     );
   }
 
-  // ============================================================
-  // WELLBEING CARD
-  // ============================================================
-
-  Widget _buildWellbeingCard() {
+  // A distinctive home hero: not a generic score card, but a "Daily Pulse"
+  // that connects check-in, reflection and progress in one place.
+  Widget _buildDailyPulse(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
+          colors: [AppColors.navy, Color(0xFF29495A)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            AppColors.navy,
-            Color(0xFF294253),
-          ],
         ),
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
             color: AppColors.navy.withValues(alpha: 0.16),
-            blurRadius: 25,
+            blurRadius: 26,
             offset: const Offset(0, 12),
           ),
         ],
@@ -293,34 +263,20 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Stack(
         children: [
           Positioned(
-            right: -45,
+            right: -50,
             top: -55,
             child: Container(
-              width: 155,
-              height: 155,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.mint.withValues(alpha: 0.10),
-              ),
-            ),
-          ),
-
-          Positioned(
-            right: 15,
-            bottom: -70,
-            child: Container(
-              width: 130,
-              height: 130,
+              width: 170,
+              height: 170,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.06),
-                  width: 20,
+                  color: AppColors.mint.withValues(alpha: 0.13),
+                  width: 24,
                 ),
               ),
             ),
           ),
-
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -328,7 +284,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 11,
+                      horizontal: 10,
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
@@ -343,71 +299,68 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: AppColors.mint,
                           size: 14,
                         ),
-                        SizedBox(width: 6),
+                        SizedBox(width: 5),
                         Text(
-                          'WELLBEING SNAPSHOT',
+                          'DAILY PULSE',
                           style: TextStyle(
                             color: AppColors.mint,
-                            fontSize: 10,
+                            fontSize: 9,
                             fontWeight: FontWeight.w800,
-                            letterSpacing: 0.8,
+                            letterSpacing: 1,
                           ),
                         ),
                       ],
                     ),
                   ),
+                  const Spacer(),
+                  Text(
+                    'TODAY',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.5),
+                      fontSize: 8,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1,
+                    ),
+                  ),
                 ],
               ),
-
-              const SizedBox(height: 18),
-
+              const SizedBox(height: 20),
               Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  _buildScoreCircle(),
-
-                  const SizedBox(width: 20),
-
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  SizedBox(
+                    width: 84,
+                    height: 84,
+                    child: Stack(
+                      alignment: Alignment.center,
                       children: [
-                        const Text(
-                          'You’re doing well',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 19,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-
-                        const SizedBox(height: 6),
-
-                        Text(
-                          'Your recent check-ins show a positive pattern.',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.68),
-                            fontSize: 12,
-                            height: 1.45,
-                          ),
-                        ),
-
-                        const SizedBox(height: 10),
-
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.trending_up_rounded,
-                              color: AppColors.mint,
-                              size: 17,
+                        SizedBox(
+                          width: 84,
+                          height: 84,
+                          child: CircularProgressIndicator(
+                            value: 0.72,
+                            strokeWidth: 7,
+                            backgroundColor: Colors.white.withValues(alpha: 0.1),
+                            valueColor: const AlwaysStoppedAnimation(
+                              AppColors.mint,
                             ),
-                            const SizedBox(width: 5),
+                          ),
+                        ),
+                        const Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
                             Text(
-                              '8% better this week',
+                              '72',
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.82),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                                fontSize: 25,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            Text(
+                              'pulse',
+                              style: TextStyle(
+                                color: Colors.white60,
+                                fontSize: 8,
                               ),
                             ),
                           ],
@@ -415,23 +368,56 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                   ),
+                  const SizedBox(width: 18),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'A little check-in can change the whole day.',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            height: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 7),
+                        Text(
+                          'Your latest wellbeing snapshot is ready. Keep the streak going gently.',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.65),
+                            fontSize: 10.5,
+                            height: 1.45,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
-
-              const SizedBox(height: 20),
-
+              const SizedBox(height: 19),
+              Row(
+                children: [
+                  Expanded(
+                    child: _darkMetric('MOOD', 'Calm', Icons.mood_rounded),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _darkMetric('ENERGY', '7/10', Icons.bolt_rounded),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _darkMetric('STREAK', '6 days', Icons.local_fire_department_rounded),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
               SizedBox(
                 width: double.infinity,
-                height: 47,
-                child: FilledButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const CheckInScreen(),
-                      ),
-                    );
-                  },
+                height: 46,
+                child: FilledButton.icon(
+                  onPressed: () => _open(context, const CheckInScreen()),
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.mint,
                     foregroundColor: Colors.white,
@@ -439,22 +425,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.favorite_outline_rounded,
-                        size: 19,
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        'Start today’s check-in',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
+                  icon: const Icon(Icons.favorite_outline_rounded, size: 18),
+                  label: const Text(
+                    'Check in with yourself',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
               ),
@@ -465,190 +442,111 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildScoreCircle() {
-    return SizedBox(
-      width: 88,
-      height: 88,
-      child: Stack(
-        alignment: Alignment.center,
+  Widget _darkMetric(String label, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 9),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.075),
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.07),
+        ),
+      ),
+      child: Row(
         children: [
-          SizedBox(
-            width: 88,
-            height: 88,
-            child: CircularProgressIndicator(
-              value: 0.72,
-              strokeWidth: 7,
-              backgroundColor: Colors.white.withValues(alpha: 0.10),
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                AppColors.mint,
-              ),
+          Icon(icon, color: AppColors.mint, size: 15),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.white54,
+                    fontSize: 6.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
             ),
-          ),
-
-          const Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '72',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 25,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              Text(
-                'score',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 9,
-                ),
-              ),
-            ],
           ),
         ],
       ),
     );
   }
 
-  // ============================================================
-  // SECTION HEADER
-  // ============================================================
+  Widget _buildQuickOrbit(BuildContext context) {
+    final tools = [
+      ('AI Chat', 'Talk it out', Icons.smart_toy_outlined, AppColors.mint,
+      const Color(0xFFEFF7F3), () => _open(context, const AiChatScreen())),
+      ('Mood', 'Record a feeling', Icons.mood_outlined, const Color(0xFFE29A45),
+      const Color(0xFFFFF5E9), () => _open(context, const MoodScreen())),
+      ('Emotion', 'Scan expression', Icons.face_retouching_natural_outlined,
+      const Color(0xFFAD76B5), const Color(0xFFF8EFF9),
+          () => _open(context, const EmotionScreen())),
+      ('Voice', 'Explore your voice', Icons.mic_none_rounded,
+      const Color(0xFF6D9A72), const Color(0xFFEEF7EF),
+          () => _open(context, const VoiceScreen())),
+      ('Assessment', 'Reflect deeper', Icons.psychology_outlined,
+      const Color(0xFF6B7FD7), const Color(0xFFF1F3FC),
+          () => _open(context, const AssessmentsScreen())),
+      ('Progress', 'See patterns', Icons.insights_outlined,
+      const Color(0xFF5C8FA8), const Color(0xFFEDF5F8),
+          () => _open(context, const ProgressScreen())),
+    ];
 
-  Widget _buildSectionHeader({
-    required String title,
-    required String subtitle,
-  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: const TextStyle(
+        const Text(
+          'Your mental toolkit',
+          style: TextStyle(
             color: AppColors.navy,
             fontSize: 19,
             fontWeight: FontWeight.w800,
             letterSpacing: -0.3,
           ),
         ),
-
         const SizedBox(height: 4),
-
         Text(
-          subtitle,
+          'Choose the kind of support you need right now.',
           style: TextStyle(
             color: AppColors.navy.withValues(alpha: 0.52),
-            fontSize: 12,
+            fontSize: 11,
           ),
         ),
-      ],
-    );
-  }
-
-  // ============================================================
-  // FEATURE GRID
-  // ============================================================
-
-  Widget _buildFeatureGrid() {
-    return GridView.count(
-      crossAxisCount: 2,
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 1.25,
-      children: [
-        _buildFeatureCard(
-          icon: Icons.smart_toy_outlined,
-          title: 'AI Chat',
-          subtitle: 'Talk anytime',
-          iconColor: AppColors.mint,
-          background: AppColors.lightMint,
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const AiChatScreen(),
-              ),
-            );
-          },
-        ),
-
-        _buildFeatureCard(
-          icon: Icons.psychology_outlined,
-          title: 'Assessment',
-          subtitle: 'Check your wellbeing',
-          iconColor: const Color(0xFF6B7FD7),
-          background: const Color(0xFFF1F3FC),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const AssessmentsScreen(),
-              ),
-            );
-          },
-        ),
-
-        _buildFeatureCard(
-          icon: Icons.mood_outlined,
-          title: 'Mood',
-          subtitle: 'Track how you feel',
-          iconColor: const Color(0xFFE29A45),
-          background: const Color(0xFFFFF5E9),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const MoodScreen(),
-              ),
-            );
-          },
-        ),
-
-        _buildFeatureCard(
-          icon: Icons.insights_outlined,
-          title: 'Progress',
-          subtitle: 'View your reports',
-          iconColor: const Color(0xFF5C8FA8),
-          background: const Color(0xFFEDF5F8),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const ProgressScreen(),
-              ),
-            );
-          },
-        ),
-
-        _buildFeatureCard(
-          icon: Icons.face_retouching_natural_outlined,
-          title: 'Emotion',
-          subtitle: 'Facial emotion scan',
-          iconColor: const Color(0xFFAD76B5),
-          background: const Color(0xFFF8EFF9),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const EmotionScreen(),
-              ),
-            );
-          },
-        ),
-
-        _buildFeatureCard(
-          icon: Icons.mic_none_rounded,
-          title: 'Voice',
-          subtitle: 'Voice emotion analysis',
-          iconColor: const Color(0xFF6D9A72),
-          background: const Color(0xFFEEF7EF),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const VoiceScreen(),
-              ),
+        const SizedBox(height: 14),
+        GridView.builder(
+          itemCount: tools.length,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            crossAxisSpacing: 9,
+            mainAxisSpacing: 9,
+            childAspectRatio: 0.93,
+          ),
+          itemBuilder: (context, index) {
+            final item = tools[index];
+            return _toolTile(
+              title: item.$1,
+              subtitle: item.$2,
+              icon: item.$3,
+              iconColor: item.$4,
+              background: item.$5,
+              onTap: item.$6,
             );
           },
         ),
@@ -656,10 +554,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildFeatureCard({
-    required IconData icon,
+  Widget _toolTile({
     required String title,
     required String subtitle,
+    required IconData icon,
     required Color iconColor,
     required Color background,
     required VoidCallback onTap,
@@ -668,61 +566,43 @@ class _HomeScreenState extends State<HomeScreen> {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(19),
         child: Ink(
-          padding: const EdgeInsets.all(15),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: AppColors.borderMint.withValues(alpha: 0.75),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.navy.withValues(alpha: 0.035),
-                blurRadius: 15,
-                offset: const Offset(0, 6),
-              ),
-            ],
+            borderRadius: BorderRadius.circular(19),
+            border: Border.all(color: AppColors.borderMint),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 39,
+                height: 39,
                 decoration: BoxDecoration(
                   color: background,
-                  borderRadius: BorderRadius.circular(13),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  icon,
-                  color: iconColor,
-                  size: 21,
-                ),
+                child: Icon(icon, color: iconColor, size: 20),
               ),
-
               const Spacer(),
-
               Text(
                 title,
                 style: const TextStyle(
                   color: AppColors.navy,
-                  fontSize: 14,
+                  fontSize: 11.5,
                   fontWeight: FontWeight.w800,
                 ),
               ),
-
               const SizedBox(height: 3),
-
               Text(
                 subtitle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: AppColors.navy.withValues(alpha: 0.48),
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w500,
+                  color: AppColors.navy.withValues(alpha: 0.45),
+                  fontSize: 8.2,
                 ),
               ),
             ],
@@ -732,131 +612,600 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ============================================================
-  // STUDENT WELLBEING
-  // ============================================================
-
-  Widget _buildStudentWellbeingCard() {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const StudentWellbeingScreen(),
-          ),
-        );
-      },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF3F8F6),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: AppColors.borderMint,
-          ),
-        ),
-        child: Row(
+  Widget _buildExerciseSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // --------------------------------------------------------
+        // SECTION HEADER
+        // --------------------------------------------------------
+        Row(
           children: [
-            Container(
-              width: 55,
-              height: 55,
-              decoration: BoxDecoration(
-                color: AppColors.mint.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(17),
-              ),
-              child: const Icon(
-                Icons.school_outlined,
-                color: AppColors.mint,
-                size: 28,
-              ),
-            ),
-
-            const SizedBox(width: 14),
-
-            Expanded(
+            const Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      const Text(
-                        'STUDENT WELLBEING',
-                        style: TextStyle(
-                          color: AppColors.mint,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-
-                      const SizedBox(width: 6),
-
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.mint.withValues(alpha: 0.10),
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        child: const Text(
-                          'NEW',
-                          style: TextStyle(
-                            color: AppColors.mint,
-                            fontSize: 7,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 6),
-
-                  const Text(
-                    'Feeling overwhelmed with studies?',
+                  Text(
+                    'MindMate Reset',
                     style: TextStyle(
                       color: AppColors.navy,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
-
-                  const SizedBox(height: 4),
-
+                  SizedBox(height: 4),
                   Text(
-                    'Check your stress, exam pressure and burnout level.',
+                    'Small guided exercises for the moment you are in.',
                     style: TextStyle(
-                      color: AppColors.navy.withValues(alpha: 0.53),
-                      fontSize: 10.5,
-                      height: 1.35,
+                      color: Color(0x851D2B3A),
+                      fontSize: 11,
                     ),
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(width: 5),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 9,
+                vertical: 6,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.lightMint,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Text(
+                '12 EXERCISES',
+                style: TextStyle(
+                  color: AppColors.mint,
+                  fontSize: 7.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.6,
+                ),
+              ),
+            ),
+          ],
+        ),
 
-            IconButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const StudentWellbeingScreen(),
+        const SizedBox(height: 15),
+
+        // --------------------------------------------------------
+        // FEATURED WORKING EXERCISE
+        // --------------------------------------------------------
+        GestureDetector(
+          onTap: () => _open(
+            context,
+            const CalmGroundingScreen(),
+          ),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFFF0F8F4),
+                  Color(0xFFE5F2EC),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(25),
+              border: Border.all(
+                color: AppColors.borderMint,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.mint.withValues(alpha: 0.07),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                // Exercise icon
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.mint.withValues(alpha: 0.12),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
                   ),
-                );
-              },
-              style: IconButton.styleFrom(
-                backgroundColor: Colors.white,
-              ),
-              icon: const Icon(
-                Icons.arrow_forward_rounded,
+                  child: const Center(
+                    child: Text(
+                      '🌿',
+                      style: TextStyle(
+                        fontSize: 29,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 15),
+
+                // Information
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            'QUICK RESET',
+                            style: TextStyle(
+                              color: AppColors.mint,
+                              fontSize: 7.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                          SizedBox(width: 7),
+                          Icon(
+                            Icons.check_circle_rounded,
+                            color: AppColors.mint,
+                            size: 12,
+                          ),
+                        ],
+                      ),
+
+                      SizedBox(height: 5),
+
+                      Text(
+                        '60-Second Calm Reset',
+                        style: TextStyle(
+                          color: AppColors.navy,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+
+                      SizedBox(height: 5),
+
+                      Text(
+                        'Breathe, ground yourself, and reset after a difficult moment.',
+                        style: TextStyle(
+                          color: Color(0x8A1D2B3A),
+                          fontSize: 10.5,
+                          height: 1.4,
+                        ),
+                      ),
+
+                      SizedBox(height: 9),
+
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.timer_outlined,
+                            color: AppColors.mint,
+                            size: 14,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'About 1 minute',
+                            style: TextStyle(
+                              color: AppColors.navy,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          SizedBox(width: 10),
+                          Icon(
+                            Icons.self_improvement_outlined,
+                            color: AppColors.mint,
+                            size: 14,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'Guided',
+                            style: TextStyle(
+                              color: AppColors.navy,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(width: 8),
+
+                // Arrow
+                Container(
+                  width: 35,
+                  height: 35,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_rounded,
+                    color: AppColors.navy,
+                    size: 18,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 18),
+
+        // --------------------------------------------------------
+        // EXPLORE EXERCISES
+        // --------------------------------------------------------
+        Row(
+          children: [
+            const Text(
+              'EXPLORE EXERCISES',
+              style: TextStyle(
                 color: AppColors.navy,
-                size: 19,
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.9,
               ),
+            ),
+            const Spacer(),
+            Text(
+              '12 more',
+              style: TextStyle(
+                color: AppColors.navy.withValues(alpha: 0.38),
+                fontSize: 8.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 10),
+
+        // --------------------------------------------------------
+        // EXERCISE LIBRARY
+        // --------------------------------------------------------
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 9,
+          mainAxisSpacing: 9,
+          childAspectRatio: 1.72,
+          children: [
+            _exerciseMiniCard(
+              emoji: '🧘',
+              title: 'Body Scan',
+              subtitle: 'Notice physical tension',
+            ),
+            _exerciseMiniCard(
+              emoji: '💭',
+              title: 'Thought Reset',
+              subtitle: 'Challenge unhelpful thoughts',
+            ),
+            _exerciseMiniCard(
+              emoji: '📚',
+              title: 'Exam Pressure Reset',
+              subtitle: 'Student stress support',
+            ),
+            _exerciseMiniCard(
+              emoji: '⚡',
+              title: 'Stress Release',
+              subtitle: 'Release built-up tension',
+            ),
+            _exerciseMiniCard(
+              emoji: '🌙',
+              title: 'Sleep Wind-Down',
+              subtitle: 'Prepare for sleep',
+            ),
+            _exerciseMiniCard(
+              emoji: '💚',
+              title: 'Self-Compassion Pause',
+              subtitle: 'Practice kinder self-talk',
+            ),
+            _exerciseMiniCard(
+              emoji: '✍️',
+              title: 'Quick Reflection',
+              subtitle: 'Understand what you feel',
+            ),
+            _exerciseMiniCard(
+              emoji: '🎯',
+              title: 'Focus Reset',
+              subtitle: 'Regain concentration',
+            ),
+            _exerciseMiniCard(
+              emoji: '🌤️',
+              title: 'Mood Lift',
+              subtitle: 'Try a positive action',
+            ),
+            _exerciseMiniCard(
+              emoji: '👀',
+              title: '5-4-3-2-1 Grounding',
+              subtitle: 'Return to the present',
+            ),
+            _exerciseMiniCard(
+              emoji: '🫁',
+              title: 'Box Breathing',
+              subtitle: 'Slow breathing and reset',
+            ),
+            _exerciseMiniCard(
+              emoji: '📵',
+              title: 'Digital Detox',
+              subtitle: 'Pause screens and recharge',
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _exerciseMiniCard({
+    required String emoji,
+    required String title,
+    required String subtitle,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(11),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(17),
+        border: Border.all(
+          color: AppColors.borderMint,
+        ),
+      ),
+      child: Row(
+        children: [
+          // Emoji
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: AppColors.lightMint,
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Center(
+              child: Text(
+                emoji,
+                style: const TextStyle(
+                  fontSize: 18,
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 9),
+
+          // Text
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment:
+              CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.navy,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    height: 1.15,
+                  ),
+                ),
+
+                const SizedBox(height: 4),
+
+                Text(
+                  subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: AppColors.navy.withValues(alpha: 0.42),
+                    fontSize: 7.8,
+                    height: 1.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(width: 4),
+
+          // Coming soon indicator
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 5,
+              vertical: 3,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.navy.withValues(alpha: 0.045),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              'SOON',
+              style: TextStyle(
+                color: AppColors.navy.withValues(alpha: 0.35),
+                fontSize: 6,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStudentFocus(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _open(
+        context,
+        const StudentWellbeingScreen(),
+      ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(18, 18, 14, 18),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [
+              Color(0xFFF1FBF6),
+              Color(0xFFE7F6EF),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(25),
+          border: Border.all(
+            color: AppColors.borderMint,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.mint.withValues(alpha: 0.07),
+              blurRadius: 18,
+              offset: const Offset(0, 7),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              right: -25,
+              bottom: -35,
+              child: Container(
+                width: 125,
+                height: 125,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.mint.withValues(alpha: 0.055),
+                ),
+              ),
+            ),
+
+            Row(
+              children: [
+                Container(
+                  width: 54,
+                  height: 54,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(17),
+                    border: Border.all(
+                      color: AppColors.borderMint,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.mint.withValues(alpha: 0.08),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Text(
+                      '🎓',
+                      style: TextStyle(fontSize: 27),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 13),
+
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.mint.withValues(alpha: 0.13),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              'STUDENT MODE',
+                              style: TextStyle(
+                                color: AppColors.mint,
+                                fontSize: 7,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.7,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.mint,
+                              borderRadius: BorderRadius.circular(7),
+                            ),
+                            child: const Text(
+                              'NEW',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 6.5,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 7),
+
+                      const Text(
+                        'How is student life feeling?',
+                        style: TextStyle(
+                          color: AppColors.navy,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          height: 1.15,
+                        ),
+                      ),
+
+                      const SizedBox(height: 5),
+
+                      const Text(
+                        'Explore stress, exam pressure, burnout, sleep and motivation.',
+                        style: TextStyle(
+                          color: Color(0x871D2B3A),
+                          fontSize: 9.5,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(width: 8),
+
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: const BoxDecoration(
+                    color: AppColors.mint,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_rounded,
+                    color: Colors.white,
+                    size: 19,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -864,35 +1213,22 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ============================================================
-  // PROGRESS
-  // ============================================================
+  Widget _buildWeeklyProgress(BuildContext context) {
+    const values = [0.52, 0.68, 0.45, 0.78, 0.72, 0.86, 0.72];
+    const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-  Widget _buildProgressCard() {
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const WeeklyWellbeingScreen(),
-          ),
-        );
-      },
+      onTap: () => _open(context, const WeeklyWellbeingScreen()),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(19),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: AppColors.borderMint,
-          ),
+          border: Border.all(color: AppColors.borderMint),
         ),
         child: Column(
           children: [
-            // ─────────────────────────────────────────────
-            // HEADER
-            // ─────────────────────────────────────────────
             Row(
               children: [
                 Container(
@@ -903,142 +1239,110 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(
-                    Icons.bar_chart_rounded,
+                    Icons.insights_rounded,
                     color: AppColors.mint,
                     size: 21,
                   ),
                 ),
-
-                const SizedBox(width: 11),
-
+                const SizedBox(width: 10),
                 const Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Weekly wellbeing',
-                        style: TextStyle(
-                          color: AppColors.navy,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-
-                      SizedBox(height: 3),
-
-                      Text(
                         'Your week at a glance',
                         style: TextStyle(
-                          color: Color(0xFF71808C),
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
+                          color: AppColors.navy,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.lightMint,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    children: [
+                      SizedBox(height: 3),
                       Text(
-                        'View',
+                        'Small patterns become clearer over time.',
                         style: TextStyle(
-                          color: AppColors.navy.withValues(alpha: 0.65),
+                          color: Color(0x781D2B3A),
                           fontSize: 9.5,
-                          fontWeight: FontWeight.w700,
                         ),
-                      ),
-
-                      const SizedBox(width: 4),
-
-                      const Icon(
-                        Icons.arrow_forward_rounded,
-                        color: AppColors.mint,
-                        size: 13,
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
-
-            const SizedBox(height: 22),
-
-            // ─────────────────────────────────────────────
-            // WEEKLY BARS
-            // ─────────────────────────────────────────────
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildMiniBar('M', 0.52),
-                _buildMiniBar('T', 0.68),
-                _buildMiniBar('W', 0.45),
-                _buildMiniBar('T', 0.78),
-                _buildMiniBar('F', 0.72),
-                _buildMiniBar('S', 0.86),
-                _buildMiniBar(
-                  'S',
-                  0.72,
-                  active: true,
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: AppColors.navy,
+                  size: 13,
                 ),
               ],
             ),
-
-            const SizedBox(height: 18),
-
-            // ─────────────────────────────────────────────
-            // WEEKLY INSIGHT
-            // ─────────────────────────────────────────────
+            const SizedBox(height: 20),
+            SizedBox(
+              height: 92,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: List.generate(values.length, (index) {
+                  final active = index == 5;
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Container(
+                        width: 22,
+                        height: 70,
+                        alignment: Alignment.bottomCenter,
+                        decoration: BoxDecoration(
+                          color: AppColors.lightMint,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: FractionallySizedBox(
+                          heightFactor: values[index],
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: active
+                                  ? AppColors.mint
+                                  : AppColors.mint.withValues(alpha: 0.48),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        days[index],
+                        style: TextStyle(
+                          color: active
+                              ? AppColors.navy
+                              : AppColors.navy.withValues(alpha: 0.42),
+                          fontSize: 8,
+                          fontWeight: active ? FontWeight.w800 : FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  );
+                }),
+              ),
+            ),
+            const SizedBox(height: 15),
             Container(
-              padding: const EdgeInsets.all(11),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
               decoration: BoxDecoration(
                 color: AppColors.lightMint,
                 borderRadius: BorderRadius.circular(13),
               ),
-              child: Row(
+              child: const Row(
                 children: [
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: AppColors.mint.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.auto_awesome_rounded,
-                      color: AppColors.mint,
-                      size: 15,
-                    ),
-                  ),
-
-                  const SizedBox(width: 9),
-
+                  Icon(Icons.auto_awesome_rounded, color: AppColors.mint, size: 15),
+                  SizedBox(width: 7),
                   Expanded(
                     child: Text(
-                      'Your mood has been more consistent this week.',
+                      'Your strongest day was Saturday. Tap to explore the full week.',
                       style: TextStyle(
-                        color: AppColors.navy.withValues(alpha: 0.72),
-                        fontSize: 10.5,
-                        height: 1.35,
-                        fontWeight: FontWeight.w500,
+                        color: AppColors.navy,
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ),
-
-                  const Icon(
-                    Icons.chevron_right_rounded,
-                    color: AppColors.mint,
-                    size: 18,
                   ),
                 ],
               ),
@@ -1049,73 +1353,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildMiniBar(
-      String day,
-      double value, {
-        bool active = false,
-      }) {
-    return Column(
-      children: [
-        Container(
-          width: 24,
-          height: 75,
-          alignment: Alignment.bottomCenter,
-          decoration: BoxDecoration(
-            color: AppColors.lightMint,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: FractionallySizedBox(
-            heightFactor: value,
-            child: Container(
-              decoration: BoxDecoration(
-                color: active
-                    ? AppColors.mint
-                    : AppColors.mint.withValues(alpha: 0.55),
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 7),
-
-        Text(
-          day,
-          style: TextStyle(
-            color: active
-                ? AppColors.navy
-                : AppColors.navy.withValues(alpha: 0.45),
-            fontSize: 9,
-            fontWeight: active ? FontWeight.w800 : FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ============================================================
-  // SAFETY
-  // ============================================================
-
-  Widget _buildSafetyCard() {
+  Widget _buildSupportCard(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const SafetySupportScreen(),
-          ),
-        );
-      },
+      onTap: () => _open(context, const SafetySupportScreen()),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: const Color(0xFFFFF7F4),
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: const Color(0xFFF4DDD5),
-          ),
+          border: Border.all(color: const Color(0xFFF4DDD5)),
         ),
         child: Row(
           children: [
@@ -1132,14 +1379,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 size: 24,
               ),
             ),
-
-            const SizedBox(width: 13),
-
-            Expanded(
+            const SizedBox(width: 12),
+            const Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Need support right now?',
                     style: TextStyle(
                       color: AppColors.navy,
@@ -1147,187 +1392,57 @@ class _HomeScreenState extends State<HomeScreen> {
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-
-                  const SizedBox(height: 4),
-
+                  SizedBox(height: 4),
                   Text(
-                    'Access crisis support and emergency resources.',
+                    'Find safety guidance, trusted-person support and professional-support information.',
                     style: TextStyle(
-                      color: AppColors.navy.withValues(alpha: 0.52),
-                      fontSize: 10.5,
+                      color: Color(0x851D2B3A),
+                      fontSize: 9.5,
+                      height: 1.4,
                     ),
                   ),
                 ],
               ),
             ),
-
-            const SizedBox(width: 5),
-
-            IconButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const SafetySupportScreen(),
-                  ),
-                );
-              },
-              style: IconButton.styleFrom(
-                backgroundColor: Colors.white,
-              ),
-              icon: const Icon(
-                Icons.arrow_forward_rounded,
-                color: Color(0xFFD67A65),
-                size: 19,
-              ),
+            const Icon(
+              Icons.arrow_forward_rounded,
+              color: AppColors.navy,
+              size: 19,
             ),
           ],
         ),
       ),
     );
   }
-
-  // ============================================================
-  // PRIVACY
-  // ============================================================
 
   Widget _buildPrivacyNote() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          Icons.lock_outline_rounded,
-          size: 14,
-          color: AppColors.navy.withValues(alpha: 0.38),
-        ),
-
-        const SizedBox(width: 6),
-
-        Text(
-          'Your wellbeing data is private and protected',
-          style: TextStyle(
-            color: AppColors.navy.withValues(alpha: 0.42),
-            fontSize: 10,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ============================================================
-  // BOTTOM NAVIGATION
-  // ============================================================
-
-  Widget _buildNavigationBar() {
-    return NavigationBar(
-      selectedIndex: _selectedIndex,
-      onDestinationSelected: (index) {
-        setState(() {
-          _selectedIndex = index;
-        });
-      },
-      backgroundColor: Colors.white,
-      elevation: 0,
-      height: 72,
-      indicatorColor: AppColors.lightMint,
-      labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-      destinations: const [
-        NavigationDestination(
-          icon: Icon(Icons.home_outlined),
-          selectedIcon: Icon(Icons.home_rounded),
-          label: 'Home',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.favorite_outline_rounded),
-          selectedIcon: Icon(Icons.favorite_rounded),
-          label: 'Check-in',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.insights_outlined),
-          selectedIcon: Icon(Icons.insights_rounded),
-          label: 'Insights',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.person_outline_rounded),
-          selectedIcon: Icon(Icons.person_rounded),
-          label: 'Profile',
-        ),
-      ],
-    );
-  }
-  // ============================================================
-  // PLACEHOLDER
-  // ============================================================
-
-  Widget _buildPlaceholder({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(30),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: AppColors.lightMint,
-                borderRadius: BorderRadius.circular(25),
-              ),
-              child: Icon(
-                icon,
-                color: AppColors.mint,
-                size: 38,
-              ),
-            ),
-
-            const SizedBox(height: 22),
-
-            Text(
-              title,
-              style: const TextStyle(
-                color: AppColors.navy,
-                fontSize: 23,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.navy.withValues(alpha: 0.55),
-                fontSize: 13,
-                height: 1.5,
-              ),
-            ),
-          ],
-        ),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: AppColors.navy.withValues(alpha: 0.035),
+        borderRadius: BorderRadius.circular(15),
       ),
-    );
-  }
-
-  // ============================================================
-  // MESSAGE
-  // ============================================================
-
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.lock_outline_rounded,
+            color: AppColors.navy.withValues(alpha: 0.45),
+            size: 17,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'MindMate is designed around private, supportive self-reflection. AI and risk-analysis features will be connected in later development increments.',
+              style: TextStyle(
+                color: AppColors.navy.withValues(alpha: 0.48),
+                fontSize: 9,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
