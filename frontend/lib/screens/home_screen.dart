@@ -41,7 +41,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void _open(Widget screen) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => screen),
+      MaterialPageRoute(
+        builder: (_) => screen,
+      ),
     );
   }
 
@@ -63,7 +65,9 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: (index) {
-          setState(() => _selectedIndex = index);
+          setState(() {
+            _selectedIndex = index;
+          });
         },
         backgroundColor: Colors.white,
         elevation: 0,
@@ -97,13 +101,19 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+// ============================================================
+// HOME FEED
+// ============================================================
+
 class _HomeFeed extends StatelessWidget {
   const _HomeFeed();
 
   void _open(BuildContext context, Widget screen) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => screen),
+      MaterialPageRoute(
+        builder: (_) => screen,
+      ),
     );
   }
 
@@ -117,21 +127,37 @@ class _HomeFeed extends StatelessWidget {
           sliver: SliverList(
             delegate: SliverChildListDelegate([
               _buildHeader(context),
+
               const SizedBox(height: 25),
+
               _buildGreeting(),
-              const SizedBox(height: 18),
+
+              const SizedBox(height: 20),
+
               _buildDailyPulse(context),
-              const SizedBox(height: 24),
+
+              const SizedBox(height: 27),
+
               _buildQuickOrbit(context),
-              const SizedBox(height: 28),
+
+              const SizedBox(height: 30),
+
               _buildExerciseSection(context),
-              const SizedBox(height: 28),
+
+              const SizedBox(height: 30),
+
               _buildStudentFocus(context),
-              const SizedBox(height: 28),
+
+              const SizedBox(height: 30),
+
               _buildWeeklyProgress(context),
-              const SizedBox(height: 28),
+
+              const SizedBox(height: 30),
+
               _buildSupportCard(context),
+
               const SizedBox(height: 22),
+
               _buildPrivacyNote(),
             ]),
           ),
@@ -139,6 +165,10 @@ class _HomeFeed extends StatelessWidget {
       ],
     );
   }
+
+  // ==========================================================
+  // HEADER
+  // ==========================================================
 
   Widget _buildHeader(BuildContext context) {
     return Row(
@@ -152,14 +182,27 @@ class _HomeFeed extends StatelessWidget {
             fit: BoxFit.contain,
           ),
         ),
+
         _circleButton(
           icon: Icons.notifications_none_rounded,
           badge: true,
-          onTap: () => _open(context, const NotificationsScreen()),
+          onTap: () {
+            _open(
+              context,
+              const NotificationsScreen(),
+            );
+          },
         ),
+
         const SizedBox(width: 9),
+
         _profileButton(
-          onTap: () => _open(context, const ProfileScreen()),
+          onTap: () {
+            _open(
+              context,
+              const ProfileScreen(),
+            );
+          },
         ),
       ],
     );
@@ -178,13 +221,27 @@ class _HomeFeed extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
-          border: Border.all(color: AppColors.borderMint),
+          border: Border.all(
+            color: AppColors.borderMint,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.navy.withValues(alpha: 0.035),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Stack(
           children: [
             Center(
-              child: Icon(icon, color: AppColors.navy, size: 22),
+              child: Icon(
+                icon,
+                color: AppColors.navy,
+                size: 22,
+              ),
             ),
+
             if (badge)
               Positioned(
                 top: 8,
@@ -204,7 +261,9 @@ class _HomeFeed extends StatelessWidget {
     );
   }
 
-  Widget _profileButton({required VoidCallback onTap}) {
+  Widget _profileButton({
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -213,7 +272,9 @@ class _HomeFeed extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.lightMint,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.borderMint),
+          border: Border.all(
+            color: AppColors.borderMint,
+          ),
         ),
         child: const Icon(
           Icons.person_outline_rounded,
@@ -223,6 +284,10 @@ class _HomeFeed extends StatelessWidget {
       ),
     );
   }
+
+  // ==========================================================
+  // GREETING
+  // ==========================================================
 
   Widget _buildGreeting() {
     return const Column(
@@ -236,7 +301,9 @@ class _HomeFeed extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
+
         SizedBox(height: 5),
+
         Text(
           'Your mind deserves a moment.',
           style: TextStyle(
@@ -251,15 +318,20 @@ class _HomeFeed extends StatelessWidget {
     );
   }
 
-  // A distinctive home hero: not a generic score card, but a "Daily Pulse"
-  // that connects check-in, reflection and progress in one place.
+  // ==========================================================
+  // DAILY PULSE
+  // ==========================================================
+
   Widget _buildDailyPulse(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [AppColors.navy, Color(0xFF29495A)],
+          colors: [
+            AppColors.navy,
+            Color(0xFF29495A),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -289,6 +361,20 @@ class _HomeFeed extends StatelessWidget {
               ),
             ),
           ),
+
+          Positioned(
+            left: -35,
+            bottom: -55,
+            child: Container(
+              width: 110,
+              height: 110,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.mint.withValues(alpha: 0.035),
+              ),
+            ),
+          ),
+
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -324,7 +410,9 @@ class _HomeFeed extends StatelessWidget {
                       ],
                     ),
                   ),
+
                   const Spacer(),
+
                   Text(
                     'TODAY',
                     style: TextStyle(
@@ -336,7 +424,9 @@ class _HomeFeed extends StatelessWidget {
                   ),
                 ],
               ),
+
               const SizedBox(height: 20),
+
               Row(
                 children: [
                   SizedBox(
@@ -351,12 +441,15 @@ class _HomeFeed extends StatelessWidget {
                           child: CircularProgressIndicator(
                             value: 0.72,
                             strokeWidth: 7,
-                            backgroundColor: Colors.white.withValues(alpha: 0.1),
-                            valueColor: const AlwaysStoppedAnimation(
+                            backgroundColor:
+                            Colors.white.withValues(alpha: 0.1),
+                            valueColor:
+                            const AlwaysStoppedAnimation<Color>(
                               AppColors.mint,
                             ),
                           ),
                         ),
+
                         const Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -380,10 +473,13 @@ class _HomeFeed extends StatelessWidget {
                       ],
                     ),
                   ),
+
                   const SizedBox(width: 18),
+
                   Expanded(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment:
+                      CrossAxisAlignment.start,
                       children: [
                         const Text(
                           'A little check-in can change the whole day.',
@@ -394,9 +490,12 @@ class _HomeFeed extends StatelessWidget {
                             height: 1.2,
                           ),
                         ),
+
                         const SizedBox(height: 7),
+
                         Text(
-                          'Your latest wellbeing snapshot is ready. Keep the streak going gently.',
+                          'Your latest wellbeing snapshot is ready. '
+                              'Keep the streak going gently.',
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.65),
                             fontSize: 10.5,
@@ -408,28 +507,53 @@ class _HomeFeed extends StatelessWidget {
                   ),
                 ],
               ),
+
               const SizedBox(height: 19),
+
               Row(
                 children: [
                   Expanded(
-                    child: _darkMetric('MOOD', 'Calm', Icons.mood_rounded),
+                    child: _darkMetric(
+                      'MOOD',
+                      'Calm',
+                      Icons.mood_rounded,
+                    ),
                   ),
+
                   const SizedBox(width: 8),
+
                   Expanded(
-                    child: _darkMetric('ENERGY', '7/10', Icons.bolt_rounded),
+                    child: _darkMetric(
+                      'ENERGY',
+                      '7/10',
+                      Icons.bolt_rounded,
+                    ),
                   ),
+
                   const SizedBox(width: 8),
+
                   Expanded(
-                    child: _darkMetric('STREAK', '6 days', Icons.local_fire_department_rounded),
+                    child: _darkMetric(
+                      'STREAK',
+                      '6 days',
+                      Icons.local_fire_department_rounded,
+                    ),
                   ),
                 ],
               ),
+
               const SizedBox(height: 14),
+
               SizedBox(
                 width: double.infinity,
                 height: 46,
                 child: FilledButton.icon(
-                  onPressed: () => _open(context, const CheckInScreen()),
+                  onPressed: () {
+                    _open(
+                      context,
+                      const CheckInScreen(),
+                    );
+                  },
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.mint,
                     foregroundColor: Colors.white,
@@ -437,7 +561,10 @@ class _HomeFeed extends StatelessWidget {
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  icon: const Icon(Icons.favorite_outline_rounded, size: 18),
+                  icon: const Icon(
+                    Icons.favorite_outline_rounded,
+                    size: 18,
+                  ),
                   label: const Text(
                     'Check in with yourself',
                     style: TextStyle(
@@ -454,9 +581,16 @@ class _HomeFeed extends StatelessWidget {
     );
   }
 
-  Widget _darkMetric(String label, String value, IconData icon) {
+  Widget _darkMetric(
+      String label,
+      String value,
+      IconData icon,
+      ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 9),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 9,
+        vertical: 9,
+      ),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.075),
         borderRadius: BorderRadius.circular(13),
@@ -466,11 +600,18 @@ class _HomeFeed extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, color: AppColors.mint, size: 15),
+          Icon(
+            icon,
+            color: AppColors.mint,
+            size: 15,
+          ),
+
           const SizedBox(width: 6),
+
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment:
+              CrossAxisAlignment.start,
               children: [
                 Text(
                   label,
@@ -481,7 +622,9 @@ class _HomeFeed extends StatelessWidget {
                     letterSpacing: 0.6,
                   ),
                 ),
+
                 const SizedBox(height: 2),
+
                 Text(
                   value,
                   overflow: TextOverflow.ellipsis,
@@ -499,24 +642,60 @@ class _HomeFeed extends StatelessWidget {
     );
   }
 
+  // ==========================================================
+  // MENTAL TOOLKIT
+  // ==========================================================
+
   Widget _buildQuickOrbit(BuildContext context) {
     final tools = [
-      ('AI Chat', 'Talk it out', Icons.smart_toy_outlined, AppColors.mint,
-      const Color(0xFFEFF7F3), () => _open(context, const AiChatScreen())),
-      ('Mood', 'Record a feeling', Icons.mood_outlined, const Color(0xFFE29A45),
-      const Color(0xFFFFF5E9), () => _open(context, const MoodScreen())),
-      ('Emotion', 'Scan expression', Icons.face_retouching_natural_outlined,
-      const Color(0xFFAD76B5), const Color(0xFFF8EFF9),
-          () => _open(context, const EmotionScreen())),
-      ('Voice', 'Explore your voice', Icons.mic_none_rounded,
-      const Color(0xFF6D9A72), const Color(0xFFEEF7EF),
-          () => _open(context, const VoiceScreen())),
-      ('Assessment', 'Reflect deeper', Icons.psychology_outlined,
-      const Color(0xFF6B7FD7), const Color(0xFFF1F3FC),
-          () => _open(context, const AssessmentsScreen())),
-      ('Progress', 'See patterns', Icons.insights_outlined,
-      const Color(0xFF5C8FA8), const Color(0xFFEDF5F8),
-          () => _open(context, const ProgressScreen())),
+      (
+      'AI Chat',
+      'Talk it out',
+      Icons.smart_toy_outlined,
+      AppColors.mint,
+      const Color(0xFFEFF7F3),
+          () => _open(context, const AiChatScreen()),
+      ),
+      (
+      'Mood',
+      'Record a feeling',
+      Icons.mood_outlined,
+      const Color(0xFFE29A45),
+      const Color(0xFFFFF5E9),
+          () => _open(context, const MoodScreen()),
+      ),
+      (
+      'Emotion',
+      'Scan expression',
+      Icons.face_retouching_natural_outlined,
+      const Color(0xFFAD76B5),
+      const Color(0xFFF8EFF9),
+          () => _open(context, const EmotionScreen()),
+      ),
+      (
+      'Voice',
+      'Explore your voice',
+      Icons.mic_none_rounded,
+      const Color(0xFF6D9A72),
+      const Color(0xFFEEF7EF),
+          () => _open(context, const VoiceScreen()),
+      ),
+      (
+      'Assessment',
+      'Reflect deeper',
+      Icons.psychology_outlined,
+      const Color(0xFF6B7FD7),
+      const Color(0xFFF1F3FC),
+          () => _open(context, const AssessmentsScreen()),
+      ),
+      (
+      'Progress',
+      'See patterns',
+      Icons.insights_outlined,
+      const Color(0xFF5C8FA8),
+      const Color(0xFFEDF5F8),
+          () => _open(context, const ProgressScreen()),
+      ),
     ];
 
     return Column(
@@ -531,7 +710,9 @@ class _HomeFeed extends StatelessWidget {
             letterSpacing: -0.3,
           ),
         ),
+
         const SizedBox(height: 4),
+
         Text(
           'Choose the kind of support you need right now.',
           style: TextStyle(
@@ -539,12 +720,15 @@ class _HomeFeed extends StatelessWidget {
             fontSize: 11,
           ),
         ),
+
         const SizedBox(height: 14),
+
         GridView.builder(
           itemCount: tools.length,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          gridDelegate:
+          const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
             crossAxisSpacing: 9,
             mainAxisSpacing: 9,
@@ -552,6 +736,7 @@ class _HomeFeed extends StatelessWidget {
           ),
           itemBuilder: (context, index) {
             final item = tools[index];
+
             return _toolTile(
               title: item.$1,
               subtitle: item.$2,
@@ -584,10 +769,20 @@ class _HomeFeed extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(19),
-            border: Border.all(color: AppColors.borderMint),
+            border: Border.all(
+              color: AppColors.borderMint,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.navy.withValues(alpha: 0.025),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment:
+            CrossAxisAlignment.start,
             children: [
               Container(
                 width: 39,
@@ -596,9 +791,15 @@ class _HomeFeed extends StatelessWidget {
                   color: background,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: iconColor, size: 20),
+                child: Icon(
+                  icon,
+                  color: iconColor,
+                  size: 20,
+                ),
               ),
+
               const Spacer(),
+
               Text(
                 title,
                 style: const TextStyle(
@@ -607,7 +808,9 @@ class _HomeFeed extends StatelessWidget {
                   fontWeight: FontWeight.w800,
                 ),
               ),
+
               const SizedBox(height: 3),
+
               Text(
                 subtitle,
                 maxLines: 1,
@@ -624,14 +827,47 @@ class _HomeFeed extends StatelessWidget {
     );
   }
 
+  // ==========================================================
+  // EXERCISES
+  // ==========================================================
+  Widget _miniInfo(
+      IconData icon,
+      String text,
+      ) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          color: AppColors.mint,
+          size: 13,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: const TextStyle(
+            color: AppColors.navy,
+            fontSize: 8.5,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+  // ==========================================================
+  // EXERCISES
+  // ==========================================================
+
   Widget _buildExerciseSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // --------------------------------------------------------
-        // SECTION HEADER
-        // --------------------------------------------------------
+        // ------------------------------------------------------
+        // TITLE
+        // ------------------------------------------------------
+
         Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             const Expanded(
               child: Column(
@@ -641,13 +877,14 @@ class _HomeFeed extends StatelessWidget {
                     'MindMate Reset',
                     style: TextStyle(
                       color: AppColors.navy,
-                      fontSize: 19,
+                      fontSize: 20,
                       fontWeight: FontWeight.w800,
+                      letterSpacing: -0.3,
                     ),
                   ),
-                  SizedBox(height: 4),
+                  SizedBox(height: 5),
                   Text(
-                    'Small guided exercises for the moment you are in.',
+                    'Guided tools for the moment you are in.',
                     style: TextStyle(
                       color: Color(0x851D2B3A),
                       fontSize: 11,
@@ -656,39 +893,55 @@ class _HomeFeed extends StatelessWidget {
                 ],
               ),
             ),
-
             Container(
               padding: const EdgeInsets.symmetric(
-                horizontal: 9,
-                vertical: 6,
+                horizontal: 10,
+                vertical: 7,
               ),
               decoration: BoxDecoration(
                 color: AppColors.lightMint,
                 borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Text(
-                '12 EXERCISES',
-                style: TextStyle(
-                  color: AppColors.mint,
-                  fontSize: 7.5,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.6,
+                border: Border.all(
+                  color: AppColors.borderMint,
                 ),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.auto_awesome_rounded,
+                    color: AppColors.mint,
+                    size: 12,
+                  ),
+                  SizedBox(width: 5),
+                  Text(
+                    '12 TOOLS',
+                    style: TextStyle(
+                      color: AppColors.mint,
+                      fontSize: 7.5,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
 
-        const SizedBox(height: 15),
+        const SizedBox(height: 16),
 
-        // --------------------------------------------------------
-        // FEATURED WORKING EXERCISE
-        // --------------------------------------------------------
+        // ------------------------------------------------------
+        // FEATURED EXERCISE
+        // ------------------------------------------------------
+
         GestureDetector(
-          onTap: () => _open(
-            context,
-            const CalmGroundingScreen(),
-          ),
+          onTap: () {
+            _open(
+              context,
+              const CalmGroundingScreen(),
+            );
+          },
           child: Container(
             width: double.infinity,
             padding: const EdgeInsets.all(18),
@@ -696,179 +949,180 @@ class _HomeFeed extends StatelessWidget {
               gradient: const LinearGradient(
                 colors: [
                   Color(0xFFF0F8F4),
-                  Color(0xFFE5F2EC),
+                  Color(0xFFE4F2EA),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(25),
+              borderRadius: BorderRadius.circular(26),
               border: Border.all(
                 color: AppColors.borderMint,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.mint.withValues(alpha: 0.07),
-                  blurRadius: 18,
-                  offset: const Offset(0, 8),
+                  color: AppColors.mint.withValues(alpha: 0.08),
+                  blurRadius: 20,
+                  offset: const Offset(0, 9),
                 ),
               ],
             ),
-            child: Row(
+            child: Stack(
               children: [
-                // Exercise icon
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.mint.withValues(alpha: 0.12),
-                        blurRadius: 15,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: const Center(
-                    child: Text(
-                      '🌿',
-                      style: TextStyle(
-                        fontSize: 29,
-                      ),
+                Positioned(
+                  right: -25,
+                  top: -30,
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.mint.withValues(alpha: 0.055),
                     ),
                   ),
                 ),
-
-                const SizedBox(width: 15),
-
-                // Information
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment:
-                    CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                Row(
+                  children: [
+                    Container(
+                      width: 66,
+                      height: 66,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.mint.withValues(alpha: 0.12),
+                            blurRadius: 16,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                      ),
+                      child: const Center(
+                        child: Text(
+                          '🌿',
+                          style: TextStyle(
+                            fontSize: 30,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 15),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'QUICK RESET',
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.mint,
+                                  borderRadius: BorderRadius.circular(7),
+                                ),
+                                child: const Text(
+                                  'FEATURED',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 6.5,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.6,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 7),
+                              const Icon(
+                                Icons.verified_rounded,
+                                color: AppColors.mint,
+                                size: 13,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 7),
+                          const Text(
+                            '60-Second Calm Reset',
                             style: TextStyle(
-                              color: AppColors.mint,
-                              fontSize: 7.5,
+                              color: AppColors.navy,
+                              fontSize: 15,
                               fontWeight: FontWeight.w800,
-                              letterSpacing: 0.8,
                             ),
                           ),
-                          SizedBox(width: 7),
-                          Icon(
-                            Icons.check_circle_rounded,
-                            color: AppColors.mint,
-                            size: 12,
+                          const SizedBox(height: 5),
+                          const Text(
+                            'Breathe, ground yourself, '
+                                'and reset after a difficult moment.',
+                            style: TextStyle(
+                              color: Color(0x8A1D2B3A),
+                              fontSize: 10.5,
+                              height: 1.4,
+                            ),
+                          ),
+                          const SizedBox(height: 9),
+                          Row(
+                            children: [
+                              _miniInfo(
+                                Icons.timer_outlined,
+                                '1 min',
+                              ),
+                              const SizedBox(width: 10),
+                              _miniInfo(
+                                Icons.self_improvement_outlined,
+                                'Guided',
+                              ),
+                            ],
                           ),
                         ],
                       ),
-
-                      SizedBox(height: 5),
-
-                      Text(
-                        '60-Second Calm Reset',
-                        style: TextStyle(
-                          color: AppColors.navy,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                        ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: const BoxDecoration(
+                        color: AppColors.navy,
+                        shape: BoxShape.circle,
                       ),
-
-                      SizedBox(height: 5),
-
-                      Text(
-                        'Breathe, ground yourself, and reset after a difficult moment.',
-                        style: TextStyle(
-                          color: Color(0x8A1D2B3A),
-                          fontSize: 10.5,
-                          height: 1.4,
-                        ),
+                      child: const Icon(
+                        Icons.arrow_forward_rounded,
+                        color: Colors.white,
+                        size: 18,
                       ),
-
-                      SizedBox(height: 9),
-
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.timer_outlined,
-                            color: AppColors.mint,
-                            size: 14,
-                          ),
-                          SizedBox(width: 4),
-                          Text(
-                            'About 1 minute',
-                            style: TextStyle(
-                              color: AppColors.navy,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          SizedBox(width: 10),
-                          Icon(
-                            Icons.self_improvement_outlined,
-                            color: AppColors.mint,
-                            size: 14,
-                          ),
-                          SizedBox(width: 4),
-                          Text(
-                            'Guided',
-                            style: TextStyle(
-                              color: AppColors.navy,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(width: 8),
-
-                // Arrow
-                Container(
-                  width: 35,
-                  height: 35,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(11),
-                  ),
-                  child: const Icon(
-                    Icons.arrow_forward_rounded,
-                    color: AppColors.navy,
-                    size: 18,
-                  ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
         ),
 
-        const SizedBox(height: 18),
+        const SizedBox(height: 20),
 
-        // --------------------------------------------------------
-        // EXPLORE EXERCISES
-        // --------------------------------------------------------
+        // ------------------------------------------------------
+        // LIBRARY HEADER
+        // ------------------------------------------------------
+
         Row(
           children: [
             const Text(
-              'EXPLORE EXERCISES',
+              'EXPLORE',
               style: TextStyle(
                 color: AppColors.navy,
                 fontSize: 9,
                 fontWeight: FontWeight.w800,
-                letterSpacing: 0.9,
+                letterSpacing: 1,
               ),
             ),
-            const Spacer(),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Container(
+                height: 1,
+                color: AppColors.borderMint,
+              ),
+            ),
+            const SizedBox(width: 8),
             Text(
-              '12 more',
+              '12 guided exercises',
               style: TextStyle(
                 color: AppColors.navy.withValues(alpha: 0.38),
                 fontSize: 8.5,
@@ -878,24 +1132,27 @@ class _HomeFeed extends StatelessWidget {
           ],
         ),
 
-        const SizedBox(height: 10),
+        const SizedBox(height: 11),
 
-        // --------------------------------------------------------
-        // EXERCISE LIBRARY
-        // --------------------------------------------------------
+        // ------------------------------------------------------
+        // 4-COLUMN EXERCISE GRID
+        // ------------------------------------------------------
+
         GridView.count(
-          crossAxisCount: 2,
+          crossAxisCount: 4,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 9,
-          mainAxisSpacing: 9,
-          childAspectRatio: 1.72,
+          crossAxisSpacing: 7,
+          mainAxisSpacing: 7,
+          childAspectRatio: 0.78,
           children: [
             GestureDetector(
-              onTap: () => _open(
-                context,
-                const BodyScanScreen(),
-              ),
+              onTap: () {
+                _open(
+                  context,
+                  const BodyScanScreen(),
+                );
+              },
               child: _exerciseMiniCard(
                 emoji: '🧘',
                 title: 'Body Scan',
@@ -904,86 +1161,100 @@ class _HomeFeed extends StatelessWidget {
             ),
 
             GestureDetector(
-              onTap: () => _open(
-                context,
-                const ThoughtResetScreen(),
-              ),
+              onTap: () {
+                _open(
+                  context,
+                  const ThoughtResetScreen(),
+                );
+              },
               child: _exerciseMiniCard(
                 emoji: '💭',
                 title: 'Thought Reset',
-                subtitle: 'Challenge unhelpful thoughts',
+                subtitle: 'Challenge thoughts',
               ),
             ),
 
             GestureDetector(
-              onTap: () => _open(
-                context,
-                const ExamPressureResetScreen(),
-              ),
+              onTap: () {
+                _open(
+                  context,
+                  const ExamPressureResetScreen(),
+                );
+              },
               child: _exerciseMiniCard(
                 emoji: '📚',
-                title: 'Exam Pressure Reset',
-                subtitle: 'Student stress support',
+                title: 'Exam Pressure',
+                subtitle: 'Reduce study stress',
               ),
             ),
 
             GestureDetector(
-              onTap: () => _open(
-                context,
-                const StressReleaseScreen(),
-              ),
-              child: _exerciseMiniCard(
-                emoji: '⚡',
-                title: 'Stress Release',
-                subtitle: 'Release built-up tension',
-              ),
-            ),
-
-            GestureDetector(
-              onTap: () => _open(
-                context,
-                const SleepWindDownScreen(),
-              ),
+              onTap: () {
+                _open(
+                  context,
+                  const SleepWindDownScreen(),
+                );
+              },
               child: _exerciseMiniCard(
                 emoji: '🌙',
                 title: 'Sleep Wind-Down',
-                subtitle: 'Prepare for sleep',
+                subtitle: 'Prepare to rest',
               ),
             ),
 
             GestureDetector(
-              onTap: () => _open(
-                context,
-                const SelfCompassionPauseScreen(),
+              onTap: () {
+                _open(
+                  context,
+                  const StressReleaseScreen(),
+                );
+              },
+              child: _exerciseMiniCard(
+                emoji: '⚡',
+                title: 'Stress Release',
+                subtitle: 'Release tension',
               ),
+            ),
+
+            GestureDetector(
+              onTap: () {
+                _open(
+                  context,
+                  const SelfCompassionPauseScreen(),
+                );
+              },
               child: _exerciseMiniCard(
                 emoji: '💚',
-                title: 'Self-Compassion Pause',
-                subtitle: 'Practice kinder self-talk',
+                title: 'Self-Compassion',
+                subtitle: 'Be kind to yourself',
               ),
             ),
 
             GestureDetector(
-              onTap: () => _open(
-                context,
-                const QuickReflectionScreen(),
-              ),
+              onTap: () {
+                _open(
+                  context,
+                  const QuickReflectionScreen(),
+                );
+              },
               child: _exerciseMiniCard(
                 emoji: '✍️',
                 title: 'Quick Reflection',
-                subtitle: 'Understand what you feel',
+                subtitle: 'Pause and notice',
               ),
             ),
 
             GestureDetector(
-              onTap: () => _open(
-                context,
-                const FocusResetScreen(),
-              ),
+              onTap: () {
+                _open(
+                  context,
+                  const FocusResetScreen(),
+                );
+              },
               child: _exerciseMiniCard(
                 emoji: '🎯',
                 title: 'Focus Reset',
-                subtitle: 'Regain concentration',
+                subtitle: 'Regain attention',
               ),
             ),
 
@@ -997,7 +1268,7 @@ class _HomeFeed extends StatelessWidget {
               child: _exerciseMiniCard(
                 emoji: '🌤️',
                 title: 'Mood Lift',
-                subtitle: 'Brighten your moment',
+                subtitle: 'Shift your mood',
               ),
             ),
 
@@ -1011,7 +1282,7 @@ class _HomeFeed extends StatelessWidget {
               child: _exerciseMiniCard(
                 emoji: '🌿',
                 title: 'Grounding',
-                subtitle: 'Reconnect with the present',
+                subtitle: 'Reconnect now',
               ),
             ),
 
@@ -1025,7 +1296,7 @@ class _HomeFeed extends StatelessWidget {
               child: _exerciseMiniCard(
                 emoji: '🌬️',
                 title: 'Box Breathing',
-                subtitle: 'Slow your rhythm and reset',
+                subtitle: 'Breathe with rhythm',
               ),
             ),
 
@@ -1039,7 +1310,7 @@ class _HomeFeed extends StatelessWidget {
               child: _exerciseMiniCard(
                 emoji: '📵',
                 title: 'Digital Detox',
-                subtitle: 'Create space away from your screen',
+                subtitle: 'Take a screen break',
               ),
             ),
           ],
@@ -1048,113 +1319,99 @@ class _HomeFeed extends StatelessWidget {
     );
   }
 
+  // ==========================================================
+  // MINIMIZED EXERCISE CARD
+  // ==========================================================
+
   Widget _exerciseMiniCard({
     required String emoji,
     required String title,
     required String subtitle,
   }) {
     return Container(
-      padding: const EdgeInsets.all(11),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 5,
+        vertical: 8,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(17),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: AppColors.borderMint,
         ),
       ),
-      child: Row(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Emoji
           Container(
-            width: 38,
-            height: 38,
+            width: 32,
+            height: 32,
             decoration: BoxDecoration(
               color: AppColors.lightMint,
-              borderRadius: BorderRadius.circular(11),
+              borderRadius: BorderRadius.circular(9),
             ),
             child: Center(
               child: Text(
                 emoji,
                 style: const TextStyle(
-                  fontSize: 18,
+                  fontSize: 15,
                 ),
               ),
             ),
           ),
 
-          const SizedBox(width: 9),
+          const SizedBox(height: 6),
 
-          // Text
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.navy,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    height: 1.15,
-                  ),
-                ),
-
-                const SizedBox(height: 4),
-
-                Text(
-                  subtitle,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: AppColors.navy.withValues(alpha: 0.42),
-                    fontSize: 7.8,
-                    height: 1.2,
-                  ),
-                ),
-              ],
+          Text(
+            title,
+            maxLines: 2,
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppColors.navy,
+              fontSize: 8.2,
+              fontWeight: FontWeight.w800,
+              height: 1.1,
             ),
           ),
 
-          const SizedBox(width: 4),
+          const SizedBox(height: 3),
 
-          // Coming soon indicator
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 5,
-              vertical: 3,
-            ),
-            decoration: BoxDecoration(
-              color: AppColors.navy.withValues(alpha: 0.045),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              'SOON',
-              style: TextStyle(
-                color: AppColors.navy.withValues(alpha: 0.35),
-                fontSize: 6,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.2,
-              ),
+          Text(
+            subtitle,
+            maxLines: 2,
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: AppColors.navy.withValues(alpha: 0.42),
+              fontSize: 6.5,
+              height: 1.1,
             ),
           ),
         ],
       ),
     );
   }
+  // ==========================================================
+  // STUDENT FOCUS
+  // ==========================================================
 
   Widget _buildStudentFocus(BuildContext context) {
     return GestureDetector(
-      onTap: () => _open(
-        context,
-        const StudentWellbeingScreen(),
-      ),
+      onTap: () {
+        _open(
+          context,
+          const StudentWellbeingScreen(),
+        );
+      },
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(18, 18, 14, 18),
+        padding: const EdgeInsets.fromLTRB(
+          18,
+          18,
+          14,
+          18,
+        ),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
             colors: [
@@ -1176,139 +1433,120 @@ class _HomeFeed extends StatelessWidget {
             ),
           ],
         ),
-        child: Stack(
+        child: Row(
           children: [
-            Positioned(
-              right: -25,
-              bottom: -35,
-              child: Container(
-                width: 125,
-                height: 125,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.mint.withValues(alpha: 0.055),
+            Container(
+              width: 54,
+              height: 54,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(17),
+                border: Border.all(
+                  color: AppColors.borderMint,
+                ),
+              ),
+              child: const Center(
+                child: Text(
+                  '🎓',
+                  style: TextStyle(
+                    fontSize: 27,
+                  ),
                 ),
               ),
             ),
 
-            Row(
-              children: [
-                Container(
-                  width: 54,
-                  height: 54,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    borderRadius: BorderRadius.circular(17),
-                    border: Border.all(
-                      color: AppColors.borderMint,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.mint.withValues(alpha: 0.08),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: const Center(
-                    child: Text(
-                      '🎓',
-                      style: TextStyle(fontSize: 27),
-                    ),
-                  ),
-                ),
+            const SizedBox(width: 13),
 
-                const SizedBox(width: 13),
-
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            Expanded(
+              child: Column(
+                crossAxisAlignment:
+                CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 7,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.mint.withValues(alpha: 0.13),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Text(
-                              'STUDENT MODE',
-                              style: TextStyle(
-                                color: AppColors.mint,
-                                fontSize: 7,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.7,
-                              ),
-                            ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.mint.withValues(alpha: 0.13),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text(
+                          'STUDENT MODE',
+                          style: TextStyle(
+                            color: AppColors.mint,
+                            fontSize: 7,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.7,
                           ),
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.mint,
-                              borderRadius: BorderRadius.circular(7),
-                            ),
-                            child: const Text(
-                              'NEW',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 6.5,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 7),
-
-                      const Text(
-                        'How is student life feeling?',
-                        style: TextStyle(
-                          color: AppColors.navy,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          height: 1.15,
                         ),
                       ),
 
-                      const SizedBox(height: 5),
+                      const SizedBox(width: 6),
 
-                      const Text(
-                        'Explore stress, exam pressure, burnout, sleep and motivation.',
-                        style: TextStyle(
-                          color: Color(0x871D2B3A),
-                          fontSize: 9.5,
-                          height: 1.4,
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.mint,
+                          borderRadius: BorderRadius.circular(7),
+                        ),
+                        child: const Text(
+                          'NEW',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 6.5,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                ),
 
-                const SizedBox(width: 8),
+                  const SizedBox(height: 7),
 
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: const BoxDecoration(
-                    color: AppColors.mint,
-                    shape: BoxShape.circle,
+                  const Text(
+                    'How is student life feeling?',
+                    style: TextStyle(
+                      color: AppColors.navy,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      height: 1.15,
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.arrow_forward_rounded,
-                    color: Colors.white,
-                    size: 19,
+
+                  const SizedBox(height: 5),
+
+                  const Text(
+                    'Explore stress, exam pressure, burnout, sleep and motivation.',
+                    style: TextStyle(
+                      color: Color(0x871D2B3A),
+                      fontSize: 9.5,
+                      height: 1.4,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
+            ),
+
+            const SizedBox(width: 8),
+
+            Container(
+              width: 38,
+              height: 38,
+              decoration: const BoxDecoration(
+                color: AppColors.mint,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.arrow_forward_rounded,
+                color: Colors.white,
+                size: 19,
+              ),
             ),
           ],
         ),
@@ -1316,19 +1554,47 @@ class _HomeFeed extends StatelessWidget {
     );
   }
 
+  // ==========================================================
+  // WEEKLY PROGRESS
+  // ==========================================================
+
   Widget _buildWeeklyProgress(BuildContext context) {
-    const values = [0.52, 0.68, 0.45, 0.78, 0.72, 0.86, 0.72];
-    const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    const values = [
+      0.52,
+      0.68,
+      0.45,
+      0.78,
+      0.72,
+      0.86,
+      0.72,
+    ];
+
+    const days = [
+      'M',
+      'T',
+      'W',
+      'T',
+      'F',
+      'S',
+      'S',
+    ];
 
     return GestureDetector(
-      onTap: () => _open(context, const WeeklyWellbeingScreen()),
+      onTap: () {
+        _open(
+          context,
+          const WeeklyWellbeingScreen(),
+        );
+      },
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(19),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.borderMint),
+          border: Border.all(
+            color: AppColors.borderMint,
+          ),
         ),
         child: Column(
           children: [
@@ -1347,10 +1613,13 @@ class _HomeFeed extends StatelessWidget {
                     size: 21,
                   ),
                 ),
+
                 const SizedBox(width: 10),
+
                 const Expanded(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment:
+                    CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Your week at a glance',
@@ -1371,6 +1640,7 @@ class _HomeFeed extends StatelessWidget {
                     ],
                   ),
                 ),
+
                 const Icon(
                   Icons.arrow_forward_ios_rounded,
                   color: AppColors.navy,
@@ -1378,65 +1648,94 @@ class _HomeFeed extends StatelessWidget {
                 ),
               ],
             ),
+
             const SizedBox(height: 20),
+
             SizedBox(
               height: 92,
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: List.generate(values.length, (index) {
-                  final active = index == 5;
-                  return Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Container(
-                        width: 22,
-                        height: 70,
-                        alignment: Alignment.bottomCenter,
-                        decoration: BoxDecoration(
-                          color: AppColors.lightMint,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: FractionallySizedBox(
-                          heightFactor: values[index],
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: active
-                                  ? AppColors.mint
-                                  : AppColors.mint.withValues(alpha: 0.48),
-                              borderRadius: BorderRadius.circular(8),
+                crossAxisAlignment:
+                CrossAxisAlignment.end,
+                mainAxisAlignment:
+                MainAxisAlignment.spaceAround,
+                children: List.generate(
+                  values.length,
+                      (index) {
+                    final active = index == 5;
+
+                    return Column(
+                      mainAxisAlignment:
+                      MainAxisAlignment.end,
+                      children: [
+                        Container(
+                          width: 22,
+                          height: 70,
+                          alignment:
+                          Alignment.bottomCenter,
+                          decoration: BoxDecoration(
+                            color: AppColors.lightMint,
+                            borderRadius:
+                            BorderRadius.circular(8),
+                          ),
+                          child: FractionallySizedBox(
+                            heightFactor: values[index],
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: active
+                                    ? AppColors.mint
+                                    : AppColors.mint
+                                    .withValues(alpha: 0.48),
+                                borderRadius:
+                                BorderRadius.circular(8),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        days[index],
-                        style: TextStyle(
-                          color: active
-                              ? AppColors.navy
-                              : AppColors.navy.withValues(alpha: 0.42),
-                          fontSize: 8,
-                          fontWeight: active ? FontWeight.w800 : FontWeight.w500,
+
+                        const SizedBox(height: 6),
+
+                        Text(
+                          days[index],
+                          style: TextStyle(
+                            color: active
+                                ? AppColors.navy
+                                : AppColors.navy
+                                .withValues(alpha: 0.42),
+                            fontSize: 8,
+                            fontWeight: active
+                                ? FontWeight.w800
+                                : FontWeight.w500,
+                          ),
                         ),
-                      ),
-                    ],
-                  );
-                }),
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
+
             const SizedBox(height: 15),
+
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 11,
+                vertical: 10,
+              ),
               decoration: BoxDecoration(
                 color: AppColors.lightMint,
                 borderRadius: BorderRadius.circular(13),
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.auto_awesome_rounded, color: AppColors.mint, size: 15),
+                  Icon(
+                    Icons.auto_awesome_rounded,
+                    color: AppColors.mint,
+                    size: 15,
+                  ),
+
                   SizedBox(width: 7),
+
                   Expanded(
                     child: Text(
                       'Your strongest day was Saturday. Tap to explore the full week.',
@@ -1456,16 +1755,27 @@ class _HomeFeed extends StatelessWidget {
     );
   }
 
+  // ==========================================================
+  // SUPPORT
+  // ==========================================================
+
   Widget _buildSupportCard(BuildContext context) {
     return GestureDetector(
-      onTap: () => _open(context, const SafetySupportScreen()),
+      onTap: () {
+        _open(
+          context,
+          const SafetySupportScreen(),
+        );
+      },
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: const Color(0xFFFFF7F4),
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: const Color(0xFFF4DDD5)),
+          border: Border.all(
+            color: const Color(0xFFF4DDD5),
+          ),
         ),
         child: Row(
           children: [
@@ -1482,10 +1792,13 @@ class _HomeFeed extends StatelessWidget {
                 size: 24,
               ),
             ),
+
             const SizedBox(width: 12),
+
             const Expanded(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment:
+                CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Need support right now?',
@@ -1495,7 +1808,9 @@ class _HomeFeed extends StatelessWidget {
                       fontWeight: FontWeight.w800,
                     ),
                   ),
+
                   SizedBox(height: 4),
+
                   Text(
                     'Find safety guidance, trusted-person support and professional-support information.',
                     style: TextStyle(
@@ -1507,6 +1822,7 @@ class _HomeFeed extends StatelessWidget {
                 ],
               ),
             ),
+
             const Icon(
               Icons.arrow_forward_rounded,
               color: AppColors.navy,
@@ -1518,6 +1834,10 @@ class _HomeFeed extends StatelessWidget {
     );
   }
 
+  // ==========================================================
+  // PRIVACY
+  // ==========================================================
+
   Widget _buildPrivacyNote() {
     return Container(
       width: double.infinity,
@@ -1527,14 +1847,17 @@ class _HomeFeed extends StatelessWidget {
         borderRadius: BorderRadius.circular(15),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+        CrossAxisAlignment.start,
         children: [
           Icon(
             Icons.lock_outline_rounded,
             color: AppColors.navy.withValues(alpha: 0.45),
             size: 17,
           ),
+
           const SizedBox(width: 8),
+
           Expanded(
             child: Text(
               'MindMate is designed around private, supportive self-reflection. AI and risk-analysis features will be connected in later development increments.',

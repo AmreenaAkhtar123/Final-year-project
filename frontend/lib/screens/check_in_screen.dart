@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../core/constants/app_colors.dart';
+import '../../core/constants/app_colors.dart';
+import 'home_screen.dart';
 
 class CheckInScreen extends StatefulWidget {
   const CheckInScreen({super.key});
@@ -134,112 +135,182 @@ class _CheckInScreenState extends State<CheckInScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) {
+      builder: (dialogContext) {
         return Dialog(
-          backgroundColor: Colors.transparent,
-          child: Container(
-            padding: const EdgeInsets.all(25),
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: BorderRadius.circular(28),
+          backgroundColor: AppColors.background,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 22,
+            vertical: 24,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxHeight: 520,
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 68,
-                  height: 68,
-                  decoration: BoxDecoration(
-                    color: AppColors.lightMint,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.check_rounded,
-                    color: AppColors.mint,
-                    size: 38,
-                  ),
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  22,
+                  24,
+                  22,
+                  20,
                 ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // -----------------------------------------------
+                    // SUCCESS ICON
+                    // -----------------------------------------------
 
-                const SizedBox(height: 18),
-
-                const Text(
-                  'Check-in Complete',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AppColors.navy,
-                    fontSize: 21,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-
-                Text(
-                  'Thank you for taking a moment to check in with yourself today.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AppColors.navy.withValues(alpha: 0.55),
-                    fontSize: 12,
-                    height: 1.5,
-                  ),
-                ),
-
-                const SizedBox(height: 18),
-
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(13),
-                  decoration: BoxDecoration(
-                    color: AppColors.lightMint,
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(
-                        Icons.auto_awesome_rounded,
-                        color: AppColors.mint,
-                        size: 20,
-                      ),
-                      SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'Your wellbeing insight will be updated.',
-                          style: TextStyle(
-                            color: AppColors.navy,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
+                    Container(
+                      width: 68,
+                      height: 68,
+                      decoration: BoxDecoration(
+                        color: AppColors.lightMint,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.borderMint,
+                          width: 1.5,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: FilledButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      Navigator.pop(context);
-                    },
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.mint,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                      child: const Icon(
+                        Icons.check_rounded,
+                        size: 38,
+                        color: AppColors.mint,
                       ),
                     ),
-                    child: const Text(
-                      'Done',
+
+                    const SizedBox(height: 15),
+
+                    // -----------------------------------------------
+                    // TITLE
+                    // -----------------------------------------------
+
+                    const Text(
+                      'Check-in Complete!',
+                      textAlign: TextAlign.center,
                       style: TextStyle(
+                        color: AppColors.navy,
+                        fontSize: 22,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                  ),
+
+                    const SizedBox(height: 7),
+
+                    Text(
+                      'Your check-in has been recorded.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: AppColors.navy.withValues(alpha: 0.68),
+                        fontSize: 13,
+                        height: 1.4,
+                      ),
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    // -----------------------------------------------
+                    // MESSAGE CARD
+                    // -----------------------------------------------
+
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(13),
+                      decoration: BoxDecoration(
+                        color: AppColors.lightMint,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppColors.borderMint,
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 34,
+                            height: 34,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.8),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.favorite_outline_rounded,
+                              color: AppColors.mint,
+                              size: 19,
+                            ),
+                          ),
+
+                          const SizedBox(width: 10),
+
+                          Expanded(
+                            child: Text(
+                              'Taking a moment to notice how you feel '
+                                  'is a meaningful step. Keep being kind '
+                                  'to yourself.',
+                              style: TextStyle(
+                                color: AppColors.navy.withValues(
+                                  alpha: 0.72,
+                                ),
+                                fontSize: 12,
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 18),
+
+                    // -----------------------------------------------
+                    // DONE BUTTON
+                    // -----------------------------------------------
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: FilledButton(
+                        onPressed: () {
+                          // Close the dialog first.
+                          Navigator.of(dialogContext).pop();
+
+                          // After the dialog closes, directly open
+                          // HomeScreen and remove all previous routes.
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (!mounted) return;
+
+                            Navigator.of(context).pushAndRemoveUntil(
+                              MaterialPageRoute(
+                                builder: (_) => const HomeScreen(),
+                              ),
+                                  (route) => false,
+                            );
+                          });
+                        },
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.mint,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                        ),
+                        child: const Text(
+                          'Done',
+                          style: TextStyle(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         );
