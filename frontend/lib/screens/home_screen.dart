@@ -22,6 +22,7 @@ import 'exercise/sleep_wind_down_screen.dart';
 import 'exercise/stress_release_screen.dart';
 import 'exercise/self_compassion_pause_screen.dart';
 import 'exercise/quick_reflection_screen.dart';
+import 'exercise/focus_reset_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -970,11 +971,18 @@ class _HomeFeed extends StatelessWidget {
               ),
             ),
 
-            _exerciseMiniCard(
-              emoji: '🎯',
-              title: 'Focus Reset',
-              subtitle: 'Regain concentration',
+            GestureDetector(
+              onTap: () => _open(
+                context,
+                const FocusResetScreen(),
+              ),
+              child: _exerciseMiniCard(
+                emoji: '🎯',
+                title: 'Focus Reset',
+                subtitle: 'Regain concentration',
+              ),
             ),
+
             _exerciseMiniCard(
               emoji: '🌤️',
               title: 'Mood Lift',
