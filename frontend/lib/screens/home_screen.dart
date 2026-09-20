@@ -16,6 +16,7 @@ import 'student_wellbeing_screen.dart';
 import 'voice_screen.dart';
 import 'weekly_wellbeing_screen.dart';
 import 'exercise/body_scan_screen.dart';
+import 'exercise/thought_reset_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -891,11 +892,19 @@ class _HomeFeed extends StatelessWidget {
                 subtitle: 'Notice physical tension',
               ),
             ),
-            _exerciseMiniCard(
-              emoji: '💭',
-              title: 'Thought Reset',
-              subtitle: 'Challenge unhelpful thoughts',
+
+            GestureDetector(
+              onTap: () => _open(
+                context,
+                const ThoughtResetScreen(),
+              ),
+              child: _exerciseMiniCard(
+                emoji: '💭',
+                title: 'Thought Reset',
+                subtitle: 'Challenge unhelpful thoughts',
+              ),
             ),
+
             _exerciseMiniCard(
               emoji: '📚',
               title: 'Exam Pressure Reset',
