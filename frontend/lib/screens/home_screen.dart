@@ -25,6 +25,7 @@ import 'exercise/quick_reflection_screen.dart';
 import 'exercise/focus_reset_screen.dart';
 import 'exercise/mood_lift_screen.dart';
 import 'exercise/grounding_screen.dart';
+import 'exercise/box_breathing_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -1013,11 +1014,20 @@ class _HomeFeed extends StatelessWidget {
               ),
             ),
 
-            _exerciseMiniCard(
-              emoji: '🫁',
-              title: 'Box Breathing',
-              subtitle: 'Slow breathing and reset',
+            GestureDetector(
+              onTap: () {
+                _open(
+                  context,
+                  const BoxBreathingScreen(),
+                );
+              },
+              child: _exerciseMiniCard(
+                emoji: '🌬️',
+                title: 'Box Breathing',
+                subtitle: 'Slow your rhythm and reset',
+              ),
             ),
+
             _exerciseMiniCard(
               emoji: '📵',
               title: 'Digital Detox',
