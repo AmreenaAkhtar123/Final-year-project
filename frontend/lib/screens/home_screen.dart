@@ -23,6 +23,7 @@ import 'exercise/stress_release_screen.dart';
 import 'exercise/self_compassion_pause_screen.dart';
 import 'exercise/quick_reflection_screen.dart';
 import 'exercise/focus_reset_screen.dart';
+import 'exercise/mood_lift_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -983,11 +984,20 @@ class _HomeFeed extends StatelessWidget {
               ),
             ),
 
-            _exerciseMiniCard(
-              emoji: '🌤️',
-              title: 'Mood Lift',
-              subtitle: 'Try a positive action',
+            GestureDetector(
+              onTap: () {
+                _open(
+                  context,
+                  const MoodLiftScreen(),
+                );
+              },
+              child: _exerciseMiniCard(
+                emoji: '🌤️',
+                title: 'Mood Lift',
+                subtitle: 'Brighten your moment',
+              ),
             ),
+
             _exerciseMiniCard(
               emoji: '👀',
               title: '5-4-3-2-1 Grounding',
