@@ -15,6 +15,7 @@ import 'safety_support_screen.dart';
 import 'student_wellbeing_screen.dart';
 import 'voice_screen.dart';
 import 'weekly_wellbeing_screen.dart';
+import 'exercise/body_scan_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -879,10 +880,16 @@ class _HomeFeed extends StatelessWidget {
           mainAxisSpacing: 9,
           childAspectRatio: 1.72,
           children: [
-            _exerciseMiniCard(
-              emoji: '🧘',
-              title: 'Body Scan',
-              subtitle: 'Notice physical tension',
+            GestureDetector(
+              onTap: () => _open(
+                context,
+                const BodyScanScreen(),
+              ),
+              child: _exerciseMiniCard(
+                emoji: '🧘',
+                title: 'Body Scan',
+                subtitle: 'Notice physical tension',
+              ),
             ),
             _exerciseMiniCard(
               emoji: '💭',
