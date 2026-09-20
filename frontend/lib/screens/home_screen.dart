@@ -18,6 +18,7 @@ import 'weekly_wellbeing_screen.dart';
 import 'exercise/body_scan_screen.dart';
 import 'exercise/thought_reset_screen.dart';
 import 'exercise/exam_pressure_reset_screen.dart';
+import 'exercise/sleep_wind_down_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -923,10 +924,17 @@ class _HomeFeed extends StatelessWidget {
               title: 'Stress Release',
               subtitle: 'Release built-up tension',
             ),
-            _exerciseMiniCard(
-              emoji: '🌙',
-              title: 'Sleep Wind-Down',
-              subtitle: 'Prepare for sleep',
+
+            GestureDetector(
+              onTap: () => _open(
+                context,
+                const SleepWindDownScreen(),
+              ),
+              child: _exerciseMiniCard(
+                emoji: '🌙',
+                title: 'Sleep Wind-Down',
+                subtitle: 'Prepare for sleep',
+              ),
             ),
             _exerciseMiniCard(
               emoji: '💚',

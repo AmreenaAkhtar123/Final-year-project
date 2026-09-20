@@ -28,6 +28,8 @@ class _ThoughtResetScreenState extends State<ThoughtResetScreen> {
   String? _perspectiveError;
   String? _nextStepError;
 
+  bool _isCompleted = false;
+
   final List<Map<String, dynamic>> _feelings = [
     {
       'emoji': '😰',
@@ -148,22 +150,6 @@ class _ThoughtResetScreenState extends State<ThoughtResetScreen> {
     }
   }
 
-  void _clearPerspectiveError() {
-    if (_perspectiveError != null) {
-      setState(() {
-        _perspectiveError = null;
-      });
-    }
-  }
-
-  void _clearNextStepError() {
-    if (_nextStepError != null) {
-      setState(() {
-        _nextStepError = null;
-      });
-    }
-  }
-
   bool _validateCurrentStep() {
     bool valid = true;
 
@@ -219,43 +205,10 @@ class _ThoughtResetScreenState extends State<ThoughtResetScreen> {
       }
     });
 
-    if (!valid) {
-      _showValidationAlert();
-    }
+    // No alert or SnackBar.
+    // The inline error is enough.
 
     return valid;
-  }
-
-  void _showValidationAlert() {
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Row(
-          children: [
-            Icon(
-              Icons.info_outline_rounded,
-              color: Colors.white,
-            ),
-            SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Please complete the highlighted section first.',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
-        duration: const Duration(seconds: 3),
-      ),
-    );
   }
 
   void _nextStep() {
@@ -289,117 +242,37 @@ class _ThoughtResetScreenState extends State<ThoughtResetScreen> {
   void _finishExercise() {
     FocusScope.of(context).unfocus();
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return Dialog(
-          backgroundColor: AppColors.background,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(26),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: AppColors.lightMint,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.check_rounded,
-                    size: 40,
-                    color: AppColors.mint,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Thought Reset Complete',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AppColors.navy,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'You gave yourself a moment to pause, reflect, and choose your next step.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AppColors.textDark,
-                    fontSize: 14,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.lightMint,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    children: [
-                      const Text(
-                        '🌱',
-                        style: TextStyle(fontSize: 26),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          _selectedNextStep ?? 'Take one small step',
-                          style: const TextStyle(
-                            color: AppColors.navy,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 22),
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      Navigator.pop(context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.navy,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: const Text(
-                      'Done',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
+    setState(() {
+      _isCompleted = true;
+    });
+  }
+
+  void _startAgain() {
+    setState(() {
+      _isCompleted = false;
+      _step = 0;
+
+      _selectedFeeling = null;
+      _selectedPerspective = null;
+      _selectedNextStep = null;
+
+      _botheringController.clear();
+      _thoughtController.clear();
+
+      _feelingError = null;
+      _botheringError = null;
+      _thoughtError = null;
+      _perspectiveError = null;
+      _nextStepError = null;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isCompleted) {
+      return _buildCompletionPage();
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -409,7 +282,12 @@ class _ThoughtResetScreenState extends State<ThoughtResetScreen> {
             _buildProgress(),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(22, 10, 22, 28),
+                padding: const EdgeInsets.fromLTRB(
+                  22,
+                  10,
+                  22,
+                  28,
+                ),
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 280),
                   transitionBuilder: (child, animation) {
@@ -570,7 +448,7 @@ class _ThoughtResetScreenState extends State<ThoughtResetScreen> {
               onTap: () {
                 setState(() {
                   _selectedFeeling = item['title'];
-                  _feelingError = null;
+                  _clearFeelingError();
                 });
               },
               child: AnimatedContainer(
@@ -656,7 +534,8 @@ class _ThoughtResetScreenState extends State<ThoughtResetScreen> {
         const SizedBox(height: 14),
         _buildTipCard(
           icon: Icons.lightbulb_outline_rounded,
-          text: 'You do not need to explain everything. Just start with what feels important.',
+          text:
+          'You do not need to explain everything. Just start with what feels important.',
         ),
       ],
     );
@@ -716,7 +595,8 @@ class _ThoughtResetScreenState extends State<ThoughtResetScreen> {
           ].map((text) {
             return GestureDetector(
               onTap: () {
-                final current = _thoughtController.text.trim();
+                final current =
+                _thoughtController.text.trim();
 
                 setState(() {
                   if (current.isEmpty) {
@@ -996,15 +876,26 @@ class _ThoughtResetScreenState extends State<ThoughtResetScreen> {
   }
 
   Widget _buildError(String? error) {
-    if (error == null) {
+    if (error == null || error.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(
-        left: 4,
-        top: 8,
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(
+        top: 10,
         bottom: 4,
+      ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 10,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF1F1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFFFFCACA),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1012,16 +903,17 @@ class _ThoughtResetScreenState extends State<ThoughtResetScreen> {
           const Icon(
             Icons.error_outline_rounded,
             color: Colors.red,
-            size: 16,
+            size: 18,
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               error,
               style: const TextStyle(
                 color: Colors.red,
                 fontSize: 12,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
+                height: 1.35,
               ),
             ),
           ),
@@ -1144,6 +1036,376 @@ class _ThoughtResetScreenState extends State<ThoughtResetScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildCompletionPage() {
+    final selectedFeelingData = _feelings.firstWhere(
+          (item) => item['title'] == _selectedFeeling,
+      orElse: () => {
+        'emoji': '💭',
+        'title': _selectedFeeling ?? 'Not selected',
+      },
+    );
+
+    final selectedPerspectiveData = _perspectives.firstWhere(
+          (item) => item['title'] == _selectedPerspective,
+      orElse: () => {
+        'emoji': '🌱',
+        'title': _selectedPerspective ?? 'Not selected',
+        'subtitle': '',
+      },
+    );
+
+    final selectedNextStepData = _nextSteps.firstWhere(
+          (item) => item['title'] == _selectedNextStep,
+      orElse: () => {
+        'emoji': '🌱',
+        'title': _selectedNextStep ?? 'Not selected',
+        'subtitle': '',
+      },
+    );
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(
+            20,
+            18,
+            20,
+            30,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: AppColors.navy,
+                      size: 20,
+                    ),
+                  ),
+                  const Expanded(
+                    child: Text(
+                      'Thought Reset',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: AppColors.navy,
+                        fontSize: 21,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 48),
+                ],
+              ),
+
+              const SizedBox(height: 28),
+
+              // Success section
+              Center(
+                child: Container(
+                  width: 94,
+                  height: 94,
+                  decoration: BoxDecoration(
+                    color: AppColors.lightMint,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.borderMint,
+                      width: 2,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.check_rounded,
+                    color: AppColors.mint,
+                    size: 54,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 22),
+
+              const Center(
+                child: Text(
+                  'Thought Reset Complete',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.navy,
+                    fontSize: 29,
+                    fontWeight: FontWeight.w800,
+                    height: 1.2,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              const Center(
+                child: Text(
+                  'You gave yourself a moment to pause, understand what is happening, and choose a helpful next step.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.textDark,
+                    fontSize: 14,
+                    height: 1.5,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 30),
+
+              const Text(
+                'Your Reflection',
+                style: TextStyle(
+                  color: AppColors.navy,
+                  fontSize: 19,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+
+              const SizedBox(height: 13),
+
+              // Feeling result
+              _buildResultCard(
+                emoji: selectedFeelingData['emoji'],
+                label: 'How you were feeling',
+                value: selectedFeelingData['title'],
+                highlighted: true,
+              ),
+
+              const SizedBox(height: 10),
+
+              // Bothering result
+              _buildResultCard(
+                emoji: '🧩',
+                label: 'What was bothering you',
+                value: _botheringController.text.trim(),
+              ),
+
+              const SizedBox(height: 10),
+
+              // Thought result
+              _buildResultCard(
+                emoji: '🧠',
+                label: 'What your mind kept saying',
+                value: _thoughtController.text.trim(),
+              ),
+
+              const SizedBox(height: 10),
+
+              // Perspective result
+              _buildResultCard(
+                emoji: selectedPerspectiveData['emoji'],
+                label: 'The perspective you chose',
+                value: selectedPerspectiveData['title'],
+              ),
+
+              const SizedBox(height: 10),
+
+              // Next step result
+              _buildResultCard(
+                emoji: selectedNextStepData['emoji'],
+                label: 'Your next step',
+                value: selectedNextStepData['title'],
+                subtitle: selectedNextStepData['subtitle'],
+                highlighted: true,
+              ),
+
+              const SizedBox(height: 24),
+
+              // Closing message
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppColors.navy,
+                  borderRadius: BorderRadius.circular(22),
+                ),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          '💚',
+                          style: TextStyle(
+                            fontSize: 26,
+                          ),
+                        ),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'You do not have to solve everything right now.',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              height: 1.3,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 12),
+                    Text(
+                      'Take your chosen next step at your own pace. Small progress still counts.',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 28),
+
+              // Done button
+              SizedBox(
+                width: double.infinity,
+                height: 54,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.mint,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(17),
+                    ),
+                  ),
+                  child: const Text(
+                    'Done',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              // Start again
+              Center(
+                child: TextButton(
+                  onPressed: _startAgain,
+                  child: const Text(
+                    'Start Again',
+                    style: TextStyle(
+                      color: AppColors.navy,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResultCard({
+    required String emoji,
+    required String label,
+    required String value,
+    String? subtitle,
+    bool highlighted = false,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: highlighted
+            ? AppColors.lightMint
+            : Colors.white,
+        borderRadius: BorderRadius.circular(17),
+        border: Border.all(
+          color: highlighted
+              ? AppColors.mint
+              : AppColors.borderMint,
+          width: highlighted ? 1.4 : 1,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 45,
+            height: 45,
+            decoration: BoxDecoration(
+              color: highlighted
+                  ? Colors.white
+                  : AppColors.lightMint,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                emoji,
+                style: const TextStyle(
+                  fontSize: 22,
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 13),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+              CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: AppColors.navy,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+
+                const SizedBox(height: 5),
+
+                Text(
+                  value,
+                  style: const TextStyle(
+                    color: AppColors.navy,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    height: 1.35,
+                  ),
+                ),
+
+                if (subtitle != null &&
+                    subtitle.isNotEmpty) ...[
+                  const SizedBox(height: 5),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: AppColors.textDark,
+                      fontSize: 11,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
