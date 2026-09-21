@@ -13,67 +13,76 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _notificationsEnabled = true;
   bool _privateModeEnabled = true;
 
+  // Demo wellbeing data for the UI.
+  // These can later come from the backend.
+  final int _checkIns = 18;
+  final int _currentStreak = 6;
+  final double _wellbeingScore = 7.4;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-
       body: SafeArea(
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(22, 22, 22, 30),
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 34),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildTopBar(),
 
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 24),
 
-                    _buildProfileHeader(),
+                    _buildProfileHero(),
 
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 20),
 
-                    _buildSectionTitle(
+                    _buildWellbeingSnapshot(),
+
+                    const SizedBox(height: 30),
+
+                    _buildSectionHeader(
                       'Account',
-                      'Manage your personal information',
+                      'Your personal MindMate information',
                     ),
 
                     const SizedBox(height: 12),
 
                     _buildAccountCard(),
 
-                    const SizedBox(height: 26),
+                    const SizedBox(height: 28),
 
-                    _buildSectionTitle(
-                      'Wellbeing & Privacy',
-                      'Control your MindMate experience',
+                    _buildSectionHeader(
+                      'Preferences',
+                      'Customize how MindMate works for you',
                     ),
 
                     const SizedBox(height: 12),
 
                     _buildPreferencesCard(),
 
-                    const SizedBox(height: 26),
+                    const SizedBox(height: 28),
 
-                    _buildSectionTitle(
-                      'Support & Safety',
-                      'Help when you need it',
+                    _buildSectionHeader(
+                      'Privacy & Safety',
+                      'Manage your information and support options',
                     ),
 
                     const SizedBox(height: 12),
 
-                    _buildSupportCard(),
+                    _buildPrivacySafetyCard(),
 
-                    const SizedBox(height: 26),
+                    const SizedBox(height: 30),
 
                     _buildLogoutButton(),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 24),
 
-                    _buildAppFooter(),
+                    _buildFooter(),
                   ],
                 ),
               ),
@@ -92,12 +101,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Row(
       children: [
         Expanded(
-          child: Image.asset(
-            'assets/images/logo1.png',
-            width: 115,
-            height: 38,
-            alignment: Alignment.centerLeft,
-            fit: BoxFit.contain,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Profile',
+                style: TextStyle(
+                  color: AppColors.navy,
+                  fontSize: 25,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.7,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Your account and wellbeing space',
+                style: TextStyle(
+                  color: AppColors.navy.withValues(alpha: 0.48),
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
         ),
 
@@ -112,9 +137,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           child: const Icon(
-            Icons.more_horiz_rounded,
+            Icons.settings_outlined,
             color: AppColors.navy,
-            size: 23,
+            size: 21,
           ),
         ),
       ],
@@ -122,26 +147,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // ============================================================
-  // PROFILE HEADER
+  // PROFILE HERO
   // ============================================================
 
-  Widget _buildProfileHeader() {
+  Widget _buildProfileHero() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
             AppColors.navy,
-            Color(0xFF294253),
+            Color(0xFF243E4D),
           ],
         ),
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColors.navy.withValues(alpha: 0.13),
+            color: AppColors.navy.withValues(alpha: 0.12),
             blurRadius: 24,
             offset: const Offset(0, 10),
           ),
@@ -150,109 +175,269 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Stack(
         children: [
           Positioned(
+            top: -55,
             right: -35,
-            top: -45,
             child: Container(
-              width: 130,
-              height: 130,
+              width: 145,
+              height: 145,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.mint.withValues(alpha: 0.10),
+                border: Border.all(
+                  color: AppColors.mint.withValues(alpha: 0.10),
+                  width: 25,
+                ),
               ),
             ),
           ),
 
           Positioned(
-            right: 25,
-            bottom: -55,
+            bottom: -45,
+            left: -30,
             child: Container(
               width: 100,
               height: 100,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.05),
-                  width: 16,
-                ),
+                color: AppColors.mint.withValues(alpha: 0.06),
               ),
             ),
           ),
 
           Column(
             children: [
-              // Profile image
-              Container(
-                width: 82,
-                height: 82,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.lightMint,
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.85),
-                    width: 3,
-                  ),
-                ),
-                child: const Icon(
-                  Icons.person_rounded,
-                  color: AppColors.mint,
-                  size: 43,
-                ),
-              ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _buildAvatar(),
 
-              const SizedBox(height: 14),
+                  const SizedBox(width: 15),
 
-              const Text(
-                'Demo User',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.4,
-                ),
-              ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Demo User',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 21,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.4,
+                          ),
+                        ),
 
-              const SizedBox(height: 5),
+                        const SizedBox(height: 5),
 
-              Text(
-                'demo@mindmate.com',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.62),
-                  fontSize: 12,
-                ),
-              ),
+                        Text(
+                          'demo@mindmate.com',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.60),
+                            fontSize: 11,
+                          ),
+                        ),
 
-              const SizedBox(height: 15),
+                        const SizedBox(height: 11),
 
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 7,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.mint.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: AppColors.mint.withValues(alpha: 0.20),
-                  ),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.favorite_rounded,
-                      color: AppColors.mint,
-                      size: 14,
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 9,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.mint.withValues(alpha: 0.14),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: AppColors.mint.withValues(
+                                    alpha: 0.20,
+                                  ),
+                                ),
+                              ),
+                              child: const Text(
+                                'MEMBER',
+                                style: TextStyle(
+                                  color: AppColors.mint,
+                                  fontSize: 8.5,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.8,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(width: 8),
+
+                            Text(
+                              'Since 2026',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.42),
+                                fontSize: 9.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    SizedBox(width: 6),
-                    Text(
-                      'Taking care of your wellbeing',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
+                  ),
+
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.07),
+                      borderRadius: BorderRadius.circular(11),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.08),
                       ),
                     ),
-                  ],
+                    child: const Icon(
+                      Icons.edit_outlined,
+                      color: Colors.white,
+                      size: 17,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              Container(
+                height: 1,
+                color: Colors.white.withValues(alpha: 0.08),
+              ),
+
+              const SizedBox(height: 16),
+
+              Row(
+                children: [
+                  const Icon(
+                    Icons.shield_outlined,
+                    color: AppColors.mint,
+                    size: 17,
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  Expanded(
+                    child: Text(
+                      'Your wellbeing journey is private and personal.',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.58),
+                        fontSize: 10.5,
+                        height: 1.3,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAvatar() {
+    return Container(
+      width: 72,
+      height: 72,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: AppColors.lightMint,
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.85),
+          width: 2.5,
+        ),
+      ),
+      child: const Icon(
+        Icons.person_rounded,
+        color: AppColors.mint,
+        size: 38,
+      ),
+    );
+  }
+
+  // ============================================================
+  // WELLBEING SNAPSHOT
+  // ============================================================
+
+  Widget _buildWellbeingSnapshot() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColors.borderMint,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.navy.withValues(alpha: 0.025),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'Wellbeing Snapshot',
+                  style: TextStyle(
+                    color: AppColors.navy,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+
+              Text(
+                'Current',
+                style: TextStyle(
+                  color: AppColors.navy.withValues(alpha: 0.38),
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 15),
+
+          Row(
+            children: [
+              Expanded(
+                child: _buildSnapshotMetric(
+                  value: _wellbeingScore.toStringAsFixed(1),
+                  label: 'Wellbeing',
+                  suffix: '/10',
+                  icon: Icons.insights_outlined,
+                ),
+              ),
+
+              _buildMetricDivider(),
+
+              Expanded(
+                child: _buildSnapshotMetric(
+                  value: '$_currentStreak',
+                  label: 'Day streak',
+                  suffix: ' days',
+                  icon: Icons.local_fire_department_outlined,
+                ),
+              ),
+
+              _buildMetricDivider(),
+
+              Expanded(
+                child: _buildSnapshotMetric(
+                  value: '$_checkIns',
+                  label: 'Check-ins',
+                  suffix: '',
+                  icon: Icons.check_circle_outline_rounded,
                 ),
               ),
             ],
@@ -262,11 +447,73 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Widget _buildSnapshotMetric({
+    required String value,
+    required String label,
+    required String suffix,
+    required IconData icon,
+  }) {
+    return Column(
+      children: [
+        Icon(
+          icon,
+          color: AppColors.mint,
+          size: 19,
+        ),
+
+        const SizedBox(height: 8),
+
+        RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: value,
+                style: const TextStyle(
+                  color: AppColors.navy,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              TextSpan(
+                text: suffix,
+                style: TextStyle(
+                  color: AppColors.navy.withValues(alpha: 0.42),
+                  fontSize: 9,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 3),
+
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: AppColors.navy.withValues(alpha: 0.45),
+            fontSize: 9,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMetricDivider() {
+    return Container(
+      width: 1,
+      height: 48,
+      color: AppColors.borderMint,
+    );
+  }
+
   // ============================================================
-  // SECTION TITLE
+  // SECTION HEADER
   // ============================================================
 
-  Widget _buildSectionTitle(
+  Widget _buildSectionHeader(
       String title,
       String subtitle,
       ) {
@@ -277,9 +524,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           title,
           style: const TextStyle(
             color: AppColors.navy,
-            fontSize: 18,
+            fontSize: 17,
             fontWeight: FontWeight.w800,
-            letterSpacing: -0.3,
+            letterSpacing: -0.25,
           ),
         ),
 
@@ -288,8 +535,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Text(
           subtitle,
           style: TextStyle(
-            color: AppColors.navy.withValues(alpha: 0.50),
-            fontSize: 11,
+            color: AppColors.navy.withValues(alpha: 0.43),
+            fontSize: 10.5,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],
@@ -305,14 +553,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         _buildSettingsTile(
           icon: Icons.person_outline_rounded,
-          iconBackground: AppColors.lightMint,
-          iconColor: AppColors.mint,
           title: 'Personal Information',
-          subtitle: 'Name, date of birth and gender',
+          subtitle: 'Name, date of birth and other details',
           onTap: () {
-            _showMessage(
-              'Personal information will open here.',
-            );
+            _showMessage('Personal information will open here.');
           },
         ),
 
@@ -320,14 +564,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         _buildSettingsTile(
           icon: Icons.email_outlined,
-          iconBackground: const Color(0xFFF1F3FC),
-          iconColor: const Color(0xFF6B7FD7),
           title: 'Email Address',
           subtitle: 'demo@mindmate.com',
           onTap: () {
-            _showMessage(
-              'Email settings will open here.',
-            );
+            _showMessage('Email settings will open here.');
           },
         ),
 
@@ -335,14 +575,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         _buildSettingsTile(
           icon: Icons.lock_outline_rounded,
-          iconBackground: const Color(0xFFFFF5E9),
-          iconColor: const Color(0xFFE29A45),
-          title: 'Change Password',
-          subtitle: 'Update your account password',
+          title: 'Password & Security',
+          subtitle: 'Change password and account security',
           onTap: () {
-            _showMessage(
-              'Change password will open here.',
-            );
+            _showMessage('Password and security will open here.');
           },
         ),
       ],
@@ -358,8 +594,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         _buildSwitchTile(
           icon: Icons.notifications_none_rounded,
-          iconBackground: const Color(0xFFF1F3FC),
-          iconColor: const Color(0xFF6B7FD7),
           title: 'Notifications',
           subtitle: 'Check-in reminders and wellbeing updates',
           value: _notificationsEnabled,
@@ -373,9 +607,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _buildDivider(),
 
         _buildSwitchTile(
-          icon: Icons.shield_outlined,
-          iconBackground: AppColors.lightMint,
-          iconColor: AppColors.mint,
+          icon: Icons.visibility_off_outlined,
           title: 'Private Mode',
           subtitle: 'Keep wellbeing information discreet',
           value: _privateModeEnabled,
@@ -389,15 +621,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _buildDivider(),
 
         _buildSettingsTile(
-          icon: Icons.privacy_tip_outlined,
-          iconBackground: const Color(0xFFF8EFF9),
-          iconColor: const Color(0xFFAD76B5),
-          title: 'Privacy & Data',
-          subtitle: 'Manage your wellbeing data',
+          icon: Icons.tune_rounded,
+          title: 'Wellbeing Preferences',
+          subtitle: 'Personalize your MindMate experience',
           onTap: () {
-            _showMessage(
-              'Privacy and data controls will open here.',
-            );
+            _showMessage('Wellbeing preferences will open here.');
           },
         ),
       ],
@@ -405,22 +633,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // ============================================================
-  // SUPPORT
+  // PRIVACY & SAFETY
   // ============================================================
 
-  Widget _buildSupportCard() {
+  Widget _buildPrivacySafetyCard() {
     return _buildSettingsCard(
       children: [
         _buildSettingsTile(
-          icon: Icons.emergency_outlined,
-          iconBackground: const Color(0xFFFFE9E3),
-          iconColor: const Color(0xFFD67A65),
-          title: 'Crisis & Emergency Support',
-          subtitle: 'Get immediate support when needed',
+          icon: Icons.privacy_tip_outlined,
+          title: 'Privacy & Data',
+          subtitle: 'Review how your wellbeing information is handled',
           onTap: () {
-            _showMessage(
-              'Emergency support will open here.',
-            );
+            _showPrivacyDialog();
+          },
+        ),
+
+        _buildDivider(),
+
+        _buildSettingsTile(
+          icon: Icons.shield_outlined,
+          title: 'Safety & Support',
+          subtitle: 'Access support options when you need them',
+          onTap: () {
+            _showMessage('Safety and support will open here.');
           },
         ),
 
@@ -428,14 +663,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         _buildSettingsTile(
           icon: Icons.help_outline_rounded,
-          iconBackground: const Color(0xFFEDF5F8),
-          iconColor: const Color(0xFF5C8FA8),
           title: 'Help & Support',
-          subtitle: 'FAQs and assistance',
+          subtitle: 'FAQs, guidance and assistance',
           onTap: () {
-            _showMessage(
-              'Help and support will open here.',
-            );
+            _showMessage('Help and support will open here.');
           },
         ),
 
@@ -443,13 +674,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         _buildSettingsTile(
           icon: Icons.info_outline_rounded,
-          iconBackground: const Color(0xFFEEF7EF),
-          iconColor: const Color(0xFF6D9A72),
           title: 'About MindMate',
-          subtitle: 'Version and application information',
-          onTap: () {
-            _showAboutDialog();
-          },
+          subtitle: 'Version 1.0.0 and application information',
+          onTap: _showAboutDialog,
         ),
       ],
     );
@@ -466,15 +693,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: AppColors.borderMint,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.navy.withValues(alpha: 0.025),
+            color: AppColors.navy.withValues(alpha: 0.022),
             blurRadius: 15,
-            offset: const Offset(0, 6),
+            offset: const Offset(0, 5),
           ),
         ],
       ),
@@ -490,8 +717,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildSettingsTile({
     required IconData icon,
-    required Color iconBackground,
-    required Color iconColor,
     required String title,
     required String subtitle,
     required VoidCallback onTap,
@@ -500,25 +725,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(20),
         child: Padding(
           padding: const EdgeInsets.symmetric(
-            horizontal: 15,
-            vertical: 14,
+            horizontal: 16,
+            vertical: 15,
           ),
           child: Row(
             children: [
               Container(
-                width: 43,
-                height: 43,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
-                  color: iconBackground,
-                  borderRadius: BorderRadius.circular(13),
+                  color: AppColors.lightMint,
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   icon,
-                  color: iconColor,
-                  size: 21,
+                  color: AppColors.mint,
+                  size: 20,
                 ),
               ),
 
@@ -532,30 +757,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       title,
                       style: const TextStyle(
                         color: AppColors.navy,
-                        fontSize: 13,
+                        fontSize: 12.5,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
 
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 4),
 
                     Text(
                       subtitle,
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: AppColors.navy.withValues(alpha: 0.45),
-                        fontSize: 10.5,
+                        color: AppColors.navy.withValues(alpha: 0.42),
+                        fontSize: 10,
+                        height: 1.25,
                       ),
                     ),
                   ],
                 ),
               ),
 
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.navy,
-                size: 21,
+              const SizedBox(width: 8),
+
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: AppColors.navy.withValues(alpha: 0.28),
+                size: 13,
               ),
             ],
           ),
@@ -570,8 +798,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildSwitchTile({
     required IconData icon,
-    required Color iconBackground,
-    required Color iconColor,
     required String title,
     required String subtitle,
     required bool value,
@@ -579,22 +805,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(
-        horizontal: 15,
-        vertical: 10,
+        horizontal: 16,
+        vertical: 12,
       ),
       child: Row(
         children: [
           Container(
-            width: 43,
-            height: 43,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
-              color: iconBackground,
-              borderRadius: BorderRadius.circular(13),
+              color: AppColors.lightMint,
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               icon,
-              color: iconColor,
-              size: 21,
+              color: AppColors.mint,
+              size: 20,
             ),
           ),
 
@@ -608,20 +834,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   title,
                   style: const TextStyle(
                     color: AppColors.navy,
-                    fontSize: 13,
+                    fontSize: 12.5,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
 
-                const SizedBox(height: 3),
+                const SizedBox(height: 4),
 
                 Text(
                   subtitle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: AppColors.navy.withValues(alpha: 0.45),
-                    fontSize: 10.5,
+                    color: AppColors.navy.withValues(alpha: 0.42),
+                    fontSize: 10,
                     height: 1.25,
                   ),
                 ),
@@ -637,8 +863,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             activeThumbColor: Colors.white,
             activeTrackColor: AppColors.mint,
             inactiveThumbColor: Colors.white,
-            inactiveTrackColor:
-            AppColors.navy.withValues(alpha: 0.15),
+            inactiveTrackColor: AppColors.navy.withValues(
+              alpha: 0.14,
+            ),
             materialTapTargetSize:
             MaterialTapTargetSize.shrinkWrap,
           ),
@@ -654,12 +881,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildDivider() {
     return Padding(
       padding: const EdgeInsets.only(
-        left: 71,
-        right: 15,
+        left: 69,
+        right: 16,
       ),
       child: Divider(
         height: 1,
-        thickness: 0.7,
+        thickness: 0.6,
         color: AppColors.borderMint.withValues(alpha: 0.75),
       ),
     );
@@ -672,28 +899,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildLogoutButton() {
     return SizedBox(
       width: double.infinity,
-      height: 52,
+      height: 50,
       child: OutlinedButton.icon(
         onPressed: _showLogoutDialog,
         icon: const Icon(
           Icons.logout_rounded,
-          size: 19,
+          size: 18,
         ),
         label: const Text(
           'Log Out',
           style: TextStyle(
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: FontWeight.w700,
           ),
         ),
         style: OutlinedButton.styleFrom(
-          foregroundColor: const Color(0xFFD67A65),
+          foregroundColor: const Color(0xFFC96F5C),
           side: const BorderSide(
-            color: Color(0xFFF0D5CD),
+            color: Color(0xFFEED8D1),
           ),
-          backgroundColor: const Color(0xFFFFF9F7),
+          backgroundColor: const Color(0xFFFFFAF8),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(14),
           ),
         ),
       ),
@@ -704,41 +931,84 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // FOOTER
   // ============================================================
 
-  Widget _buildAppFooter() {
+  Widget _buildFooter() {
     return Column(
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.lock_outline_rounded,
               color: AppColors.mint,
-              size: 14,
+              size: 13,
             ),
-
             const SizedBox(width: 6),
-
             Text(
-              'Your wellbeing data stays private',
+              'Your wellbeing information is private',
               style: TextStyle(
-                color: AppColors.navy.withValues(alpha: 0.42),
-                fontSize: 10,
+                color: AppColors.navy.withValues(alpha: 0.40),
+                fontSize: 9.5,
                 fontWeight: FontWeight.w500,
               ),
             ),
           ],
         ),
 
-        const SizedBox(height: 10),
+        const SizedBox(height: 9),
 
         Text(
-          'MindMate • Your wellbeing companion',
+          'MindMate • Version 1.0.0',
           style: TextStyle(
-            color: AppColors.navy.withValues(alpha: 0.28),
-            fontSize: 9,
+            color: AppColors.navy.withValues(alpha: 0.25),
+            fontSize: 8.5,
           ),
         ),
       ],
+    );
+  }
+
+  // ============================================================
+  // PRIVACY DIALOG
+  // ============================================================
+
+  void _showPrivacyDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppColors.background,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+          ),
+          title: const Text(
+            'Privacy & Data',
+            style: TextStyle(
+              color: AppColors.navy,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          content: Text(
+            'MindMate currently uses demo data for wellbeing features. '
+                'Your information is not connected to a backend yet.',
+            style: TextStyle(
+              color: AppColors.navy.withValues(alpha: 0.60),
+              fontSize: 13,
+              height: 1.45,
+            ),
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.mint,
+              ),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -767,6 +1037,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             style: TextStyle(
               color: AppColors.navy.withValues(alpha: 0.60),
               fontSize: 13,
+              height: 1.4,
             ),
           ),
           actions: [
@@ -781,7 +1052,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             ),
-
             FilledButton(
               onPressed: () {
                 Navigator.pop(context);
@@ -818,7 +1088,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // ============================================================
-  // MESSAGE
+  // TEMPORARY MESSAGE
   // ============================================================
 
   void _showMessage(String message) {

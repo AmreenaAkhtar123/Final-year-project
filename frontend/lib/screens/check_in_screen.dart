@@ -28,6 +28,9 @@ class _CheckInScreenState extends State<CheckInScreen> {
 
   bool _isSubmitting = false;
 
+  // Inline validation
+  String? _moodError;
+
   // ============================================================
   // DATA
   // ============================================================
@@ -101,10 +104,19 @@ class _CheckInScreenState extends State<CheckInScreen> {
   // ============================================================
 
   Future<void> _submitCheckIn() async {
+    setState(() {
+      _moodError = null;
+    });
+
+    // ------------------------------------------------------------
+    // INLINE VALIDATION
+    // ------------------------------------------------------------
+
     if (_selectedMood == -1) {
-      _showMessage(
-        'Please select how you are feeling today.',
-      );
+      setState(() {
+        _moodError = 'Please select how you are feeling today.';
+      });
+
       return;
     }
 
@@ -161,9 +173,9 @@ class _CheckInScreenState extends State<CheckInScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // -----------------------------------------------
+                    // ------------------------------------------------
                     // SUCCESS ICON
-                    // -----------------------------------------------
+                    // ------------------------------------------------
 
                     Container(
                       width: 68,
@@ -185,9 +197,9 @@ class _CheckInScreenState extends State<CheckInScreen> {
 
                     const SizedBox(height: 15),
 
-                    // -----------------------------------------------
+                    // ------------------------------------------------
                     // TITLE
-                    // -----------------------------------------------
+                    // ------------------------------------------------
 
                     const Text(
                       'Check-in Complete!',
@@ -213,9 +225,9 @@ class _CheckInScreenState extends State<CheckInScreen> {
 
                     const SizedBox(height: 14),
 
-                    // -----------------------------------------------
+                    // ------------------------------------------------
                     // MESSAGE CARD
-                    // -----------------------------------------------
+                    // ------------------------------------------------
 
                     Container(
                       width: double.infinity,
@@ -266,20 +278,17 @@ class _CheckInScreenState extends State<CheckInScreen> {
 
                     const SizedBox(height: 18),
 
-                    // -----------------------------------------------
+                    // ------------------------------------------------
                     // DONE BUTTON
-                    // -----------------------------------------------
+                    // ------------------------------------------------
 
                     SizedBox(
                       width: double.infinity,
                       height: 48,
                       child: FilledButton(
                         onPressed: () {
-                          // Close the dialog first.
                           Navigator.of(dialogContext).pop();
 
-                          // After the dialog closes, directly open
-                          // HomeScreen and remove all previous routes.
                           WidgetsBinding.instance.addPostFrameCallback((_) {
                             if (!mounted) return;
 
@@ -319,25 +328,6 @@ class _CheckInScreenState extends State<CheckInScreen> {
   }
 
   // ============================================================
-  // MESSAGE
-  // ============================================================
-
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
-      ),
-    );
-  }
-
-  // ============================================================
   // BUILD
   // ============================================================
 
@@ -345,7 +335,6 @@ class _CheckInScreenState extends State<CheckInScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-
       body: SafeArea(
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
@@ -354,7 +343,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
                   22,
-                  20,
+                  18,
                   22,
                   35,
                 ),
@@ -363,7 +352,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
                   children: [
                     _buildTopBar(),
 
-                    const SizedBox(height: 25),
+                    const SizedBox(height: 28),
 
                     _buildIntro(),
 
@@ -421,23 +410,34 @@ class _CheckInScreenState extends State<CheckInScreen> {
   }
 
   // ============================================================
-  // TOP BAR
+  // PROFESSIONAL TOP BAR
   // ============================================================
 
   Widget _buildTopBar() {
     return Row(
       children: [
+        // --------------------------------------------------------
+        // BACK BUTTON
+        // --------------------------------------------------------
+
         GestureDetector(
           onTap: () => Navigator.pop(context),
           child: Container(
-            width: 42,
-            height: 42,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
               border: Border.all(
                 color: AppColors.borderMint,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.navy.withValues(alpha: 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
             child: const Icon(
               Icons.arrow_back_rounded,
@@ -449,43 +449,53 @@ class _CheckInScreenState extends State<CheckInScreen> {
 
         const SizedBox(width: 14),
 
-        Expanded(
-          child: Image.asset(
-            'assets/images/logo1.png',
-            width: 112,
-            height: 38,
-            alignment: Alignment.centerLeft,
-            fit: BoxFit.contain,
-          ),
-        ),
+        // --------------------------------------------------------
+        // TITLE
+        // --------------------------------------------------------
 
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 10,
-            vertical: 7,
-          ),
-          decoration: BoxDecoration(
-            color: AppColors.lightMint,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
+        const Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                Icons.favorite_outline_rounded,
-                color: AppColors.mint,
-                size: 14,
-              ),
-              SizedBox(width: 5),
               Text(
-                'Check-in',
+                'Daily Check-in',
                 style: TextStyle(
                   color: AppColors.navy,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 19,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              SizedBox(height: 3),
+              Text(
+                'Take a moment for yourself',
+                style: TextStyle(
+                  color: AppColors.textDark,
+                  fontSize: 11,
+                  height: 1.2,
                 ),
               ),
             ],
+          ),
+        ),
+
+        // --------------------------------------------------------
+        // MINDMATE ICON
+        // --------------------------------------------------------
+
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: AppColors.lightMint,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: AppColors.borderMint,
+            ),
+          ),
+          child: const Icon(
+            Icons.favorite_outline_rounded,
+            color: AppColors.mint,
+            size: 20,
           ),
         ),
       ],
@@ -514,7 +524,8 @@ class _CheckInScreenState extends State<CheckInScreen> {
         const SizedBox(height: 10),
 
         Text(
-          'Take a quiet moment to check in with yourself. There are no right or wrong answers.',
+          'Take a quiet moment to check in with yourself. '
+              'There are no right or wrong answers.',
           style: TextStyle(
             color: AppColors.navy.withValues(alpha: 0.52),
             fontSize: 12,
@@ -649,6 +660,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
                     onTap: () {
                       setState(() {
                         _selectedMood = index;
+                        _moodError = null;
                       });
                     },
                     child: AnimatedContainer(
@@ -707,13 +719,46 @@ class _CheckInScreenState extends State<CheckInScreen> {
             Center(
               child: Text(
                 _moods[_selectedMood].description,
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppColors.mint,
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
+
+          // ------------------------------------------------------
+          // INLINE RED ERROR
+          // ------------------------------------------------------
+
+          if (_moodError != null) ...[
+            const SizedBox(height: 10),
+
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.error_outline_rounded,
+                  color: Colors.redAccent,
+                  size: 17,
+                ),
+
+                const SizedBox(width: 7),
+
+                Expanded(
+                  child: Text(
+                    _moodError!,
+                    style: const TextStyle(
+                      color: Colors.redAccent,
+                      fontSize: 11,
+                      height: 1.4,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -743,6 +788,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
                 'Very low',
                 style: _smallLabelStyle(),
               ),
+
               Text(
                 '${_moodIntensity.round()} / 10',
                 style: const TextStyle(
@@ -751,6 +797,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
                   fontWeight: FontWeight.w800,
                 ),
               ),
+
               Text(
                 'Very high',
                 style: _smallLabelStyle(),
@@ -1037,7 +1084,8 @@ class _CheckInScreenState extends State<CheckInScreen> {
           _buildSectionHeading(
             number: '06',
             title: 'What influenced your mood?',
-            subtitle: 'Choose anything that may have played a role.',
+            subtitle:
+            'Choose anything that may have played a role.',
           ),
 
           const SizedBox(height: 16),
@@ -1107,7 +1155,8 @@ class _CheckInScreenState extends State<CheckInScreen> {
           _buildSectionHeading(
             number: '07',
             title: 'A little reflection',
-            subtitle: 'Optional — write whatever is on your mind.',
+            subtitle:
+            'Optional — write whatever is on your mind.',
           ),
 
           const SizedBox(height: 16),
@@ -1135,13 +1184,13 @@ class _CheckInScreenState extends State<CheckInScreen> {
               contentPadding: const EdgeInsets.all(15),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(
+                borderSide: const BorderSide(
                   color: AppColors.borderMint,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(
+                borderSide: const BorderSide(
                   color: AppColors.borderMint,
                 ),
               ),
@@ -1199,7 +1248,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
