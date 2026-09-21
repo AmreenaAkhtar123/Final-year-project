@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../core/constants/app_colors.dart';
+import 'settings/about_mindmate_screen.dart';
+import 'settings/help_support_screen.dart';
+import 'settings/password_security_screen.dart';
+import 'settings/personal_information_screen.dart';
+import 'settings/privacy_data_screen.dart';
+import 'settings/wellbeing_preferences_screen.dart';
+import 'safety_support_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -99,7 +106,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildTopBar() {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        // Back button
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              }
+            },
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: AppColors.borderMint,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.navy.withValues(alpha: 0.05),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.arrow_back_rounded,
+                color: AppColors.navy,
+                size: 21,
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(width: 14),
+
+        // Header text
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -126,20 +173,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
 
+        // Small decorative MindMate mark
         Container(
           width: 42,
           height: 42,
+          padding: const EdgeInsets.all(7),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.lightMint,
             shape: BoxShape.circle,
             border: Border.all(
               color: AppColors.borderMint,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.mint.withValues(alpha: 0.08),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          child: const Icon(
-            Icons.settings_outlined,
-            color: AppColors.navy,
-            size: 21,
+          child: Image.asset(
+            'assets/images/logo1.png',
+            fit: BoxFit.contain,
           ),
         ),
       ],
@@ -280,20 +335,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
 
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.07),
-                      borderRadius: BorderRadius.circular(11),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.08),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const PersonalInformationScreen(),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.07),
+                        borderRadius: BorderRadius.circular(11),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.08),
+                        ),
                       ),
-                    ),
-                    child: const Icon(
-                      Icons.edit_outlined,
-                      color: Colors.white,
-                      size: 17,
+                      child: const Icon(
+                        Icons.edit_outlined,
+                        color: Colors.white,
+                        size: 17,
+                      ),
                     ),
                   ),
                 ],
@@ -556,7 +621,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           title: 'Personal Information',
           subtitle: 'Name, date of birth and other details',
           onTap: () {
-            _showMessage('Personal information will open here.');
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const PersonalInformationScreen(),
+              ),
+            );
           },
         ),
 
@@ -567,7 +637,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           title: 'Email Address',
           subtitle: 'demo@mindmate.com',
           onTap: () {
-            _showMessage('Email settings will open here.');
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const PersonalInformationScreen(),
+              ),
+            );
           },
         ),
 
@@ -576,10 +651,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _buildSettingsTile(
           icon: Icons.lock_outline_rounded,
           title: 'Password & Security',
-          subtitle: 'Change password and account security',
-          onTap: () {
-            _showMessage('Password and security will open here.');
-          },
+          subtitle: 'Change password and account security',onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const PasswordSecurityScreen(),
+            ),
+          );
+        },
         ),
       ],
     );
@@ -625,7 +704,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           title: 'Wellbeing Preferences',
           subtitle: 'Personalize your MindMate experience',
           onTap: () {
-            _showMessage('Wellbeing preferences will open here.');
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const WellbeingPreferencesScreen(),
+              ),
+            );
           },
         ),
       ],
@@ -644,7 +728,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           title: 'Privacy & Data',
           subtitle: 'Review how your wellbeing information is handled',
           onTap: () {
-            _showPrivacyDialog();
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const PrivacyDataScreen(),
+              ),
+            );
           },
         ),
 
@@ -655,7 +744,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           title: 'Safety & Support',
           subtitle: 'Access support options when you need them',
           onTap: () {
-            _showMessage('Safety and support will open here.');
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const SafetySupportScreen(),
+              ),
+            );
           },
         ),
 
@@ -666,7 +760,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           title: 'Help & Support',
           subtitle: 'FAQs, guidance and assistance',
           onTap: () {
-            _showMessage('Help and support will open here.');
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const HelpSupportScreen(),
+              ),
+            );
           },
         ),
 
@@ -676,7 +775,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           icon: Icons.info_outline_rounded,
           title: 'About MindMate',
           subtitle: 'Version 1.0.0 and application information',
-          onTap: _showAboutDialog,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const AboutMindMateScreen(),
+              ),
+            );
+          },
         ),
       ],
     );

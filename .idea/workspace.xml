@@ -5,10 +5,21 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f21d4447-cc26-4919-8eac-2323aaaa6e0a" name="Changes" comment="Initializing the project and make the UI of splash screen">
+      <change afterPath="$PROJECT_DIR$/frontend/lib/screens/settings/about_mindmate_screen.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/lib/screens/settings/help_support_screen.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/lib/screens/settings/password_security_screen.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/lib/screens/settings/personal_information_screen.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/lib/screens/settings/privacy_data_screen.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/lib/screens/settings/wellbeing_preferences_screen.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/screens/check_in_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/screens/check_in_screen.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/screens/insights_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/screens/insights_screen.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/lib/screens/profile_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/screens/profile_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/linux/flutter/generated_plugin_registrant.cc" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/linux/flutter/generated_plugin_registrant.cc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/linux/flutter/generated_plugins.cmake" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/linux/flutter/generated_plugins.cmake" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/macos/Flutter/GeneratedPluginRegistrant.swift" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/macos/Flutter/GeneratedPluginRegistrant.swift" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/pubspec.lock" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/pubspec.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/pubspec.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/pubspec.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/windows/flutter/generated_plugin_registrant.cc" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/windows/flutter/generated_plugin_registrant.cc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/windows/flutter/generated_plugins.cmake" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/windows/flutter/generated_plugins.cmake" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
