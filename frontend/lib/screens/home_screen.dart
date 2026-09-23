@@ -825,9 +825,9 @@ class _HomeFeedState extends State<_HomeFeed> {
   }
 
   Widget _toolTile({
+    required IconData icon,
     required String title,
     required String subtitle,
-    required IconData icon,
     required Color iconColor,
     required Color background,
     required VoidCallback onTap,
@@ -854,8 +854,8 @@ class _HomeFeedState extends State<_HomeFeed> {
             ],
           ),
           child: Column(
-            crossAxisAlignment:
-            CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
                 width: 39,
@@ -871,14 +871,18 @@ class _HomeFeedState extends State<_HomeFeed> {
                 ),
               ),
 
-              const Spacer(),
+              const SizedBox(height: 12),
 
               Text(
                 title,
+                maxLines: 2,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: AppColors.navy,
                   fontSize: 11.5,
                   fontWeight: FontWeight.w800,
+                  height: 1.1,
                 ),
               ),
 
@@ -887,10 +891,12 @@ class _HomeFeedState extends State<_HomeFeed> {
               Text(
                 subtitle,
                 maxLines: 1,
+                textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: AppColors.navy.withValues(alpha: 0.45),
                   fontSize: 8.2,
+                  height: 1.1,
                 ),
               ),
             ],
@@ -1212,12 +1218,12 @@ class _HomeFeedState extends State<_HomeFeed> {
         // ------------------------------------------------------
 
         GridView.count(
-          crossAxisCount: 4,
+          crossAxisCount: 3,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 7,
-          mainAxisSpacing: 7,
-          childAspectRatio: 0.78,
+          crossAxisSpacing: 9,
+          mainAxisSpacing: 9,
+          childAspectRatio: 0.93,
           children: [
             GestureDetector(
               onTap: () {
@@ -1402,38 +1408,43 @@ class _HomeFeedState extends State<_HomeFeed> {
     required String subtitle,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 5,
-        vertical: 8,
-      ),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(19),
         border: Border.all(
           color: AppColors.borderMint,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.navy.withValues(alpha: 0.025),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            width: 32,
-            height: 32,
+            width: 39,
+            height: 39,
             decoration: BoxDecoration(
               color: AppColors.lightMint,
-              borderRadius: BorderRadius.circular(9),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
               child: Text(
                 emoji,
                 style: const TextStyle(
-                  fontSize: 15,
+                  fontSize: 20,
                 ),
               ),
             ),
           ),
 
-          const SizedBox(height: 6),
+          const SizedBox(height: 12),
 
           Text(
             title,
@@ -1442,7 +1453,7 @@ class _HomeFeedState extends State<_HomeFeed> {
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: AppColors.navy,
-              fontSize: 8.2,
+              fontSize: 9.5,
               fontWeight: FontWeight.w800,
               height: 1.1,
             ),
@@ -1452,12 +1463,12 @@ class _HomeFeedState extends State<_HomeFeed> {
 
           Text(
             subtitle,
-            maxLines: 2,
+            maxLines: 1,
             textAlign: TextAlign.center,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: AppColors.navy.withValues(alpha: 0.42),
-              fontSize: 6.5,
+              color: AppColors.navy.withValues(alpha: 0.45),
+              fontSize: 8.2,
               height: 1.1,
             ),
           ),
