@@ -121,26 +121,48 @@ class EmotionResultScreen extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(18, 12, 18, 8),
       child: Row(
         children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(
-              Icons.arrow_back_ios_new_rounded,
-              size: 20,
-              color: AppColors.navy,
-            ),
-          ),
-          const Expanded(
-            child: Text(
-              'Emotion Result',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.navy,
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                if (Navigator.of(context).canPop()) {
+                  Navigator.of(context).pop();
+                }
+              },
+              borderRadius: BorderRadius.circular(11),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(11),
+                  border: Border.all(
+                    color: AppColors.borderMint,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: AppColors.navy,
+                  size: 17,
+                ),
               ),
             ),
           ),
-          const SizedBox(width: 48),
+
+          Expanded(
+            child: Center(
+              child: const Text(
+                'Emotion Result',
+                style: TextStyle(
+                  color: AppColors.navy,
+                  fontSize: 19,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 40),
         ],
       ),
     );

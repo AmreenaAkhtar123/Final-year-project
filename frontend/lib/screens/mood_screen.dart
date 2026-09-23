@@ -262,29 +262,60 @@ class _MoodScreenState extends State<MoodScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        leading: IconButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: AppColors.navy,
-            size: 20,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(72),
+        child: SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 10, 18, 8),
+            child: Row(
+              children: [
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      if (Navigator.of(context).canPop()) {
+                        Navigator.of(context).pop();
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(11),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(11),
+                        border: Border.all(
+                          color: AppColors.borderMint,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: AppColors.navy,
+                        size: 15,
+                      ),
+                    ),
+                  ),
+                ),
+
+                Expanded(
+                  child: Center(
+                    child: const Text(
+                      'Mood Tracker',
+                      style: TextStyle(
+                        color: AppColors.navy,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 34),
+              ],
+            ),
           ),
         ),
-        title: const Text(
-          'Mood Tracker',
-          style: TextStyle(
-            color: AppColors.navy,
-            fontSize: 19,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        centerTitle: true,
       ),
       body: SafeArea(
         child: SingleChildScrollView(

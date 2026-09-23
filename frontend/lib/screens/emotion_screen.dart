@@ -1215,23 +1215,33 @@ class _EmotionScreenState extends State<EmotionScreen> {
   Widget _buildHeader() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        20,
-        14,
-        20,
+        18,
+        12,
+        18,
         8,
       ),
       child: Row(
         children: [
           Material(
-            color: AppColors.lightMint,
-            shape: const CircleBorder(),
+            color: Colors.transparent,
             child: InkWell(
-              onTap: () => Navigator.pop(context),
-              customBorder: const CircleBorder(),
-              child: const SizedBox(
-                width: 42,
-                height: 42,
-                child: Icon(
+              onTap: () {
+                if (Navigator.of(context).canPop()) {
+                  Navigator.of(context).pop();
+                }
+              },
+              borderRadius: BorderRadius.circular(11),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(11),
+                  border: Border.all(
+                    color: AppColors.borderMint,
+                  ),
+                ),
+                child: const Icon(
                   Icons.arrow_back_ios_new_rounded,
                   color: AppColors.navy,
                   size: 17,

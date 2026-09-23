@@ -78,13 +78,27 @@ class _AiChatScreenState extends State<AiChatScreen> {
         surfaceTintColor: Colors.transparent,
 
         leading: IconButton(
+          padding: const EdgeInsets.only(left: 8),
           onPressed: () {
-            Navigator.pop(context);
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            }
           },
+          style: IconButton.styleFrom(
+            fixedSize: const Size(40, 40),
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: const BorderSide(
+                color: AppColors.borderMint,
+              ),
+            ),
+            padding: EdgeInsets.zero,
+          ),
           icon: const Icon(
             Icons.arrow_back_ios_new_rounded,
             color: AppColors.navy,
-            size: 20,
+            size: 18,
           ),
         ),
 

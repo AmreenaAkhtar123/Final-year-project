@@ -14,32 +14,61 @@ class AssessmentsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
 
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(64),
+        child: Container(
+          color: AppColors.background,
+          padding: const EdgeInsets.fromLTRB(
+            18,
+            30,
+            18,
+            10,
+          ),
+          child: Row(
+            children: [
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    Navigator.pop(context);
+                  },
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: AppColors.borderMint,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: AppColors.navy,
+                      size: 15,
+                    ),
+                  ),
+                ),
+              ),
 
-        leading: IconButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: AppColors.navy,
-            size: 20,
+              const Expanded(
+                child: Center(
+                  child: Text(
+                    'Assessments',
+                    style: TextStyle(
+                      color: AppColors.navy,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 34),
+            ],
           ),
         ),
-
-        title: const Text(
-          'Assessments',
-          style: TextStyle(
-            color: AppColors.navy,
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-
-        centerTitle: true,
       ),
 
       body: SafeArea(

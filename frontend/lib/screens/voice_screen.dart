@@ -326,7 +326,6 @@ class _VoiceScreenState extends State<VoiceScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: _buildAppBar(),
       body: SafeArea(
         child: Stack(
           children: [
@@ -336,12 +335,14 @@ class _VoiceScreenState extends State<VoiceScreen>
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(
                 22,
-                10,
+                0,
                 22,
                 28,
               ),
               child: Column(
                 children: [
+                  _buildAppBar(),
+
                   _buildHeader(),
 
                   const SizedBox(height: 26),
@@ -390,27 +391,61 @@ class _VoiceScreenState extends State<VoiceScreen>
   // APP BAR
   // ============================================================
 
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      backgroundColor: AppColors.background,
-      elevation: 0,
-      surfaceTintColor: Colors.transparent,
-      centerTitle: true,
-      leading: IconButton(
-        icon: const Icon(
-          Icons.arrow_back_ios_new_rounded,
-          size: 20,
-          color: AppColors.navy,
-        ),
-        onPressed: () => Navigator.pop(context),
-      ),
-      title: const Text(
-        'Voice Support',
-        style: TextStyle(
-          color: AppColors.navy,
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-        ),
+  Widget _buildAppBar() {
+    return SizedBox(
+      height: 54,
+      child: Row(
+        children: [
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                if (Navigator.of(context).canPop()) {
+                  Navigator.of(context).pop();
+                }
+              },
+              borderRadius: BorderRadius.circular(9),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(9),
+                  border: Border.all(
+                    color: AppColors.borderMint,
+                  ),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: AppColors.navy,
+                    size: 14,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          Expanded(
+            child: Center(
+              child: Transform.translate(
+                offset: const Offset(-1, 0),
+                child: const Text(
+                  'Voice Support',
+                  style: TextStyle(
+                    color: AppColors.navy,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(
+            width: 32,
+          ),
+        ],
       ),
     );
   }
