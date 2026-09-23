@@ -57,8 +57,16 @@ class _HomeScreenState extends State<HomeScreen> {
         child: IndexedStack(
           index: _selectedIndex,
           children: [
-            const _HomeFeed(),
-            const CheckInScreen(),
+            _HomeFeed(),
+
+            CheckInScreen(
+              onBackToHome: () {
+                setState(() {
+                  _selectedIndex = 0;
+                });
+              },
+            ),
+
             InsightsScreen(
               onBackToHome: () {
                 setState(() {
@@ -66,6 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 });
               },
             ),
+
             const ProfileScreen(),
           ],
         ),
@@ -605,7 +614,11 @@ class _HomeFeedState extends State<_HomeFeed> {
                   onPressed: () {
                     _open(
                       context,
-                      const CheckInScreen(),
+                      CheckInScreen(
+                        onBackToHome: () {
+                          Navigator.pop(context);
+                        },
+                      ),
                     );
                   },
                   style: FilledButton.styleFrom(

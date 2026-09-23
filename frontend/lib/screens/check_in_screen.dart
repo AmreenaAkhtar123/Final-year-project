@@ -4,7 +4,12 @@ import '../../core/constants/app_colors.dart';
 import 'home_screen.dart';
 
 class CheckInScreen extends StatefulWidget {
-  const CheckInScreen({super.key});
+  final VoidCallback onBackToHome;
+
+  const CheckInScreen({
+    super.key,
+    required this.onBackToHome,
+  });
 
   @override
   State<CheckInScreen> createState() => _CheckInScreenState();
@@ -420,30 +425,21 @@ class _CheckInScreenState extends State<CheckInScreen> {
         // BACK BUTTON
         // --------------------------------------------------------
 
-        GestureDetector(
-          onTap: () => Navigator.pop(context),
-          child: Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              border: Border.all(
+        IconButton(
+          onPressed: widget.onBackToHome,
+          style: IconButton.styleFrom(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: const BorderSide(
                 color: AppColors.borderMint,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.navy.withValues(alpha: 0.04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
-                ),
-              ],
             ),
-            child: const Icon(
-              Icons.arrow_back_rounded,
-              color: AppColors.navy,
-              size: 21,
-            ),
+          ),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.navy,
+            size: 18,
           ),
         ),
 
