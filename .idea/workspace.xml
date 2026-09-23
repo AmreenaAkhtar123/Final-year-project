@@ -6,15 +6,9 @@
   <component name="ChangeListManager">
     <list default="true" id="f21d4447-cc26-4919-8eac-2323aaaa6e0a" name="Changes" comment="Initializing the project and make the UI of splash screen">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/screens/exercise/body_scan_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/screens/exercise/body_scan_screen.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/screens/exercise/exam_pressure_reset_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/screens/exercise/exam_pressure_reset_screen.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/screens/exercise/focus_reset_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/screens/exercise/focus_reset_screen.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/screens/exercise/grounding_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/screens/exercise/grounding_screen.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/screens/exercise/mood_lift_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/screens/exercise/mood_lift_screen.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/screens/exercise/quick_reflection_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/screens/exercise/quick_reflection_screen.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/screens/exercise/sleep_wind_down_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/screens/exercise/sleep_wind_down_screen.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/screens/exercise/stress_release_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/screens/exercise/stress_release_screen.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/screens/exercise/thought_reset_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/screens/exercise/thought_reset_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/screens/settings/about_mindmate_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/screens/settings/about_mindmate_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/screens/student_wellbeing_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/screens/student_wellbeing_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/screens/weekly_wellbeing_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/screens/weekly_wellbeing_screen.dart" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -128,6 +122,11 @@
           <url>file://$PROJECT_DIR$/frontend/lib/screens/home_screen.dart</url>
           <line>916</line>
           <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="Dart">
+          <url>file://$PROJECT_DIR$/frontend/lib/screens/settings/about_mindmate_screen.dart</url>
+          <line>11</line>
+          <option name="timeStamp" value="16" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

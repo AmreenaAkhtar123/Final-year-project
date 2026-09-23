@@ -85,36 +85,71 @@ class _StudentWellbeingScreenState extends State<StudentWellbeingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: AppColors.navy,
-            size: 20,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(72),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 30, 18, 6),
+          child: Row(
+            children: [
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    Navigator.pop(context);
+                  },
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: AppColors.borderMint,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: AppColors.navy,
+                      size: 15,
+                    ),
+                  ),
+                ),
+              ),
+
+              const Expanded(
+                child: Center(
+                  child: Text(
+                    'Student Wellbeing',
+                    style: TextStyle(
+                      color: AppColors.navy,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _showInfoDialog,
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    alignment: Alignment.center,
+                    child: const Icon(
+                      Icons.info_outline_rounded,
+                      color: AppColors.navy,
+                      size: 21,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Student Wellbeing',
-          style: TextStyle(
-            color: AppColors.navy,
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        actions: [
-          IconButton(
-            onPressed: _showInfoDialog,
-            icon: const Icon(
-              Icons.info_outline_rounded,
-              color: AppColors.navy,
-              size: 21,
-            ),
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 35),
