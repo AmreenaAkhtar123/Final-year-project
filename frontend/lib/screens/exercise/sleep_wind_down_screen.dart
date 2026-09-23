@@ -438,38 +438,64 @@ class _SleepWindDownScreenState extends State<SleepWindDownScreen> {
   Widget _buildTopBar() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        20,
-        14,
-        20,
+        18,
+        10,
+        18,
         8,
       ),
       child: Column(
         children: [
-          Row(
-            children: [
-              IconButton(
-                onPressed: _previousStep,
-                icon: const Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  size: 20,
-                ),
-                color: AppColors.navy,
-              ),
-              const Expanded(
-                child: Text(
-                  'Sleep Wind-Down',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AppColors.navy,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
+          SizedBox(
+            height: 48,
+            child: Row(
+              children: [
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _previousStep,
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: AppColors.borderMint,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: AppColors.navy,
+                        size: 15,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 48),
-            ],
+
+                const Expanded(
+                  child: Center(
+                    child: Text(
+                      'Sleep Wind-Down',
+                      style: TextStyle(
+                        color: AppColors.navy,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(
+                  width: 40,
+                  height: 40,
+                ),
+              ],
+            ),
           ),
+
           const SizedBox(height: 4),
+
           ClipRRect(
             borderRadius: BorderRadius.circular(20),
             child: LinearProgressIndicator(
@@ -1354,6 +1380,56 @@ class _SleepWindDownScreenState extends State<SleepWindDownScreen> {
           ),
           child: Column(
             children: [
+              Row(
+                children: [
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(context);
+                      },
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: AppColors.borderMint,
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: AppColors.navy,
+                          size: 15,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const Expanded(
+                    child: Center(
+                      child: Text(
+                        'Sleep Wind-Down',
+                        style: TextStyle(
+                          color: AppColors.navy,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(
+                    width: 40,
+                    height: 40,
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 30),
+
               Container(
                 width: 105,
                 height: 105,

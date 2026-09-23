@@ -750,37 +750,70 @@ class _BodyScanScreenState extends State<BodyScanScreen>
   }
 
   Widget _buildTopBar() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 10, 18, 6),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(
-              Icons.arrow_back_ios_new_rounded,
-              size: 19,
-              color: AppColors.navy,
-            ),
-          ),
-          const Expanded(
-            child: Text(
-              'Body Scan',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.navy,
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
+    return SizedBox(
+      height: 72,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 10, 18, 6),
+        child: Row(
+          children: [
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  Navigator.pop(context);
+                },
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: AppColors.borderMint,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: AppColors.navy,
+                    size: 15,
+                  ),
+                ),
               ),
             ),
-          ),
-          IconButton(
-            onPressed: _showHowItWorks,
-            icon: const Icon(
-              Icons.info_outline_rounded,
-              color: AppColors.navy,
+
+            const Expanded(
+              child: Center(
+                child: Text(
+                  'Body Scan',
+                  style: TextStyle(
+                    color: AppColors.navy,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
             ),
-          ),
-        ],
+
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _showHowItWorks,
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  alignment: Alignment.center,
+                  child: const Icon(
+                    Icons.info_outline_rounded,
+                    color: AppColors.navy,
+                    size: 22,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -267,31 +267,55 @@ class _ExamPressureResetScreenState
   }
 
   Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 10, 20, 8),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: _previousStep,
-            icon: const Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: AppColors.navy,
-              size: 21,
-            ),
-          ),
-          const Expanded(
-            child: Text(
-              'Exam Pressure Reset',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.navy,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
+    return SizedBox(
+      height: 72,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 10, 18, 6),
+        child: Row(
+          children: [
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _previousStep,
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: AppColors.borderMint,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: AppColors.navy,
+                    size: 15,
+                  ),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 48),
-        ],
+
+            const Expanded(
+              child: Center(
+                child: Text(
+                  'Exam Pressure Reset',
+                  style: TextStyle(
+                    color: AppColors.navy,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(
+              width: 40,
+              height: 40,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -884,30 +908,52 @@ class _ExamPressureResetScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header
+              // Header
               Row(
                 children: [
-                  IconButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    icon: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: AppColors.navy,
-                      size: 21,
-                    ),
-                  ),
-                  const Expanded(
-                    child: Text(
-                      'Exam Pressure Reset',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppColors.navy,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(context);
+                      },
+                      borderRadius: BorderRadius.circular(10),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: AppColors.borderMint,
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: AppColors.navy,
+                          size: 15,
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 48),
+
+                  const Expanded(
+                    child: Center(
+                      child: Text(
+                        'Exam Pressure Reset',
+                        style: TextStyle(
+                          color: AppColors.navy,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(
+                    width: 40,
+                    height: 40,
+                  ),
                 ],
               ),
 

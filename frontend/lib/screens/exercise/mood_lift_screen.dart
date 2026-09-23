@@ -103,79 +103,69 @@ class _MoodLiftScreenState extends State<MoodLiftScreen> {
   }
 
   Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        16,
-        12,
-        20,
-        10,
-      ),
-      child: Row(
-        children: [
-          Material(
-            color: AppColors.lightMint,
-            borderRadius: BorderRadius.circular(14),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(14),
-              onTap: () {
-                Navigator.pop(context);
-              },
-              child: const SizedBox(
-                width: 46,
-                height: 46,
-                child: Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  size: 19,
-                  color: AppColors.navy,
+    return SizedBox(
+      height: 72,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 10, 18, 6),
+        child: Row(
+          children: [
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  Navigator.pop(context);
+                },
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: AppColors.borderMint,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: AppColors.navy,
+                    size: 15,
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 14),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Mood Lift',
-                  style: TextStyle(
-                    color: AppColors.navy,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                  ),
+            const Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Mood Lift',
+                      style: TextStyle(
+                        color: AppColors.navy,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Find one small shift that feels possible.',
+                      style: TextStyle(
+                        color: AppColors.navy,
+                        fontSize: 11,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 3),
-                Text(
-                  'Find one small shift that feels possible.',
-                  style: TextStyle(
-                    color: AppColors.navy,
-                    fontSize: 13,
-                    height: 1.3,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 11,
-              vertical: 7,
-            ),
-            decoration: BoxDecoration(
-              color: AppColors.mint.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Text(
-              'LIFT',
-              style: TextStyle(
-                color: AppColors.mint,
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.8,
               ),
             ),
-          ),
-        ],
+            const SizedBox(
+              width: 40,
+              height: 40,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1157,44 +1147,60 @@ class _MoodLiftScreenState extends State<MoodLiftScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                16,
-                12,
-                20,
+                18,
                 10,
+                18,
+                6,
               ),
-              child: Row(
-                children: [
-                  Material(
-                    color: AppColors.lightMint,
-                    borderRadius: BorderRadius.circular(14),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(14),
-                      onTap: () {
-                        Navigator.pop(context);
-                      },
-                      child: const SizedBox(
-                        width: 46,
-                        height: 46,
-                        child: Icon(
-                          Icons.close_rounded,
-                          size: 21,
-                          color: AppColors.navy,
+              child: SizedBox(
+                height: 72,
+                child: Row(
+                  children: [
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.pop(context);
+                        },
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: AppColors.borderMint,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.arrow_back_ios_new_rounded,
+                            color: AppColors.navy,
+                            size: 15,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 14),
-                  const Expanded(
-                    child: Text(
-                      'Mood Lift Result',
-                      style: TextStyle(
-                        color: AppColors.navy,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
+
+                    const Expanded(
+                      child: Center(
+                        child: Text(
+                          'Mood Lift Complete',
+                          style: TextStyle(
+                            color: AppColors.navy,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ],
+
+                    const SizedBox(
+                      width: 40,
+                      height: 40,
+                    ),
+                  ],
+                ),
               ),
             ),
 
@@ -1209,15 +1215,13 @@ class _MoodLiftScreenState extends State<MoodLiftScreen> {
                 ),
                 child: Column(
                   children: [
-                    const SizedBox(height: 15),
+                    const SizedBox(height: 10),
 
                     Container(
                       width: 88,
                       height: 88,
                       decoration: BoxDecoration(
-                        color: AppColors.mint.withValues(
-                          alpha: 0.14,
-                        ),
+                        color: AppColors.mint.withValues(alpha: 0.14),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -1230,7 +1234,7 @@ class _MoodLiftScreenState extends State<MoodLiftScreen> {
                     const SizedBox(height: 20),
 
                     const Text(
-                      'Your mood-lift plan is ready',
+                      'You found one small shift.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: AppColors.navy,
@@ -1243,8 +1247,8 @@ class _MoodLiftScreenState extends State<MoodLiftScreen> {
                     const SizedBox(height: 10),
 
                     const Text(
-                      'You checked in, identified what you need, '
-                          'and chose one realistic action.',
+                      'You checked in with yourself, noticed what '
+                          'you needed, and created a manageable next step.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.grey,
@@ -1279,25 +1283,24 @@ class _MoodLiftScreenState extends State<MoodLiftScreen> {
                             _selectedMood = null;
                             _selectedLift = null;
                             _selectedMemory = null;
+                            _completed = false;
                             _moodError = null;
                             _liftError = null;
                             _memoryError = null;
-                            _completed = false;
                           });
                         },
                         icon: const Icon(
                           Icons.refresh_rounded,
                         ),
                         label: const Text(
-                          'Create Another Mood Lift',
+                          'Try Again',
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.mint,
                           foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
-                            borderRadius:
-                            BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(16),
                           ),
                           textStyle: const TextStyle(
                             fontSize: 14,
@@ -1321,8 +1324,7 @@ class _MoodLiftScreenState extends State<MoodLiftScreen> {
                             color: AppColors.borderMint,
                           ),
                           shape: RoundedRectangleBorder(
-                            borderRadius:
-                            BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(16),
                           ),
                         ),
                         child: const Text(

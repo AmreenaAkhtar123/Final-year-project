@@ -366,44 +366,68 @@ class _QuickReflectionScreenState extends State<QuickReflectionScreen>
   // ============================================================
 
   Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 12, 18, 6),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: _previousStep,
-            icon: const Icon(
-              Icons.arrow_back_ios_new_rounded,
-              size: 19,
-            ),
-            color: AppColors.navy,
-          ),
-
-          const Expanded(
-            child: Column(
-              children: [
-                Text(
-                  'Quick Reflection',
-                  style: TextStyle(
+    return SizedBox(
+      height: 72,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 10, 18, 6),
+        child: Row(
+          children: [
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _previousStep,
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: AppColors.borderMint,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
                     color: AppColors.navy,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
+                    size: 15,
                   ),
                 ),
-                SizedBox(height: 2),
-                Text(
-                  'A few minutes for yourself',
-                  style: TextStyle(
-                    color: AppColors.textDark,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
 
-          const SizedBox(width: 48),
-        ],
+            const Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Quick Reflection',
+                      style: TextStyle(
+                        color: AppColors.navy,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'A few minutes for yourself',
+                      style: TextStyle(
+                        color: AppColors.textDark,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(
+              width: 40,
+              height: 40,
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -90,83 +90,64 @@ class _DigitalDetoxScreenState extends State<DigitalDetoxScreen> {
   // ============================================================
 
   Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        16,
-        12,
-        20,
-        10,
-      ),
-      child: Row(
-        children: [
-          Material(
-            color: AppColors.lightMint,
-            borderRadius: BorderRadius.circular(14),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(14),
-              onTap: () {
-                if (_challengeStarted) {
-                  _showLeaveDialog();
-                } else {
-                  Navigator.pop(context);
-                }
-              },
-              child: const SizedBox(
-                width: 46,
-                height: 46,
-                child: Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  size: 19,
-                  color: AppColors.navy,
+    return SizedBox(
+      height: 72,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          18,
+          10,
+          18,
+          6,
+        ),
+        child: Row(
+          children: [
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  if (_challengeStarted) {
+                    _showLeaveDialog();
+                  } else {
+                    Navigator.pop(context);
+                  }
+                },
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: AppColors.borderMint,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: AppColors.navy,
+                    size: 15,
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 14),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
+            const Expanded(
+              child: Center(
+                child: Text(
                   'Digital Detox',
                   style: TextStyle(
                     color: AppColors.navy,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                SizedBox(height: 3),
-                Text(
-                  'Give your attention some breathing room.',
-                  style: TextStyle(
-                    color: AppColors.navy,
-                    fontSize: 13,
-                    height: 1.3,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 11,
-              vertical: 7,
-            ),
-            decoration: BoxDecoration(
-              color: AppColors.mint.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Text(
-              'OFFLINE',
-              style: TextStyle(
-                color: AppColors.mint,
-                fontSize: 9,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.7,
               ),
             ),
-          ),
-        ],
+            const SizedBox(
+              width: 40,
+              height: 40,
+            ),
+          ],
+        ),
       ),
     );
   }

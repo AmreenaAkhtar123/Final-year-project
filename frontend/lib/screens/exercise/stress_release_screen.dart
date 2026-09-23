@@ -353,44 +353,60 @@ class _StressReleaseScreenState extends State<StressReleaseScreen> {
   // HEADER
   // ------------------------------------------------------------
 
+  // ------------------------------------------------------------
+// HEADER
+// ------------------------------------------------------------
+
   Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: _goBack,
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(13),
-                border: Border.all(
-                  color: AppColors.borderMint,
-                ),
-              ),
-              child: const Icon(
-                Icons.arrow_back_ios_new_rounded,
-                size: 18,
-                color: AppColors.navy,
-              ),
-            ),
-          ),
-          const Expanded(
-            child: Center(
-              child: Text(
-                'Stress Release',
-                style: TextStyle(
-                  color: AppColors.navy,
-                  fontSize: 19,
-                  fontWeight: FontWeight.w700,
+    return SizedBox(
+      height: 72,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 10, 18, 6),
+        child: Row(
+          children: [
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _goBack,
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: AppColors.borderMint,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: AppColors.navy,
+                    size: 15,
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 42),
-        ],
+
+            const Expanded(
+              child: Center(
+                child: Text(
+                  'Stress Release',
+                  style: TextStyle(
+                    color: AppColors.navy,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(
+              width: 40,
+              height: 40,
+            ),
+          ],
+        ),
       ),
     );
   }
