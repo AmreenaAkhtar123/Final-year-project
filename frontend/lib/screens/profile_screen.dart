@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
+
+import '../core/services/profile_image_service.dart';
 
 import '../core/constants/app_colors.dart';
 import 'settings/about_mindmate_screen.dart';
@@ -26,7 +29,59 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final int _currentStreak = 6;
   final double _wellbeingScore = 7.4;
 
+  File? _profileImage;
+  bool _isLoadingProfileImage = true;
+
   @override
+  void initState() {
+    super.initState();
+
+    ProfileImageService.profileImageNotifier.addListener(
+      _onProfileImageChanged,
+    );
+
+    _loadProfileImage();
+  }
+
+  Future<void> _loadProfileImage() async {
+    final image = await ProfileImageService.getProfileImage();
+
+    if (!mounted) return;
+
+    setState(() {
+      _profileImage = image;
+      _isLoadingProfileImage = false;
+    });
+
+    // Make sure the shared notifier also knows about the
+    // currently saved image when ProfileScreen is opened.
+    if (ProfileImageService.profileImageNotifier.value?.path !=
+        image?.path) {
+      ProfileImageService.profileImageNotifier.value = image;
+    }
+  }
+
+  void _onProfileImageChanged() {
+    if (!mounted) return;
+
+    final image = ProfileImageService.profileImageNotifier.value;
+
+    setState(() {
+      _profileImage = image;
+      _isLoadingProfileImage = false;
+    });
+  }
+
+  @override
+  void dispose() {
+    ProfileImageService.profileImageNotifier.removeListener(
+      _onProfileImageChanged,
+    );
+
+    super.dispose();
+  }
+
+
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -414,7 +469,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
           width: 2.5,
         ),
       ),
-      child: const Icon(
+      child: _isLoadingProfileImage
+          ? const SizedBox(
+        width: 28,
+        height: 28,
+        child: CircularProgressIndicator(
+          strokeWidth: 2.5,
+          color: AppColors.mint,
+        ),
+      )
+          : _profileImage != null
+          ? ClipOval(
+        child: Image.file(
+          _profileImage!,
+          width: double.infinity,
+          height: double.infinity,
+          fit: BoxFit.cover,
+        ),
+      )
+          : const Icon(
         Icons.person_rounded,
         color: AppColors.mint,
         size: 38,
@@ -651,14 +724,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _buildSettingsTile(
           icon: Icons.lock_outline_rounded,
           title: 'Password & Security',
-          subtitle: 'Change password and account security',onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const PasswordSecurityScreen(),
-            ),
-          );
-        },
+          subtitle: 'Change password and account security',
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const PasswordSecurityScreen(),
+              ),
+            );
+          },
         ),
       ],
     );

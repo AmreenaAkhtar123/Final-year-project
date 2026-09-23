@@ -2,8 +2,11 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/services/profile_image_service.dart';
+
 
 class PersonalInformationScreen extends StatefulWidget {
   const PersonalInformationScreen({super.key});
@@ -18,6 +21,13 @@ class _PersonalInformationScreenState
   // ===========================================================================
   // CONTROLLERS
   // ===========================================================================
+  final ImagePicker _imagePicker = ImagePicker();
+
+  File? _profileImage;
+
+  bool _isLoadingProfileImage = true;
+  bool _isSavingProfileImage = false;
+
 
   final TextEditingController _nameController =
   TextEditingController(text: 'Demo User');
@@ -41,13 +51,6 @@ class _PersonalInformationScreenState
   String? _occupation;
   String? _educationLevel;
 
-  // ===========================================================================
-  // PROFILE PHOTO
-  // ===========================================================================
-
-  final ImagePicker _imagePicker = ImagePicker();
-
-  File? _profileImage;
 
   // ===========================================================================
   // SCREEN STATE
@@ -91,6 +94,8 @@ class _PersonalInformationScreenState
   @override
   void initState() {
     super.initState();
+
+    _loadSavedProfileImage();
 
     _nameController.addListener(_markChanged);
     _emailController.addListener(_markChanged);
@@ -258,6 +263,17 @@ class _PersonalInformationScreenState
       },
     );
   }
+  Future<void> _loadSavedProfileImage() async {
+    final File? savedImage =
+    await ProfileImageService.getProfileImage();
+
+    if (!mounted) return;
+
+    setState(() {
+      _profileImage = savedImage;
+      _isLoadingProfileImage = false;
+    });
+  }
 
   Widget _buildPhotoOption({
     required IconData icon,
@@ -339,25 +355,61 @@ class _PersonalInformationScreenState
 
   Future<void> _pickProfileImage(ImageSource source) async {
     try {
-      final XFile? pickedImage = await _imagePicker.pickImage(
+      final XFile? pickedFile = await _imagePicker.pickImage(
         source: source,
+        imageQuality: 85,
         maxWidth: 1200,
         maxHeight: 1200,
-        imageQuality: 85,
       );
 
-      if (pickedImage == null) {
+      if (pickedFile == null) {
         return;
       }
 
       if (!mounted) return;
 
       setState(() {
-        _profileImage = File(pickedImage.path);
+        _isSavingProfileImage = true;
+      });
+
+      final Directory appDirectory =
+      await getApplicationDocumentsDirectory();
+
+      final Directory profileDirectory = Directory(
+        '${appDirectory.path}/mindmate_profile',
+      );
+
+      if (!await profileDirectory.exists()) {
+        await profileDirectory.create(recursive: true);
+      }
+
+      // Use a unique filename for every newly selected photo.
+      final String fileName =
+          'profile_photo_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+      final File savedFile = File(
+        '${profileDirectory.path}/$fileName',
+      );
+
+      await File(pickedFile.path).copy(savedFile.path);
+
+      await ProfileImageService.saveProfileImagePath(
+        savedFile.path,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _profileImage = savedFile;
+        _isSavingProfileImage = false;
         _hasChanges = true;
       });
     } catch (e) {
       if (!mounted) return;
+
+      setState(() {
+        _isSavingProfileImage = false;
+      });
 
       _showPhotoError(
         'We could not access the selected photo. Please try again.',
@@ -365,11 +417,21 @@ class _PersonalInformationScreenState
     }
   }
 
-  void _removeProfileImage() {
-    setState(() {
-      _profileImage = null;
-      _hasChanges = true;
-    });
+  Future<void> _removeProfileImage() async {
+    try {
+      // This handles deleting the saved file, removing the saved path,
+      // and notifying every listener immediately.
+      await ProfileImageService.removeProfileImage();
+
+      if (!mounted) return;
+
+      setState(() {
+        _profileImage = null;
+        _hasChanges = true;
+      });
+    } catch (e) {
+      // Keep the UI stable if local cleanup fails.
+    }
   }
 
   void _showPhotoError(String message) {
