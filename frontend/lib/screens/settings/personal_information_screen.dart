@@ -1459,6 +1459,10 @@ class _PersonalInformationScreenState
   // DROPDOWN
   // ===========================================================================
 
+  // ===========================================================================
+// DROPDOWN
+// ===========================================================================
+
   Widget _buildDropdownField({
     required String label,
     required String? value,
@@ -1475,65 +1479,275 @@ class _PersonalInformationScreenState
           label,
           optional: optional,
         ),
+
         const SizedBox(height: 7),
-        DropdownButtonFormField<String>(
-          initialValue: value,
-          isExpanded: true,
-          icon: Icon(
-            Icons.keyboard_arrow_down_rounded,
-            color: AppColors.navy.withValues(alpha: 0.35),
-          ),
-          style: const TextStyle(
-            color: AppColors.navy,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(
-              color: AppColors.navy.withValues(alpha: 0.35),
-              fontSize: 12.5,
-              fontWeight: FontWeight.w500,
-            ),
-            filled: true,
-            fillColor: AppColors.background,
-            prefixIcon: Icon(
-              icon,
-              color: AppColors.mint,
-              size: 20,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(
-                color: AppColors.borderMint,
-              ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(
-                color: AppColors.borderMint,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(
-                color: AppColors.mint,
-                width: 1.4,
-              ),
-            ),
-          ),
-          items: items.map((item) {
-            return DropdownMenuItem<String>(
-              value: item,
-              child: Text(item),
+
+        InkWell(
+          onTap: () async {
+            FocusScope.of(context).unfocus();
+
+            final String? selectedValue =
+            await showModalBottomSheet<String>(
+              context: context,
+              backgroundColor: Colors.transparent,
+              isScrollControlled: true,
+              builder: (context) {
+                return SafeArea(
+                  child: Container(
+                    width: double.infinity,
+                    decoration: const BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(28),
+                      ),
+                    ),
+                    padding: const EdgeInsets.fromLTRB(
+                      20,
+                      12,
+                      20,
+                      20,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Top handle
+                        Container(
+                          width: 42,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: AppColors.borderMint,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // Header
+                        Row(
+                          children: [
+                            Container(
+                              width: 42,
+                              height: 42,
+                              decoration: BoxDecoration(
+                                color: AppColors.lightMint,
+                                borderRadius: BorderRadius.circular(13),
+                                border: Border.all(
+                                  color: AppColors.borderMint,
+                                ),
+                              ),
+                              child: Icon(
+                                icon,
+                                color: AppColors.mint,
+                                size: 21,
+                              ),
+                            ),
+
+                            const SizedBox(width: 12),
+
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment:
+                                CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    label,
+                                    style: const TextStyle(
+                                      color: AppColors.navy,
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    'Select an option',
+                                    style: TextStyle(
+                                      color: AppColors.navy
+                                          .withValues(alpha: 0.45),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 18),
+
+                        // Options
+                        ...items.map(
+                              (item) {
+                            final bool isSelected = item == value;
+
+                            return Padding(
+                              padding: const EdgeInsets.only(
+                                bottom: 8,
+                              ),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () {
+                                    Navigator.pop(
+                                      context,
+                                      item,
+                                    );
+                                  },
+                                  borderRadius:
+                                  BorderRadius.circular(15),
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 15,
+                                      vertical: 14,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? AppColors.lightMint
+                                          : Colors.white,
+                                      borderRadius:
+                                      BorderRadius.circular(15),
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? AppColors.mint
+                                            : AppColors.borderMint,
+                                        width: isSelected ? 1.2 : 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            item,
+                                            style: TextStyle(
+                                              color: AppColors.navy,
+                                              fontSize: 13,
+                                              fontWeight: isSelected
+                                                  ? FontWeight.w700
+                                                  : FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+
+                                        if (isSelected)
+                                          Container(
+                                            width: 25,
+                                            height: 25,
+                                            decoration:
+                                            const BoxDecoration(
+                                              color: AppColors.mint,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(
+                                              Icons.check_rounded,
+                                              color: Colors.white,
+                                              size: 16,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+
+                        const SizedBox(height: 4),
+
+                        // Cancel
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: OutlinedButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.navy,
+                              side: const BorderSide(
+                                color: AppColors.borderMint,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                            ),
+                            child: const Text(
+                              'Cancel',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             );
-          }).toList(),
-          onChanged: onChanged,
+
+            if (selectedValue != null) {
+              onChanged(selectedValue);
+            }
+          },
+
+          borderRadius: BorderRadius.circular(16),
+
+          child: InputDecorator(
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: AppColors.background,
+
+              prefixIcon: Icon(
+                icon,
+                color: AppColors.mint,
+                size: 20,
+              ),
+
+              suffixIcon: Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: AppColors.navy.withValues(alpha: 0.35),
+              ),
+
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(
+                  color: AppColors.borderMint,
+                ),
+              ),
+
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: const BorderSide(
+                  color: AppColors.borderMint,
+                ),
+              ),
+
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 14,
+              ),
+            ),
+
+            child: Text(
+              value ?? hint,
+              style: TextStyle(
+                color: value == null
+                    ? AppColors.navy.withValues(alpha: 0.35)
+                    : AppColors.navy,
+                fontSize: 13,
+                fontWeight: value == null
+                    ? FontWeight.w500
+                    : FontWeight.w600,
+              ),
+            ),
+          ),
         ),
       ],
     );
   }
-
   // ===========================================================================
   // FIELD LABEL
   // ===========================================================================
