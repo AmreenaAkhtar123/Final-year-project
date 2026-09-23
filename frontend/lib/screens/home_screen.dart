@@ -75,7 +75,13 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
 
-            const ProfileScreen(),
+            ProfileScreen(
+              onBackToHome: () {
+                setState(() {
+                  _selectedIndex = 0;
+                });
+              },
+            ),
           ],
         ),
       ),

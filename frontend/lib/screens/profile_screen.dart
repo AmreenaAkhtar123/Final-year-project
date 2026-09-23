@@ -13,7 +13,12 @@ import 'settings/wellbeing_preferences_screen.dart';
 import 'safety_support_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final VoidCallback? onBackToHome;
+
+  const ProfileScreen({
+    super.key,
+    this.onBackToHome,
+  });
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -168,7 +173,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           color: Colors.transparent,
           child: InkWell(
             onTap: () {
-              if (Navigator.of(context).canPop()) {
+              if (widget.onBackToHome != null) {
+                widget.onBackToHome!();
+              } else if (Navigator.of(context).canPop()) {
                 Navigator.of(context).pop();
               }
             },
