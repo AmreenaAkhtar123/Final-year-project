@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 
 import '../core/constants/app_colors.dart';
+import 'home_screen.dart';
 
 class InsightsScreen extends StatefulWidget {
-  const InsightsScreen({super.key});
+  final VoidCallback onBackToHome;
+
+  const InsightsScreen({
+    super.key,
+    required this.onBackToHome,
+  });
 
   @override
   State<InsightsScreen> createState() => _InsightsScreenState();
@@ -403,34 +409,21 @@ class _InsightsScreenState extends State<InsightsScreen> {
           // BACK BUTTON
           // ------------------------------------------------------
 
-          GestureDetector(
-            onTap: () {
-              if (Navigator.of(context).canPop()) {
-                Navigator.of(context).pop();
-              }
-            },
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                border: Border.all(
+          IconButton(
+            onPressed: widget.onBackToHome,
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: const BorderSide(
                   color: AppColors.borderMint,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.navy.withValues(alpha: 0.04),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
               ),
-              child: const Icon(
-                Icons.arrow_back_rounded,
-                color: AppColors.navy,
-                size: 21,
-              ),
+            ),
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: AppColors.navy,
+              size: 18,
             ),
           ),
 

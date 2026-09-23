@@ -56,11 +56,17 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: IndexedStack(
           index: _selectedIndex,
-          children: const [
-            _HomeFeed(),
-            CheckInScreen(),
-            InsightsScreen(),
-            ProfileScreen(),
+          children: [
+            const _HomeFeed(),
+            const CheckInScreen(),
+            InsightsScreen(
+              onBackToHome: () {
+                setState(() {
+                  _selectedIndex = 0;
+                });
+              },
+            ),
+            const ProfileScreen(),
           ],
         ),
       ),
