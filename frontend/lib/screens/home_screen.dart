@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../core/constants/app_colors.dart';
+import '../core/services/profile_image_service.dart';
 import 'ai_chat_screen.dart';
 import 'assessments/assessments_screen.dart';
 import 'check_in_screen.dart';
@@ -105,8 +107,45 @@ class _HomeScreenState extends State<HomeScreen> {
 // HOME FEED
 // ============================================================
 
-class _HomeFeed extends StatelessWidget {
+class _HomeFeed extends StatefulWidget {
   const _HomeFeed();
+
+  @override
+  State<_HomeFeed> createState() => _HomeFeedState();
+}
+
+class _HomeFeedState extends State<_HomeFeed> {
+  File? _profileImage;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _profileImage =
+        ProfileImageService.profileImageNotifier.value;
+
+    ProfileImageService.profileImageNotifier.addListener(
+      _onProfileImageChanged,
+    );
+  }
+
+  void _onProfileImageChanged() {
+    if (!mounted) return;
+
+    setState(() {
+      _profileImage =
+          ProfileImageService.profileImageNotifier.value;
+    });
+  }
+
+  @override
+  void dispose() {
+    ProfileImageService.profileImageNotifier.removeListener(
+      _onProfileImageChanged,
+    );
+
+    super.dispose();
+  }
 
   void _open(BuildContext context, Widget screen) {
     Navigator.push(
@@ -271,12 +310,21 @@ class _HomeFeed extends StatelessWidget {
         height: 43,
         decoration: BoxDecoration(
           color: AppColors.lightMint,
-          borderRadius: BorderRadius.circular(14),
+          shape: BoxShape.circle,
           border: Border.all(
             color: AppColors.borderMint,
           ),
         ),
-        child: const Icon(
+        child: _profileImage != null
+            ? ClipOval(
+          child: Image.file(
+            _profileImage!,
+            width: 43,
+            height: 43,
+            fit: BoxFit.cover,
+          ),
+        )
+            : const Icon(
           Icons.person_outline_rounded,
           color: AppColors.navy,
           size: 22,
