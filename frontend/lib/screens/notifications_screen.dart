@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 
-
-
 import '../core/constants/app_colors.dart';
+
+class NotificationState {
+  static final ValueNotifier<bool> firstNotificationUnread =
+  ValueNotifier<bool>(true);
+
+  static void markFirstNotificationAsRead() {
+    firstNotificationUnread.value = false;
+  }
+}
 
 class NotificationsScreen extends StatelessWidget {
   const NotificationsScreen({super.key});
@@ -69,13 +76,27 @@ class NotificationsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(22, 10, 22, 30),
         children: [
-          _buildNotification(
-            icon: Icons.favorite_rounded,
-            title: 'Daily check-in reminder',
-            message: 'Take a moment to check in with yourself today.',
-            time: 'Today',
-            iconBackground: AppColors.lightMint,
-            iconColor: AppColors.mint,
+          ValueListenableBuilder<bool>(
+            valueListenable: NotificationState.firstNotificationUnread,
+            builder: (context, isUnread, child) {
+              return GestureDetector(
+                onTap: () {
+                  if (isUnread) {
+                    NotificationState.markFirstNotificationAsRead();
+                  }
+                },
+                child: _buildNotification(
+                  icon: Icons.favorite_rounded,
+                  title: 'Daily check-in reminder',
+                  message:
+                  'Take a moment to check in with yourself today.',
+                  time: 'Today',
+                  iconBackground: AppColors.lightMint,
+                  iconColor: AppColors.mint,
+                  isUnread: isUnread,
+                ),
+              );
+            },
           ),
 
           const SizedBox(height: 12),
@@ -83,10 +104,12 @@ class NotificationsScreen extends StatelessWidget {
           _buildNotification(
             icon: Icons.auto_awesome_rounded,
             title: 'MindMate insight',
-            message: 'Your recent mood pattern has been looking positive.',
+            message:
+            'Your recent mood pattern has been looking positive.',
             time: 'Yesterday',
             iconBackground: const Color(0xFFF1F3FC),
             iconColor: const Color(0xFF6B7FD7),
+            isUnread: false,
           ),
 
           const SizedBox(height: 12),
@@ -94,10 +117,12 @@ class NotificationsScreen extends StatelessWidget {
           _buildNotification(
             icon: Icons.psychology_outlined,
             title: 'Wellbeing check',
-            message: 'You can complete your weekly wellbeing assessment.',
+            message:
+            'You can complete your weekly wellbeing assessment.',
             time: '2 days ago',
             iconBackground: const Color(0xFFFFF5E9),
             iconColor: const Color(0xFFE29A45),
+            isUnread: false,
           ),
         ],
       ),
@@ -111,6 +136,7 @@ class NotificationsScreen extends StatelessWidget {
     required String time,
     required Color iconBackground,
     required Color iconColor,
+    required bool isUnread,
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -155,13 +181,33 @@ class NotificationsScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      child: Text(
-                        title,
-                        style: const TextStyle(
-                          color: AppColors.navy,
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w800,
-                        ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              title,
+                              style: TextStyle(
+                                color: AppColors.navy,
+                                fontSize: 13.5,
+                                fontWeight: isUnread
+                                    ? FontWeight.w800
+                                    : FontWeight.w700,
+                              ),
+                            ),
+                          ),
+
+                          if (isUnread) ...[
+                            const SizedBox(width: 7),
+                            Container(
+                              width: 7,
+                              height: 7,
+                              decoration: const BoxDecoration(
+                                color: AppColors.mint,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
 

@@ -243,13 +243,20 @@ class _HomeFeedState extends State<_HomeFeed> {
           ),
         ),
 
-        _circleButton(
-          icon: Icons.notifications_none_rounded,
-          badge: true,
-          onTap: () {
-            _open(
-              context,
-              const NotificationsScreen(),
+        ValueListenableBuilder<bool>(
+          valueListenable: NotificationState.firstNotificationUnread,
+          builder: (context, isUnread, child) {
+            return _circleButton(
+              icon: Icons.notifications_none_rounded,
+              badge: isUnread,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationsScreen(),
+                  ),
+                );
+              },
             );
           },
         ),

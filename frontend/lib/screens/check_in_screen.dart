@@ -16,11 +16,8 @@ class CheckInScreen extends StatefulWidget {
 }
 
 class _CheckInScreenState extends State<CheckInScreen> {
-  // ============================================================
-  // CHECK-IN STATE
-  // ============================================================
-
   int _selectedMood = -1;
+
   double _moodIntensity = 5;
   double _energyLevel = 5;
   double _sleepQuality = 5;
@@ -33,42 +30,43 @@ class _CheckInScreenState extends State<CheckInScreen> {
 
   bool _isSubmitting = false;
 
-  // Inline validation
+  // Tracks whether the user has actually selected a slider value.
+  bool _intensitySelected = false;
+  bool _energySelected = false;
+  bool _sleepSelected = false;
+
+  // Inline validation errors.
   String? _moodError;
+  String? _intensityError;
+  String? _emotionError;
+  String? _energyError;
+  String? _sleepError;
+  String? _factorError;
 
-  // ============================================================
-  // DATA
-  // ============================================================
-
-  final List<_MoodOption> _moods = const [
-    _MoodOption(
-      emoji: '😔',
-      title: 'Low',
-      description: 'Not feeling my best',
-    ),
-    _MoodOption(
-      emoji: '😕',
-      title: 'Okay',
-      description: 'Getting through it',
-    ),
-    _MoodOption(
-      emoji: '😐',
-      title: 'Neutral',
-      description: 'Feeling balanced',
-    ),
-    _MoodOption(
-      emoji: '🙂',
-      title: 'Good',
-      description: 'Feeling positive',
-    ),
-    _MoodOption(
-      emoji: '😊',
-      title: 'Great',
-      description: 'Feeling wonderful',
-    ),
+  final List<Map<String, String>> _moods = const [
+    {
+      'label': 'Low',
+      'emoji': '😔',
+    },
+    {
+      'label': 'Okay',
+      'emoji': '😕',
+    },
+    {
+      'label': 'Neutral',
+      'emoji': '😐',
+    },
+    {
+      'label': 'Good',
+      'emoji': '🙂',
+    },
+    {
+      'label': 'Great',
+      'emoji': '😊',
+    },
   ];
 
-  final List<String> _emotions = [
+  final List<String> _emotions = const [
     'Calm',
     'Happy',
     'Anxious',
@@ -81,7 +79,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
     'Hopeful',
   ];
 
-  final List<String> _factors = [
+  final List<String> _factors = const [
     'Studies',
     'Work',
     'Family',
@@ -94,59 +92,85 @@ class _CheckInScreenState extends State<CheckInScreen> {
     'Nothing specific',
   ];
 
-  // ============================================================
-  // DISPOSE
-  // ============================================================
-
   @override
   void dispose() {
     _reflectionController.dispose();
     super.dispose();
   }
 
-  // ============================================================
-  // SUBMIT
-  // ============================================================
+  double _calculateProgress() {
+    int completed = 0;
 
-  Future<void> _submitCheckIn() async {
+    if (_selectedMood != -1) completed++;
+    if (_intensitySelected) completed++;
+    if (_selectedEmotions.isNotEmpty) completed++;
+    if (_energySelected) completed++;
+    if (_sleepSelected) completed++;
+    if (_selectedFactors.isNotEmpty) completed++;
+
+    return completed / 6;
+  }
+
+  void _submitCheckIn() {
     setState(() {
       _moodError = null;
+      _intensityError = null;
+      _emotionError = null;
+      _energyError = null;
+      _sleepError = null;
+      _factorError = null;
+
+      if (_selectedMood == -1) {
+        _moodError = 'Please select your overall mood.';
+      }
+
+      if (!_intensitySelected) {
+        _intensityError = 'Please select your mood intensity.';
+      }
+
+      if (_selectedEmotions.isEmpty) {
+        _emotionError = 'Please select at least one emotion.';
+      }
+
+      if (!_energySelected) {
+        _energyError = 'Please select your energy level.';
+      }
+
+      if (!_sleepSelected) {
+        _sleepError = 'Please select your sleep quality.';
+      }
+
+      if (_selectedFactors.isEmpty) {
+        _factorError = 'Please select at least one factor.';
+      }
     });
 
-    // ------------------------------------------------------------
-    // INLINE VALIDATION
-    // ------------------------------------------------------------
-
-    if (_selectedMood == -1) {
-      setState(() {
-        _moodError = 'Please select how you are feeling today.';
-      });
-
+    // Do not continue if any required field is missing.
+    if (_moodError != null ||
+        _intensityError != null ||
+        _emotionError != null ||
+        _energyError != null ||
+        _sleepError != null ||
+        _factorError != null) {
       return;
     }
+
+    // Reflection is optional, so it is intentionally not validated.
 
     setState(() {
       _isSubmitting = true;
     });
 
-    // Temporary delay.
-    // Later this will send the check-in to the backend.
-    await Future.delayed(
-      const Duration(seconds: 1),
-    );
+    Future.delayed(const Duration(milliseconds: 700), () {
+      if (!mounted) return;
 
-    if (!mounted) return;
+      setState(() {
+        _isSubmitting = false;
+      });
 
-    setState(() {
-      _isSubmitting = false;
+      _showCompletionDialog();
     });
-
-    _showCompletionDialog();
   }
-
-  // ============================================================
-  // COMPLETION DIALOG
-  // ============================================================
 
   void _showCompletionDialog() {
     showDialog(
@@ -154,177 +178,81 @@ class _CheckInScreenState extends State<CheckInScreen> {
       barrierDismissible: false,
       builder: (dialogContext) {
         return Dialog(
-          backgroundColor: AppColors.background,
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 22,
-            vertical: 24,
-          ),
+          backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(26),
           ),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 520,
-            ),
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  22,
-                  24,
-                  22,
-                  20,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: AppColors.lightMint,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check_rounded,
+                    color: AppColors.mint,
+                    size: 34,
+                  ),
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // ------------------------------------------------
-                    // SUCCESS ICON
-                    // ------------------------------------------------
+                const SizedBox(height: 18),
+                const Text(
+                  'Check-in Complete',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.navy,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'Thank you for taking a moment to check in with yourself today.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.black54,
+                    fontSize: 14,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 22),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(dialogContext).pop();
 
-                    Container(
-                      width: 68,
-                      height: 68,
-                      decoration: BoxDecoration(
-                        color: AppColors.lightMint,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppColors.borderMint,
-                          width: 1.5,
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(
+                          builder: (_) => const HomeScreen(),
                         ),
-                      ),
-                      child: const Icon(
-                        Icons.check_rounded,
-                        size: 38,
-                        color: AppColors.mint,
+                            (route) => false,
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.mint,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
                       ),
                     ),
-
-                    const SizedBox(height: 15),
-
-                    // ------------------------------------------------
-                    // TITLE
-                    // ------------------------------------------------
-
-                    const Text(
-                      'Check-in Complete!',
-                      textAlign: TextAlign.center,
+                    child: const Text(
+                      'Done',
                       style: TextStyle(
-                        color: AppColors.navy,
-                        fontSize: 22,
+                        fontSize: 15,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-
-                    const SizedBox(height: 7),
-
-                    Text(
-                      'Your check-in has been recorded.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppColors.navy.withValues(alpha: 0.68),
-                        fontSize: 13,
-                        height: 1.4,
-                      ),
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    // ------------------------------------------------
-                    // MESSAGE CARD
-                    // ------------------------------------------------
-
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(13),
-                      decoration: BoxDecoration(
-                        color: AppColors.lightMint,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: AppColors.borderMint,
-                        ),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 34,
-                            height: 34,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.8),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.favorite_outline_rounded,
-                              color: AppColors.mint,
-                              size: 19,
-                            ),
-                          ),
-
-                          const SizedBox(width: 10),
-
-                          Expanded(
-                            child: Text(
-                              'Taking a moment to notice how you feel '
-                                  'is a meaningful step. Keep being kind '
-                                  'to yourself.',
-                              style: TextStyle(
-                                color: AppColors.navy.withValues(
-                                  alpha: 0.72,
-                                ),
-                                fontSize: 12,
-                                height: 1.4,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 18),
-
-                    // ------------------------------------------------
-                    // DONE BUTTON
-                    // ------------------------------------------------
-
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: FilledButton(
-                        onPressed: () {
-                          Navigator.of(dialogContext).pop();
-
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (!mounted) return;
-
-                            Navigator.of(context).pushAndRemoveUntil(
-                              MaterialPageRoute(
-                                builder: (_) => const HomeScreen(),
-                              ),
-                                  (route) => false,
-                            );
-                          });
-                        },
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.mint,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                        ),
-                        child: const Text(
-                          'Done',
-                          style: TextStyle(
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         );
@@ -332,218 +260,115 @@ class _CheckInScreenState extends State<CheckInScreen> {
     );
   }
 
-  // ============================================================
-  // BUILD
-  // ============================================================
+  Widget _buildInlineError(String? error) {
+    if (error == null) {
+      return const SizedBox.shrink();
+    }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  22,
-                  18,
-                  22,
-                  35,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildTopBar(),
-
-                    const SizedBox(height: 28),
-
-                    _buildIntro(),
-
-                    const SizedBox(height: 22),
-
-                    _buildProgress(),
-
-                    const SizedBox(height: 28),
-
-                    _buildMoodSection(),
-
-                    const SizedBox(height: 25),
-
-                    _buildIntensitySection(),
-
-                    const SizedBox(height: 25),
-
-                    _buildEmotionSection(),
-
-                    const SizedBox(height: 25),
-
-                    _buildEnergySection(),
-
-                    const SizedBox(height: 25),
-
-                    _buildSleepSection(),
-
-                    const SizedBox(height: 25),
-
-                    _buildFactorsSection(),
-
-                    const SizedBox(height: 25),
-
-                    _buildReflectionSection(),
-
-                    const SizedBox(height: 25),
-
-                    _buildInsightCard(),
-
-                    const SizedBox(height: 28),
-
-                    _buildSubmitButton(),
-
-                    const SizedBox(height: 15),
-
-                    _buildPrivacyNote(),
-                  ],
-                ),
+    return Padding(
+      padding: const EdgeInsets.only(
+        top: 8,
+        left: 4,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.error_outline_rounded,
+            color: Colors.red,
+            size: 16,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              error,
+              style: const TextStyle(
+                color: Colors.red,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  // ============================================================
-  // PROFESSIONAL TOP BAR
-  // ============================================================
-
   Widget _buildTopBar() {
     return Row(
       children: [
-        // --------------------------------------------------------
-        // BACK BUTTON
-        // --------------------------------------------------------
-
-        IconButton(
-          onPressed: widget.onBackToHome,
-          style: IconButton.styleFrom(
-            backgroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-              side: const BorderSide(
-                color: AppColors.borderMint,
+        Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          child: InkWell(
+            onTap: widget.onBackToHome,
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: AppColors.borderMint,
+                ),
+              ),
+              child: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: AppColors.navy,
+                size: 18,
               ),
             ),
           ),
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
+        ),
+        const Spacer(),
+        const Text(
+          'Daily Check-in',
+          style: TextStyle(
             color: AppColors.navy,
-            size: 18,
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
           ),
         ),
-
-        const SizedBox(width: 14),
-
-        // --------------------------------------------------------
-        // TITLE
-        // --------------------------------------------------------
-
-        const Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Daily Check-in',
-                style: TextStyle(
-                  color: AppColors.navy,
-                  fontSize: 19,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              SizedBox(height: 3),
-              Text(
-                'Take a moment for yourself',
-                style: TextStyle(
-                  color: AppColors.textDark,
-                  fontSize: 11,
-                  height: 1.2,
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // --------------------------------------------------------
-        // MINDMATE ICON
-        // --------------------------------------------------------
-
-        Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: AppColors.lightMint,
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: AppColors.borderMint,
-            ),
-          ),
-          child: const Icon(
-            Icons.favorite_outline_rounded,
-            color: AppColors.mint,
-            size: 20,
-          ),
-        ),
+        const Spacer(),
+        const SizedBox(width: 42),
       ],
     );
   }
 
-  // ============================================================
-  // INTRO
-  // ============================================================
-
   Widget _buildIntro() {
-    return Column(
+    return const Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'How are you\nfeeling today?',
           style: TextStyle(
             color: AppColors.navy,
-            fontSize: 31,
-            height: 1.08,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.8,
+            fontSize: 30,
+            height: 1.15,
+            fontWeight: FontWeight.w700,
           ),
         ),
-
-        const SizedBox(height: 10),
-
+        SizedBox(height: 10),
         Text(
-          'Take a quiet moment to check in with yourself. '
-              'There are no right or wrong answers.',
+          'Take a moment to notice what is happening within you.',
           style: TextStyle(
-            color: AppColors.navy.withValues(alpha: 0.52),
-            fontSize: 12,
-            height: 1.55,
+            color: Colors.black54,
+            fontSize: 14,
+            height: 1.5,
           ),
         ),
       ],
     );
   }
 
-  // ============================================================
-  // PROGRESS
-  // ============================================================
-
   Widget _buildProgress() {
-    final completed = _calculateProgress();
+    final progress = _calculateProgress();
 
     return Container(
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.all(17),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: AppColors.borderMint,
         ),
@@ -551,107 +376,109 @@ class _CheckInScreenState extends State<CheckInScreen> {
       child: Row(
         children: [
           SizedBox(
-            width: 43,
-            height: 43,
+            width: 52,
+            height: 52,
             child: Stack(
               alignment: Alignment.center,
               children: [
                 CircularProgressIndicator(
-                  value: completed,
-                  strokeWidth: 4,
+                  value: progress,
+                  strokeWidth: 5,
                   backgroundColor: AppColors.lightMint,
-                  valueColor:
-                  const AlwaysStoppedAnimation<Color>(
+                  valueColor: const AlwaysStoppedAnimation<Color>(
                     AppColors.mint,
                   ),
                 ),
                 Text(
-                  '${(completed * 100).round()}%',
+                  '${(progress * 100).round()}%',
                   style: const TextStyle(
                     color: AppColors.navy,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(width: 12),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Your daily check-in',
-                  style: TextStyle(
-                    color: AppColors.navy,
-                    fontSize: 12,
+                    fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-
-                const SizedBox(height: 3),
-
+              ],
+            ),
+          ),
+          const SizedBox(width: 15),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Text(
-                  completed == 1
-                      ? 'Everything is complete.'
-                      : 'A few moments for yourself.',
+                  'Your daily check-in',
                   style: TextStyle(
-                    color: AppColors.navy.withValues(alpha: 0.45),
-                    fontSize: 10,
+                    color: AppColors.navy,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'A few moments for yourself can make a difference.',
+                  style: TextStyle(
+                    color: Colors.black54,
+                    fontSize: 12,
+                    height: 1.4,
                   ),
                 ),
               ],
             ),
-          ),
-
-          const Icon(
-            Icons.self_improvement_rounded,
-            color: AppColors.mint,
-            size: 25,
           ),
         ],
       ),
     );
   }
 
-  double _calculateProgress() {
-    int completed = 0;
-
-    if (_selectedMood != -1) completed++;
-    if (_selectedEmotions.isNotEmpty) completed++;
-    if (_selectedFactors.isNotEmpty) completed++;
-    if (_reflectionController.text.trim().isNotEmpty) completed++;
-
-    return completed / 4;
+  Widget _buildSectionTitle(
+      String title,
+      String subtitle,
+      ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            color: AppColors.navy,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          subtitle,
+          style: const TextStyle(
+            color: Colors.black54,
+            fontSize: 13,
+            height: 1.4,
+          ),
+        ),
+      ],
+    );
   }
 
-  // ============================================================
-  // MOOD
-  // ============================================================
-
   Widget _buildMoodSection() {
-    return _buildSectionContainer(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionHeading(
-            number: '01',
-            title: 'Your overall mood',
-            subtitle: 'Choose what feels closest right now.',
-          ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionTitle(
+          'Overall mood',
+          'Choose the option that best describes how you feel.',
+        ),
+        const SizedBox(height: 14),
+        Row(
+          children: List.generate(
+            _moods.length,
+                (index) {
+              final mood = _moods[index];
+              final selected = _selectedMood == index;
 
-          const SizedBox(height: 18),
-
-          Row(
-            children: List.generate(
-              _moods.length,
-                  (index) {
-                final selected = _selectedMood == index;
-
-                return Expanded(
+              return Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    right: index == _moods.length - 1 ? 0 : 7,
+                  ),
                   child: GestureDetector(
                     onTap: () {
                       setState(() {
@@ -661,587 +488,528 @@ class _CheckInScreenState extends State<CheckInScreen> {
                     },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 180),
-                      margin: EdgeInsets.only(
-                        right: index == _moods.length - 1 ? 0 : 7,
-                      ),
                       padding: const EdgeInsets.symmetric(
-                        vertical: 11,
+                        vertical: 12,
+                        horizontal: 3,
                       ),
                       decoration: BoxDecoration(
                         color: selected
                             ? AppColors.lightMint
-                            : AppColors.background,
-                        borderRadius: BorderRadius.circular(15),
+                            : Colors.white,
+                        borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: selected
                               ? AppColors.mint
                               : AppColors.borderMint,
-                          width: selected ? 1.5 : 1,
+                          width: selected ? 1.4 : 1,
                         ),
                       ),
                       child: Column(
                         children: [
                           Text(
-                            _moods[index].emoji,
+                            mood['emoji']!,
                             style: const TextStyle(
                               fontSize: 24,
                             ),
                           ),
-
-                          const SizedBox(height: 5),
-
+                          const SizedBox(height: 6),
                           Text(
-                            _moods[index].title,
+                            mood['label']!,
+                            textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: AppColors.navy,
-                              fontSize: 9,
+                              color: selected
+                                  ? AppColors.navy
+                                  : Colors.black54,
+                              fontSize: 10,
                               fontWeight: selected
-                                  ? FontWeight.w800
-                                  : FontWeight.w600,
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                );
-              },
-            ),
-          ),
-
-          const SizedBox(height: 13),
-
-          if (_selectedMood != -1)
-            Center(
-              child: Text(
-                _moods[_selectedMood].description,
-                style: const TextStyle(
-                  color: AppColors.mint,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-
-          // ------------------------------------------------------
-          // INLINE RED ERROR
-          // ------------------------------------------------------
-
-          if (_moodError != null) ...[
-            const SizedBox(height: 10),
-
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(
-                  Icons.error_outline_rounded,
-                  color: Colors.redAccent,
-                  size: 17,
-                ),
-
-                const SizedBox(width: 7),
-
-                Expanded(
-                  child: Text(
-                    _moodError!,
-                    style: const TextStyle(
-                      color: Colors.redAccent,
-                      fontSize: 11,
-                      height: 1.4,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  // ============================================================
-  // INTENSITY
-  // ============================================================
-
-  Widget _buildIntensitySection() {
-    return _buildSectionContainer(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionHeading(
-            number: '02',
-            title: 'Mood intensity',
-            subtitle: 'How strongly are you feeling this mood?',
-          ),
-
-          const SizedBox(height: 16),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Very low',
-                style: _smallLabelStyle(),
-              ),
-
-              Text(
-                '${_moodIntensity.round()} / 10',
-                style: const TextStyle(
-                  color: AppColors.mint,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-
-              Text(
-                'Very high',
-                style: _smallLabelStyle(),
-              ),
-            ],
-          ),
-
-          SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              activeTrackColor: AppColors.mint,
-              inactiveTrackColor: AppColors.lightMint,
-              thumbColor: AppColors.mint,
-              overlayColor:
-              AppColors.mint.withValues(alpha: 0.10),
-              trackHeight: 5,
-            ),
-            child: Slider(
-              min: 1,
-              max: 10,
-              divisions: 9,
-              value: _moodIntensity,
-              onChanged: (value) {
-                setState(() {
-                  _moodIntensity = value;
-                });
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ============================================================
-  // EMOTIONS
-  // ============================================================
-
-  Widget _buildEmotionSection() {
-    return _buildSectionContainer(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionHeading(
-            number: '03',
-            title: 'What are you feeling?',
-            subtitle: 'Select all emotions that describe you.',
-          ),
-
-          const SizedBox(height: 16),
-
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _emotions.map((emotion) {
-              final selected =
-              _selectedEmotions.contains(emotion);
-
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    if (selected) {
-                      _selectedEmotions.remove(emotion);
-                    } else {
-                      _selectedEmotions.add(emotion);
-                    }
-                  });
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 160),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 9,
-                  ),
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? AppColors.mint
-                        : AppColors.background,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: selected
-                          ? AppColors.mint
-                          : AppColors.borderMint,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (selected) ...[
-                        const Icon(
-                          Icons.check_rounded,
-                          color: Colors.white,
-                          size: 14,
-                        ),
-                        const SizedBox(width: 5),
-                      ],
-                      Text(
-                        emotion,
-                        style: TextStyle(
-                          color: selected
-                              ? Colors.white
-                              : AppColors.navy,
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
               );
-            }).toList(),
+            },
           ),
-        ],
-      ),
+        ),
+        _buildInlineError(_moodError),
+      ],
     );
   }
 
-  // ============================================================
-  // ENERGY
-  // ============================================================
+  Widget _buildSliderLabels(
+      String left,
+      String right,
+      ) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          left,
+          style: const TextStyle(
+            color: Colors.black45,
+            fontSize: 11,
+          ),
+        ),
+        Text(
+          right,
+          style: const TextStyle(
+            color: Colors.black45,
+            fontSize: 11,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIntensitySection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildSectionTitle(
+              'Mood intensity',
+              'How strongly are you feeling this mood?',
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 11,
+                vertical: 6,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.lightMint,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                _intensitySelected
+                    ? '${_moodIntensity.round()}/10'
+                    : 'Select',
+                style: const TextStyle(
+                  color: AppColors.navy,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            activeTrackColor: AppColors.mint,
+            inactiveTrackColor: AppColors.lightMint,
+            thumbColor: AppColors.mint,
+            overlayColor: AppColors.lightMint,
+            trackHeight: 5,
+            thumbShape: const RoundSliderThumbShape(
+              enabledThumbRadius: 9,
+            ),
+          ),
+          child: Slider(
+            value: _moodIntensity,
+            min: 1,
+            max: 10,
+            divisions: 9,
+            onChanged: (value) {
+              setState(() {
+                _moodIntensity = value;
+                _intensitySelected = true;
+                _intensityError = null;
+              });
+            },
+          ),
+        ),
+        _buildSliderLabels(
+          'Very low',
+          'Very high',
+        ),
+        _buildInlineError(_intensityError),
+      ],
+    );
+  }
+
+  Widget _buildEmotionSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionTitle(
+          'What are you feeling?',
+          'Select all emotions that feel relevant right now.',
+        ),
+        const SizedBox(height: 13),
+        Wrap(
+          spacing: 8,
+          runSpacing: 9,
+          children: _emotions.map((emotion) {
+            final selected = _selectedEmotions.contains(emotion);
+
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  if (selected) {
+                    _selectedEmotions.remove(emotion);
+                  } else {
+                    _selectedEmotions.add(emotion);
+                  }
+
+                  if (_selectedEmotions.isNotEmpty) {
+                    _emotionError = null;
+                  }
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 13,
+                  vertical: 9,
+                ),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? AppColors.lightMint
+                      : Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: selected
+                        ? AppColors.mint
+                        : AppColors.borderMint,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (selected) ...[
+                      const Icon(
+                        Icons.check_rounded,
+                        color: AppColors.mint,
+                        size: 15,
+                      ),
+                      const SizedBox(width: 5),
+                    ],
+                    Text(
+                      emotion,
+                      style: TextStyle(
+                        color: selected
+                            ? AppColors.navy
+                            : Colors.black54,
+                        fontSize: 12,
+                        fontWeight: selected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        _buildInlineError(_emotionError),
+      ],
+    );
+  }
 
   Widget _buildEnergySection() {
-    return _buildSectionContainer(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionHeading(
-            number: '04',
-            title: 'Energy level',
-            subtitle: 'How much energy do you have right now?',
-          ),
-
-          const SizedBox(height: 15),
-
-          Row(
-            children: [
-              _buildScaleIcon(
-                Icons.battery_0_bar_rounded,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildSectionTitle(
+              'Energy level',
+              'How much energy do you have today?',
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 11,
+                vertical: 6,
               ),
-
-              Expanded(
-                child: SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    activeTrackColor: AppColors.mint,
-                    inactiveTrackColor: AppColors.lightMint,
-                    thumbColor: AppColors.mint,
-                    trackHeight: 5,
-                  ),
-                  child: Slider(
-                    min: 1,
-                    max: 10,
-                    divisions: 9,
-                    value: _energyLevel,
-                    onChanged: (value) {
-                      setState(() {
-                        _energyLevel = value;
-                      });
-                    },
-                  ),
+              decoration: BoxDecoration(
+                color: AppColors.lightMint,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                _energySelected
+                    ? '${_energyLevel.round()}/10'
+                    : 'Select',
+                style: const TextStyle(
+                  color: AppColors.navy,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-
-              _buildScaleIcon(
-                Icons.battery_full_rounded,
-              ),
-            ],
-          ),
-
-          Center(
-            child: Text(
-              _energyText,
-              style: const TextStyle(
-                color: AppColors.mint,
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            activeTrackColor: AppColors.mint,
+            inactiveTrackColor: AppColors.lightMint,
+            thumbColor: AppColors.mint,
+            overlayColor: AppColors.lightMint,
+            trackHeight: 5,
+            thumbShape: const RoundSliderThumbShape(
+              enabledThumbRadius: 9,
             ),
           ),
-        ],
-      ),
+          child: Slider(
+            value: _energyLevel,
+            min: 1,
+            max: 10,
+            divisions: 9,
+            onChanged: (value) {
+              setState(() {
+                _energyLevel = value;
+                _energySelected = true;
+                _energyError = null;
+              });
+            },
+          ),
+        ),
+        _buildSliderLabels(
+          'Exhausted',
+          'Full of energy',
+        ),
+        _buildInlineError(_energyError),
+      ],
     );
   }
-
-  String get _energyText {
-    if (_energyLevel <= 3) return 'Running on low energy';
-    if (_energyLevel <= 6) return 'Moderate energy';
-    if (_energyLevel <= 8) return 'Feeling energized';
-    return 'Full of energy';
-  }
-
-  Widget _buildScaleIcon(IconData icon) {
-    return Icon(
-      icon,
-      color: AppColors.mint,
-      size: 22,
-    );
-  }
-
-  // ============================================================
-  // SLEEP
-  // ============================================================
 
   Widget _buildSleepSection() {
-    return _buildSectionContainer(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionHeading(
-            number: '05',
-            title: 'Sleep quality',
-            subtitle: 'How restful was your sleep last night?',
-          ),
-
-          const SizedBox(height: 15),
-
-          Row(
-            children: [
-              const Icon(
-                Icons.bedtime_outlined,
-                color: AppColors.mint,
-                size: 21,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildSectionTitle(
+              'Sleep quality',
+              'How would you describe your sleep?',
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 11,
+                vertical: 6,
               ),
-
-              Expanded(
-                child: SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    activeTrackColor: AppColors.mint,
-                    inactiveTrackColor: AppColors.lightMint,
-                    thumbColor: AppColors.mint,
-                    trackHeight: 5,
-                  ),
-                  child: Slider(
-                    min: 1,
-                    max: 10,
-                    divisions: 9,
-                    value: _sleepQuality,
-                    onChanged: (value) {
-                      setState(() {
-                        _sleepQuality = value;
-                      });
-                    },
-                  ),
+              decoration: BoxDecoration(
+                color: AppColors.lightMint,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                _sleepSelected
+                    ? '${_sleepQuality.round()}/10'
+                    : 'Select',
+                style: const TextStyle(
+                  color: AppColors.navy,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-
-              const Icon(
-                Icons.hotel_rounded,
-                color: AppColors.mint,
-                size: 21,
-              ),
-            ],
-          ),
-
-          Center(
-            child: Text(
-              _sleepText,
-              style: const TextStyle(
-                color: AppColors.mint,
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            activeTrackColor: AppColors.mint,
+            inactiveTrackColor: AppColors.lightMint,
+            thumbColor: AppColors.mint,
+            overlayColor: AppColors.lightMint,
+            trackHeight: 5,
+            thumbShape: const RoundSliderThumbShape(
+              enabledThumbRadius: 9,
             ),
           ),
-        ],
-      ),
+          child: Slider(
+            value: _sleepQuality,
+            min: 1,
+            max: 10,
+            divisions: 9,
+            onChanged: (value) {
+              setState(() {
+                _sleepQuality = value;
+                _sleepSelected = true;
+                _sleepError = null;
+              });
+            },
+          ),
+        ),
+        _buildSliderLabels(
+          'Very poor',
+          'Excellent',
+        ),
+        _buildInlineError(_sleepError),
+      ],
     );
   }
 
-  String get _sleepText {
-    if (_sleepQuality <= 3) return 'Poor sleep';
-    if (_sleepQuality <= 6) return 'Could be better';
-    if (_sleepQuality <= 8) return 'Good sleep';
-    return 'Very restful';
-  }
-
-  // ============================================================
-  // FACTORS
-  // ============================================================
-
   Widget _buildFactorsSection() {
-    return _buildSectionContainer(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionHeading(
-            number: '06',
-            title: 'What influenced your mood?',
-            subtitle:
-            'Choose anything that may have played a role.',
-          ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionTitle(
+          'What influenced your mood?',
+          'Choose anything that may have affected how you feel.',
+        ),
+        const SizedBox(height: 13),
+        Wrap(
+          spacing: 8,
+          runSpacing: 9,
+          children: _factors.map((factor) {
+            final selected = _selectedFactors.contains(factor);
 
-          const SizedBox(height: 16),
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  if (factor == 'Nothing specific') {
+                    if (selected) {
+                      _selectedFactors.remove(factor);
+                    } else {
+                      _selectedFactors
+                        ..clear()
+                        ..add(factor);
+                    }
+                  } else {
+                    _selectedFactors.remove('Nothing specific');
 
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _factors.map((factor) {
-              final selected =
-              _selectedFactors.contains(factor);
-
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
                     if (selected) {
                       _selectedFactors.remove(factor);
                     } else {
                       _selectedFactors.add(factor);
                     }
-                  });
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 160),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 9,
-                  ),
-                  decoration: BoxDecoration(
+                  }
+
+                  if (_selectedFactors.isNotEmpty) {
+                    _factorError = null;
+                  }
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 13,
+                  vertical: 9,
+                ),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? AppColors.lightMint
+                      : Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
                     color: selected
-                        ? AppColors.lightMint
-                        : Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: selected
-                          ? AppColors.mint
-                          : AppColors.borderMint,
-                    ),
-                  ),
-                  child: Text(
-                    factor,
-                    style: TextStyle(
-                      color: AppColors.navy,
-                      fontSize: 10.5,
-                      fontWeight: selected
-                          ? FontWeight.w700
-                          : FontWeight.w500,
-                    ),
+                        ? AppColors.mint
+                        : AppColors.borderMint,
                   ),
                 ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (selected) ...[
+                      const Icon(
+                        Icons.check_rounded,
+                        color: AppColors.mint,
+                        size: 15,
+                      ),
+                      const SizedBox(width: 5),
+                    ],
+                    Text(
+                      factor,
+                      style: TextStyle(
+                        color: selected
+                            ? AppColors.navy
+                            : Colors.black54,
+                        fontSize: 12,
+                        fontWeight: selected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        _buildInlineError(_factorError),
+      ],
     );
   }
 
-  // ============================================================
-  // REFLECTION
-  // ============================================================
-
   Widget _buildReflectionSection() {
-    return _buildSectionContainer(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionHeading(
-            number: '07',
-            title: 'A little reflection',
-            subtitle:
-            'Optional — write whatever is on your mind.',
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionTitle(
+          'Reflection',
+          'Optional — write whatever is on your mind.',
+        ),
+        const SizedBox(height: 13),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: AppColors.borderMint,
+            ),
           ),
-
-          const SizedBox(height: 16),
-
-          TextField(
+          child: TextField(
             controller: _reflectionController,
             maxLines: 5,
             maxLength: 500,
-            onChanged: (_) {
-              setState(() {});
-            },
-            decoration: InputDecoration(
-              hintText:
-              'What would you like to remember about today?',
+            textInputAction: TextInputAction.newline,
+            style: const TextStyle(
+              color: AppColors.navy,
+              fontSize: 14,
+            ),
+            decoration: const InputDecoration(
+              hintText: 'Write a few thoughts...',
               hintStyle: TextStyle(
-                color: AppColors.navy.withValues(alpha: 0.32),
-                fontSize: 11,
+                color: Colors.black38,
+                fontSize: 13,
               ),
-              filled: true,
-              fillColor: AppColors.background,
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.all(16),
               counterStyle: TextStyle(
-                color: AppColors.navy.withValues(alpha: 0.30),
-                fontSize: 9,
-              ),
-              contentPadding: const EdgeInsets.all(15),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(
-                  color: AppColors.borderMint,
-                ),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(
-                  color: AppColors.borderMint,
-                ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(
-                  color: AppColors.mint,
-                  width: 1.5,
-                ),
+                color: Colors.black38,
+                fontSize: 11,
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  // ============================================================
-  // INSIGHT
-  // ============================================================
-
   Widget _buildInsightCard() {
-    String title;
-    String message;
-    IconData icon;
+    String title = 'A moment for yourself';
+    String description =
+        'Checking in with yourself is a small step toward understanding your wellbeing.';
 
     if (_selectedMood == 0) {
       title = 'Be gentle with yourself';
-      message =
-      'It sounds like today may be difficult. Taking things one small step at a time is enough.';
-      icon = Icons.spa_rounded;
-    } else if (_energyLevel <= 3) {
+      description =
+      'It sounds like today may feel a little difficult. Give yourself permission to slow down and take things one moment at a time.';
+    } else if (_selectedMood == 4) {
+      title = 'Hold on to this feeling';
+      description =
+      'It is wonderful to notice a good moment. Take a second to appreciate what is making today feel positive.';
+    } else if (_energySelected && _energyLevel <= 3) {
       title = 'Your energy matters';
-      message =
-      'Low energy can be a signal to slow down. Consider a short break, some water, or a few deep breaths.';
-      icon = Icons.battery_2_bar_rounded;
-    } else if (_sleepQuality <= 3) {
-      title = 'Rest is part of wellbeing';
-      message =
-      'Your sleep may be affecting how you feel today. Try to give yourself some extra space to rest.';
-      icon = Icons.nightlight_round;
-    } else if (_selectedMood >= 3) {
-      title = 'Keep nurturing this feeling';
-      message =
-      'It is great to notice positive moments. Consider remembering what helped you feel this way today.';
-      icon = Icons.auto_awesome_rounded;
-    } else {
-      title = 'A moment for yourself';
-      message =
-      'Checking in is already a positive step. Small moments of self-awareness can make a difference.';
-      icon = Icons.self_improvement_rounded;
+      description =
+      'Low energy can be a sign that your mind and body need a little extra care today.';
+    } else if (_sleepSelected && _sleepQuality <= 3) {
+      title = 'Rest can make a difference';
+      description =
+      'If sleep has been difficult, consider giving yourself some extra space for rest and recovery today.';
     }
 
     return Container(
-      width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -1261,53 +1029,38 @@ class _CheckInScreenState extends State<CheckInScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 43,
-            height: 43,
+            width: 42,
+            height: 42,
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(13),
             ),
-            child: Icon(
-              icon,
-              color: AppColors.mint,
-              size: 22,
+            child: const Center(
+              child: Text(
+                '🌿',
+                style: TextStyle(fontSize: 21),
+              ),
             ),
           ),
-
-          const SizedBox(width: 12),
-
+          const SizedBox(width: 13),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'MINDMATE INSIGHT',
-                  style: TextStyle(
-                    color: AppColors.mint,
-                    fontSize: 8,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1,
-                  ),
-                ),
-
-                const SizedBox(height: 5),
-
                 Text(
                   title,
                   style: const TextStyle(
                     color: AppColors.navy,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-
-                const SizedBox(height: 4),
-
+                const SizedBox(height: 5),
                 Text(
-                  message,
-                  style: TextStyle(
-                    color: AppColors.navy.withValues(alpha: 0.55),
-                    fontSize: 10.5,
+                  description,
+                  style: const TextStyle(
+                    color: Colors.black54,
+                    fontSize: 12,
                     height: 1.45,
                   ),
                 ),
@@ -1319,24 +1072,20 @@ class _CheckInScreenState extends State<CheckInScreen> {
     );
   }
 
-  // ============================================================
-  // SUBMIT
-  // ============================================================
-
   Widget _buildSubmitButton() {
     return SizedBox(
       width: double.infinity,
       height: 55,
-      child: FilledButton(
+      child: ElevatedButton(
         onPressed: _isSubmitting ? null : _submitCheckIn,
-        style: FilledButton.styleFrom(
+        style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.mint,
-          disabledBackgroundColor:
-          AppColors.mint.withValues(alpha: 0.55),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+          disabledBackgroundColor: AppColors.mint.withOpacity(0.6),
+          foregroundColor: Colors.white,
           elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(17),
+          ),
         ),
         child: _isSubmitting
             ? const SizedBox(
@@ -1344,22 +1093,112 @@ class _CheckInScreenState extends State<CheckInScreen> {
           height: 22,
           child: CircularProgressIndicator(
             strokeWidth: 2.5,
-            color: Colors.white,
+            valueColor: AlwaysStoppedAnimation<Color>(
+              Colors.white,
+            ),
           ),
         )
-            : const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.check_circle_outline_rounded,
-              size: 20,
-            ),
-            SizedBox(width: 8),
-            Text(
-              'Complete Check-in',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
+            : const Text(
+          'Complete Check-in',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPrivacyNote() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(
+          Icons.lock_outline_rounded,
+          color: Colors.black38,
+          size: 14,
+        ),
+        const SizedBox(width: 6),
+        Text(
+          'Your check-in is private and personal.',
+          style: TextStyle(
+            color: Colors.black.withOpacity(0.42),
+            fontSize: 11,
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(
+                22,
+                18,
+                22,
+                35,
+              ),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate(
+                  [
+                    _buildTopBar(),
+
+                    const SizedBox(height: 28),
+
+                    _buildIntro(),
+
+                    const SizedBox(height: 24),
+
+                    _buildProgress(),
+
+                    const SizedBox(height: 30),
+
+                    _buildMoodSection(),
+
+                    const SizedBox(height: 30),
+
+                    _buildIntensitySection(),
+
+                    const SizedBox(height: 30),
+
+                    _buildEmotionSection(),
+
+                    const SizedBox(height: 30),
+
+                    _buildEnergySection(),
+
+                    const SizedBox(height: 30),
+
+                    _buildSleepSection(),
+
+                    const SizedBox(height: 30),
+
+                    _buildFactorsSection(),
+
+                    const SizedBox(height: 30),
+
+                    _buildReflectionSection(),
+
+                    const SizedBox(height: 24),
+
+                    _buildInsightCard(),
+
+                    const SizedBox(height: 26),
+
+                    _buildSubmitButton(),
+
+                    const SizedBox(height: 16),
+
+                    _buildPrivacyNote(),
+                  ],
+                ),
               ),
             ),
           ],
@@ -1367,153 +1206,4 @@ class _CheckInScreenState extends State<CheckInScreen> {
       ),
     );
   }
-
-  // ============================================================
-  // PRIVACY
-  // ============================================================
-
-  Widget _buildPrivacyNote() {
-    return Center(
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.lock_outline_rounded,
-            color: AppColors.navy.withValues(alpha: 0.32),
-            size: 13,
-          ),
-
-          const SizedBox(width: 5),
-
-          Text(
-            'Your check-in is private and secure',
-            style: TextStyle(
-              color: AppColors.navy.withValues(alpha: 0.35),
-              fontSize: 9.5,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ============================================================
-  // SECTION CONTAINER
-  // ============================================================
-
-  Widget _buildSectionContainer({
-    required Widget child,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: AppColors.borderMint,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.navy.withValues(alpha: 0.025),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: child,
-    );
-  }
-
-  // ============================================================
-  // SECTION HEADING
-  // ============================================================
-
-  Widget _buildSectionHeading({
-    required String number,
-    required String title,
-    required String subtitle,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 30,
-          height: 30,
-          decoration: BoxDecoration(
-            color: AppColors.lightMint,
-            borderRadius: BorderRadius.circular(9),
-          ),
-          child: Center(
-            child: Text(
-              number,
-              style: const TextStyle(
-                color: AppColors.mint,
-                fontSize: 9,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-        ),
-
-        const SizedBox(width: 10),
-
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: AppColors.navy,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-
-              const SizedBox(height: 3),
-
-              Text(
-                subtitle,
-                style: TextStyle(
-                  color: AppColors.navy.withValues(alpha: 0.42),
-                  fontSize: 10,
-                  height: 1.3,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ============================================================
-  // SMALL LABEL
-  // ============================================================
-
-  TextStyle _smallLabelStyle() {
-    return TextStyle(
-      color: AppColors.navy.withValues(alpha: 0.42),
-      fontSize: 9,
-      fontWeight: FontWeight.w600,
-    );
-  }
-}
-
-// ================================================================
-// MOOD MODEL
-// ================================================================
-
-class _MoodOption {
-  final String emoji;
-  final String title;
-  final String description;
-
-  const _MoodOption({
-    required this.emoji,
-    required this.title,
-    required this.description,
-  });
 }

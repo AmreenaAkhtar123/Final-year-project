@@ -382,7 +382,7 @@ class _MoodScreenState extends State<MoodScreen> {
 
               _buildSectionTitle(
                 'Add a note',
-                'Optional — write anything you would like to remember.',
+                'Write anything you would like to remember.',
               ),
 
               const SizedBox(height: 15),
