@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 import '../core/constants/app_colors.dart';
 
@@ -472,14 +473,41 @@ class _AiChatScreenState extends State<AiChatScreen> {
                     color: AppColors.borderMint,
                   ),
                 ),
-                child: Text(
+                child: message.isUser
+                    ? Text(
                   message.text,
-                  style: TextStyle(
-                    color: message.isUser
-                        ? Colors.white
-                        : AppColors.navy,
+                  style: const TextStyle(
+                    color: Colors.white,
                     fontSize: 12.5,
                     height: 1.45,
+                  ),
+                )
+                    : MarkdownBody(
+                  data: message.text,
+                  selectable: true,
+                  styleSheet: MarkdownStyleSheet(
+                    p: const TextStyle(
+                      color: AppColors.navy,
+                      fontSize: 12.5,
+                      height: 1.45,
+                    ),
+                    strong: const TextStyle(
+                      color: AppColors.navy,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      height: 1.45,
+                    ),
+                    em: const TextStyle(
+                      color: AppColors.navy,
+                      fontSize: 12.5,
+                      fontStyle: FontStyle.italic,
+                      height: 1.45,
+                    ),
+                    listBullet: const TextStyle(
+                      color: AppColors.navy,
+                      fontSize: 12.5,
+                      height: 1.45,
+                    ),
                   ),
                 ),
               ),
