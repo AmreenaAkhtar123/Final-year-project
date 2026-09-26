@@ -365,6 +365,80 @@ class _AiChatScreenState extends State<AiChatScreen> {
     );
   }
 
+  void _startNewChat() {
+    if (_isLoading) {
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          title: const Text(
+            'Start a new chat?',
+            style: TextStyle(
+              color: AppColors.navy,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          content: const Text(
+            'Your current conversation will be cleared and '
+                'MindMate will start a fresh conversation.',
+            style: TextStyle(
+              color: AppColors.navy,
+              fontSize: 13,
+              height: 1.5,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+              },
+              child: const Text(
+                'Cancel',
+                style: TextStyle(
+                  color: AppColors.navy,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+
+                setState(() {
+                  _messages.clear();
+
+                  _messages.add(
+                    const _ChatMessage(
+                      text:
+                      'Hi! I’m MindMate. I’m here to listen and support you. How are you feeling today?',
+                      isUser: false,
+                    ),
+                  );
+
+                  _previousInteractionId = null;
+                  _messageController.clear();
+                });
+
+                _scrollController.jumpTo(0);
+              },
+              child: const Text(
+                'New Chat',
+                style: TextStyle(
+                  color: AppColors.mint,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -439,6 +513,14 @@ class _AiChatScreenState extends State<AiChatScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            onPressed: _isLoading ? null : _startNewChat,
+            icon: const Icon(
+              Icons.refresh_rounded,
+              color: AppColors.navy,
+              size: 22,
+            ),
+          ),
           IconButton(
             onPressed: _showInfo,
             icon: const Icon(
