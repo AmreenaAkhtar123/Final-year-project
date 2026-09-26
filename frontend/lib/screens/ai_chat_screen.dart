@@ -19,6 +19,8 @@ class _AiChatScreenState extends State<AiChatScreen> {
 
   bool _isLoading = false;
 
+  String? _previousInteractionId;
+
   static const String _apiUrl =
       'http://192.168.100.14:5000/api/chat';
 
@@ -70,6 +72,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
 
       request.body = jsonEncode({
         'message': text,
+        'previousInteractionId': _previousInteractionId,
       });
 
       final response = await request.send();
@@ -109,9 +112,13 @@ class _AiChatScreenState extends State<AiChatScreen> {
         while (buffer.contains('\n')) {
           final newlineIndex = buffer.indexOf('\n');
 
-          final line = buffer.substring(0, newlineIndex).trim();
+          final line = buffer
+              .substring(0, newlineIndex)
+              .trim();
 
-          buffer = buffer.substring(newlineIndex + 1);
+          buffer = buffer.substring(
+            newlineIndex + 1,
+          );
 
           if (line.isEmpty) {
             continue;
@@ -122,7 +129,28 @@ class _AiChatScreenState extends State<AiChatScreen> {
 
             final type = data['type'];
 
-            if (type == 'text') {
+            // -----------------------------------------
+            // Conversation history ID
+            // -----------------------------------------
+            if (type == 'interaction_id') {
+              final interactionId =
+              data['interactionId'];
+
+              if (interactionId is String &&
+                  interactionId.isNotEmpty) {
+                _previousInteractionId =
+                    interactionId;
+
+                debugPrint(
+                  'Saved interaction ID: $_previousInteractionId',
+                );
+              }
+            }
+
+            // -----------------------------------------
+            // Streaming AI text
+            // -----------------------------------------
+            else if (type == 'text') {
               final streamedText = data['text'];
 
               if (streamedText is! String ||
@@ -141,26 +169,39 @@ class _AiChatScreenState extends State<AiChatScreen> {
                     ),
                   );
 
-                  aiMessageIndex = _messages.length - 1;
+                  aiMessageIndex =
+                      _messages.length - 1;
+
                   _isLoading = false;
                 });
               } else {
                 setState(() {
-                  _messages[aiMessageIndex!] = _ChatMessage(
-                    text: currentReply,
-                    isUser: false,
-                  );
+                  _messages[aiMessageIndex!] =
+                      _ChatMessage(
+                        text: currentReply,
+                        isUser: false,
+                      );
                 });
               }
 
               _scrollToBottom();
-            } else if (type == 'done') {
+            }
+
+            // -----------------------------------------
+            // Gemini finished
+            // -----------------------------------------
+            else if (type == 'done') {
               if (mounted) {
                 setState(() {
                   _isLoading = false;
                 });
               }
-            } else if (type == 'error') {
+            }
+
+            // -----------------------------------------
+            // Backend / Gemini error
+            // -----------------------------------------
+            else if (type == 'error') {
               if (mounted) {
                 setState(() {
                   _messages.add(
@@ -179,6 +220,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
             debugPrint(
               'JSON parsing error: $error',
             );
+
             debugPrint(
               'Problematic line: $line',
             );
@@ -186,14 +228,38 @@ class _AiChatScreenState extends State<AiChatScreen> {
         }
       }
 
-      // Handle anything remaining in the buffer.
+      // ---------------------------------------------
+      // Handle anything remaining in the buffer
+      // ---------------------------------------------
       final remainingLine = buffer.trim();
 
       if (remainingLine.isNotEmpty) {
         try {
-          final data = jsonDecode(remainingLine);
+          final data = jsonDecode(
+            remainingLine,
+          );
 
-          if (data['type'] == 'text') {
+          final type = data['type'];
+
+          // Save interaction ID if it arrived
+          // in the final chunk.
+          if (type == 'interaction_id') {
+            final interactionId =
+            data['interactionId'];
+
+            if (interactionId is String &&
+                interactionId.isNotEmpty) {
+              _previousInteractionId =
+                  interactionId;
+
+              debugPrint(
+                'Saved final interaction ID: '
+                    '$_previousInteractionId',
+              );
+            }
+          }
+
+          if (type == 'text') {
             final streamedText = data['text'];
 
             if (streamedText is String &&
@@ -209,14 +275,16 @@ class _AiChatScreenState extends State<AiChatScreen> {
                     ),
                   );
 
-                  aiMessageIndex = _messages.length - 1;
+                  aiMessageIndex =
+                      _messages.length - 1;
                 });
               } else {
                 setState(() {
-                  _messages[aiMessageIndex!] = _ChatMessage(
-                    text: currentReply,
-                    isUser: false,
-                  );
+                  _messages[aiMessageIndex!] =
+                      _ChatMessage(
+                        text: currentReply,
+                        isUser: false,
+                      );
                 });
               }
             }
@@ -228,8 +296,9 @@ class _AiChatScreenState extends State<AiChatScreen> {
         }
       }
 
-      // IMPORTANT:
-      // Only show an error if Gemini actually sent no text.
+      // ---------------------------------------------
+      // Only show an error if Gemini sent no text
+      // ---------------------------------------------
       if (mounted) {
         if (currentReply.trim().isEmpty) {
           setState(() {
