@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 import '../core/constants/app_colors.dart';
 
@@ -11,6 +14,12 @@ class AiChatScreen extends StatefulWidget {
 
 class _AiChatScreenState extends State<AiChatScreen> {
   final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+
+  bool _isLoading = false;
+
+  static const String _apiUrl =
+      'http://192.168.100.14:5000/api/chat';
 
   final List<_ChatMessage> _messages = [
     const _ChatMessage(
@@ -23,13 +32,18 @@ class _AiChatScreenState extends State<AiChatScreen> {
   @override
   void dispose() {
     _messageController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
-  void _sendMessage() {
+
+
+  Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
 
-    if (text.isEmpty) return;
+    if (text.isEmpty || _isLoading) {
+      return;
+    }
 
     setState(() {
       _messages.add(
@@ -40,27 +54,240 @@ class _AiChatScreenState extends State<AiChatScreen> {
       );
 
       _messageController.clear();
+      _isLoading = true;
     });
 
-    // Temporary response.
-    // Later this will be replaced with the backend AI API.
-    Future.delayed(const Duration(milliseconds: 700), () {
-      if (!mounted) return;
+    _scrollToBottom();
+
+    try {
+      final request = http.Request(
+        'POST',
+        Uri.parse(_apiUrl),
+      );
+
+      request.headers['Content-Type'] = 'application/json';
+
+      request.body = jsonEncode({
+        'message': text,
+      });
+
+      final response = await request.send();
+
+      if (!mounted) {
+        return;
+      }
+
+      if (response.statusCode != 200) {
+        setState(() {
+          _messages.add(
+            const _ChatMessage(
+              text:
+              'I’m having trouble connecting right now. Please try again in a moment.',
+              isUser: false,
+            ),
+          );
+
+          _isLoading = false;
+        });
+
+        return;
+      }
+
+      String buffer = '';
+      String currentReply = '';
+      int? aiMessageIndex;
+
+      await for (final chunk
+      in response.stream.transform(utf8.decoder)) {
+        if (!mounted) {
+          return;
+        }
+
+        buffer += chunk;
+
+        while (buffer.contains('\n')) {
+          final newlineIndex = buffer.indexOf('\n');
+
+          final line = buffer.substring(0, newlineIndex).trim();
+
+          buffer = buffer.substring(newlineIndex + 1);
+
+          if (line.isEmpty) {
+            continue;
+          }
+
+          try {
+            final data = jsonDecode(line);
+
+            final type = data['type'];
+
+            if (type == 'text') {
+              final streamedText = data['text'];
+
+              if (streamedText is! String ||
+                  streamedText.isEmpty) {
+                continue;
+              }
+
+              currentReply += streamedText;
+
+              if (aiMessageIndex == null) {
+                setState(() {
+                  _messages.add(
+                    _ChatMessage(
+                      text: currentReply,
+                      isUser: false,
+                    ),
+                  );
+
+                  aiMessageIndex = _messages.length - 1;
+                  _isLoading = false;
+                });
+              } else {
+                setState(() {
+                  _messages[aiMessageIndex!] = _ChatMessage(
+                    text: currentReply,
+                    isUser: false,
+                  );
+                });
+              }
+
+              _scrollToBottom();
+            } else if (type == 'done') {
+              if (mounted) {
+                setState(() {
+                  _isLoading = false;
+                });
+              }
+            } else if (type == 'error') {
+              if (mounted) {
+                setState(() {
+                  _messages.add(
+                    const _ChatMessage(
+                      text:
+                      'I’m having trouble getting a response right now. Please try again.',
+                      isUser: false,
+                    ),
+                  );
+
+                  _isLoading = false;
+                });
+              }
+            }
+          } catch (error) {
+            debugPrint(
+              'JSON parsing error: $error',
+            );
+            debugPrint(
+              'Problematic line: $line',
+            );
+          }
+        }
+      }
+
+      // Handle anything remaining in the buffer.
+      final remainingLine = buffer.trim();
+
+      if (remainingLine.isNotEmpty) {
+        try {
+          final data = jsonDecode(remainingLine);
+
+          if (data['type'] == 'text') {
+            final streamedText = data['text'];
+
+            if (streamedText is String &&
+                streamedText.isNotEmpty) {
+              currentReply += streamedText;
+
+              if (aiMessageIndex == null) {
+                setState(() {
+                  _messages.add(
+                    _ChatMessage(
+                      text: currentReply,
+                      isUser: false,
+                    ),
+                  );
+
+                  aiMessageIndex = _messages.length - 1;
+                });
+              } else {
+                setState(() {
+                  _messages[aiMessageIndex!] = _ChatMessage(
+                    text: currentReply,
+                    isUser: false,
+                  );
+                });
+              }
+            }
+          }
+        } catch (error) {
+          debugPrint(
+            'Final JSON parsing error: $error',
+          );
+        }
+      }
+
+      // IMPORTANT:
+      // Only show an error if Gemini actually sent no text.
+      if (mounted) {
+        if (currentReply.trim().isEmpty) {
+          setState(() {
+            _messages.add(
+              const _ChatMessage(
+                text:
+                'I didn’t receive a response. Please try again.',
+                isUser: false,
+              ),
+            );
+          });
+        }
+
+        setState(() {
+          _isLoading = false;
+        });
+      }
+
+      _scrollToBottom();
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
 
       setState(() {
         _messages.add(
           const _ChatMessage(
             text:
-            'Thank you for sharing that with me. I’m listening. Tell me a little more about what’s on your mind.',
+            'I couldn’t connect to MindMate right now. Please make sure the backend is running and try again.',
             isUser: false,
           ),
         );
+
+        _isLoading = false;
       });
+
+      debugPrint(
+        'AI Chat Streaming Error: $error',
+      );
+    }
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) {
+        return;
+      }
+
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
     });
   }
 
   void _useSuggestion(String text) {
     _messageController.text = text;
+
     _messageController.selection = TextSelection.fromPosition(
       TextPosition(
         offset: _messageController.text.length,
@@ -76,7 +303,6 @@ class _AiChatScreenState extends State<AiChatScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
-
         leading: IconButton(
           padding: const EdgeInsets.only(left: 8),
           onPressed: () {
@@ -101,9 +327,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
             size: 18,
           ),
         ),
-
         titleSpacing: 0,
-
         title: Row(
           children: [
             Container(
@@ -119,9 +343,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                 size: 21,
               ),
             ),
-
             const SizedBox(width: 10),
-
             const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -133,9 +355,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-
                 SizedBox(height: 1),
-
                 Text(
                   'AI Companion',
                   style: TextStyle(
@@ -148,42 +368,46 @@ class _AiChatScreenState extends State<AiChatScreen> {
             ),
           ],
         ),
-
         actions: [
           IconButton(
-            onPressed: () {
-              _showInfo();
-            },
+            onPressed: _showInfo,
             icon: const Icon(
               Icons.info_outline_rounded,
               color: AppColors.navy,
               size: 22,
             ),
           ),
-
           const SizedBox(width: 6),
         ],
       ),
-
       body: Column(
         children: [
           Expanded(
             child: _messages.isEmpty
                 ? _buildEmptyState()
                 : ListView.builder(
-              padding: const EdgeInsets.fromLTRB(18, 10, 18, 20),
+              controller: _scrollController,
+              padding: const EdgeInsets.fromLTRB(
+                18,
+                10,
+                18,
+                20,
+              ),
               physics: const BouncingScrollPhysics(),
-              itemCount: _messages.length,
+              itemCount:
+              _messages.length + (_isLoading ? 1 : 0),
               itemBuilder: (context, index) {
+                if (_isLoading && index == _messages.length) {
+                  return _buildTypingIndicator();
+                }
+
                 final message = _messages[index];
 
                 return _buildMessageBubble(message);
               },
             ),
           ),
-
           _buildSuggestions(),
-
           _buildInputArea(),
         ],
       ),
@@ -192,13 +416,15 @@ class _AiChatScreenState extends State<AiChatScreen> {
 
   Widget _buildMessageBubble(_ChatMessage message) {
     return Align(
-      alignment:
-      message.isUser ? Alignment.centerRight : Alignment.centerLeft,
+      alignment: message.isUser
+          ? Alignment.centerRight
+          : Alignment.centerLeft,
       child: Padding(
         padding: const EdgeInsets.only(bottom: 12),
         child: Row(
-          mainAxisAlignment:
-          message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+          mainAxisAlignment: message.isUser
+              ? MainAxisAlignment.end
+              : MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             if (!message.isUser) ...[
@@ -217,7 +443,6 @@ class _AiChatScreenState extends State<AiChatScreen> {
               ),
               const SizedBox(width: 8),
             ],
-
             Flexible(
               child: Container(
                 constraints: const BoxConstraints(
@@ -265,6 +490,66 @@ class _AiChatScreenState extends State<AiChatScreen> {
     );
   }
 
+  Widget _buildTypingIndicator() {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: AppColors.lightMint,
+                borderRadius: BorderRadius.circular(11),
+              ),
+              child: const Icon(
+                Icons.smart_toy_outlined,
+                color: AppColors.mint,
+                size: 17,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 13,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(18),
+                  topRight: Radius.circular(18),
+                  bottomLeft: Radius.circular(5),
+                  bottomRight: Radius.circular(18),
+                ),
+                border: Border.all(
+                  color: AppColors.borderMint,
+                ),
+              ),
+              child: const SizedBox(
+                width: 30,
+                height: 16,
+                child: Center(
+                  child: SizedBox(
+                    width: 15,
+                    height: 15,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.mint,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildEmptyState() {
     return Center(
       child: Padding(
@@ -285,9 +570,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                 size: 36,
               ),
             ),
-
             const SizedBox(height: 20),
-
             const Text(
               'What’s on your mind?',
               style: TextStyle(
@@ -296,9 +579,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                 fontWeight: FontWeight.w800,
               ),
             ),
-
             const SizedBox(height: 8),
-
             Text(
               'You can talk to MindMate about how you’re feeling.',
               textAlign: TextAlign.center,
@@ -327,10 +608,14 @@ class _AiChatScreenState extends State<AiChatScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 18),
         scrollDirection: Axis.horizontal,
         itemCount: suggestions.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, __) {
+          return const SizedBox(width: 8);
+        },
         itemBuilder: (context, index) {
           return OutlinedButton(
-            onPressed: () {
+            onPressed: _isLoading
+                ? null
+                : () {
               _useSuggestion(suggestions[index]);
             },
             style: OutlinedButton.styleFrom(
@@ -363,7 +648,12 @@ class _AiChatScreenState extends State<AiChatScreen> {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+        padding: const EdgeInsets.fromLTRB(
+          14,
+          10,
+          14,
+          12,
+        ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
@@ -373,6 +663,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                 minLines: 1,
                 maxLines: 4,
                 textInputAction: TextInputAction.newline,
+                enabled: !_isLoading,
                 style: const TextStyle(
                   color: AppColors.navy,
                   fontSize: 12.5,
@@ -411,19 +702,28 @@ class _AiChatScreenState extends State<AiChatScreen> {
                 ),
               ),
             ),
-
             const SizedBox(width: 8),
-
             Container(
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: AppColors.mint,
+                color: _isLoading
+                    ? AppColors.borderMint
+                    : AppColors.mint,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: IconButton(
-                onPressed: _sendMessage,
-                icon: const Icon(
+                onPressed: _isLoading ? null : _sendMessage,
+                icon: _isLoading
+                    ? const SizedBox(
+                  width: 19,
+                  height: 19,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+                    : const Icon(
                   Icons.send_rounded,
                   color: Colors.white,
                   size: 20,
