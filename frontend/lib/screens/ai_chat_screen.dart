@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../core/config/api_config.dart';
 
 import '../core/constants/app_colors.dart';
 
@@ -22,8 +22,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
 
   String? _previousInteractionId;
 
-  final String _apiUrl =
-      '${dotenv.env['API_BASE_URL']}/api/chat';
+  final String _apiUrl = ApiConfig.chatUrl;
 
   final List<_ChatMessage> _messages = [
     const _ChatMessage(
