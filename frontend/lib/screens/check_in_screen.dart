@@ -1,6 +1,11 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
 
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
+import '../../core/config/api_config.dart';
 import '../../core/constants/app_colors.dart';
+import '../../models/mood_analysis.dart';
 import 'home_screen.dart';
 
 class CheckInScreen extends StatefulWidget {
@@ -29,6 +34,9 @@ class _CheckInScreenState extends State<CheckInScreen> {
   TextEditingController();
 
   bool _isSubmitting = false;
+
+  MoodAnalysis? _moodAnalysis;
+  String? _aiError;
 
   // Tracks whether the user has actually selected a slider value.
   bool _intensitySelected = false;
@@ -111,7 +119,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
     return completed / 6;
   }
 
-  void _submitCheckIn() {
+  Future<void> _submitCheckIn() async {
     setState(() {
       _moodError = null;
       _intensityError = null;
@@ -119,6 +127,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
       _energyError = null;
       _sleepError = null;
       _factorError = null;
+      _aiError = null;
 
       if (_selectedMood == -1) {
         _moodError = 'Please select your overall mood.';
@@ -145,7 +154,6 @@ class _CheckInScreenState extends State<CheckInScreen> {
       }
     });
 
-    // Do not continue if any required field is missing.
     if (_moodError != null ||
         _intensityError != null ||
         _emotionError != null ||
@@ -155,24 +163,81 @@ class _CheckInScreenState extends State<CheckInScreen> {
       return;
     }
 
-    // Reflection is optional, so it is intentionally not validated.
-
     setState(() {
       _isSubmitting = true;
     });
 
-    Future.delayed(const Duration(milliseconds: 700), () {
+    try {
+      final response = await http.post(
+        Uri.parse(ApiConfig.moodAnalysisUrl),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'mood': _moods[_selectedMood]['label'],
+          'moodIntensity': _moodIntensity.round(),
+          'emotions': _selectedEmotions.toList(),
+          'energyLevel': _energyLevel.round(),
+          'sleepQuality': _sleepQuality.round(),
+          'factors': _selectedFactors.toList(),
+          'reflection': _reflectionController.text.trim(),
+        }),
+      );
+
       if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        setState(() {
+          _moodAnalysis = MoodAnalysis.fromJson(data);
+          _isSubmitting = false;
+        });
+
+        _showMoodAnalysisDialog();
+      } else {
+        print('MOOD AI STATUS CODE: ${response.statusCode}');
+        print('MOOD AI RESPONSE: ${response.body}');
+
+        setState(() {
+          _isSubmitting = false;
+          _aiError =
+          'Mood AI error: ${response.statusCode}\n${response.body}';
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_aiError!),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+
+      print('MOOD AI CONNECTION ERROR: $error');
 
       setState(() {
         _isSubmitting = false;
+        _aiError = 'Connection error: $error';
       });
 
-      _showCompletionDialog();
-    });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_aiError!),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
   }
 
-  void _showCompletionDialog() {
+  void _showMoodAnalysisDialog() {
+    final analysis = _moodAnalysis;
+
+    if (analysis == null) return;
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -183,82 +248,214 @@ class _CheckInScreenState extends State<CheckInScreen> {
             borderRadius: BorderRadius.circular(26),
           ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                    color: AppColors.lightMint,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.check_rounded,
-                    color: AppColors.mint,
-                    size: 34,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                const Text(
-                  'Check-in Complete',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AppColors.navy,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'Thank you for taking a moment to check in with yourself today.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.black54,
-                    fontSize: 14,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 22),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(dialogContext).pop();
-
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(
-                          builder: (_) => const HomeScreen(),
+            padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 62,
+                      height: 62,
+                      decoration: BoxDecoration(
+                        color: AppColors.lightMint,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Center(
+                        child: Text(
+                          '🌿',
+                          style: TextStyle(fontSize: 30),
                         ),
-                            (route) => false,
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.mint,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
                       ),
                     ),
-                    child: const Text(
-                      'Done',
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  const Center(
+                    child: Text(
+                      'Your MindMate Insight',
+                      textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 15,
+                        color: AppColors.navy,
+                        fontSize: 21,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
-                ),
-              ],
+
+                  const SizedBox(height: 18),
+
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.lightMint,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.mood_rounded,
+                          color: AppColors.mint,
+                          size: 23,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Primary emotion',
+                                style: TextStyle(
+                                  color: Colors.black54,
+                                  fontSize: 11,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                analysis.primaryEmotion,
+                                style: const TextStyle(
+                                  color: AppColors.navy,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            analysis.intensity,
+                            style: const TextStyle(
+                              color: AppColors.navy,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  const Text(
+                    'What MindMate noticed',
+                    style: TextStyle(
+                      color: AppColors.navy,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+
+                  const SizedBox(height: 7),
+
+                  Text(
+                    analysis.summary,
+                    style: const TextStyle(
+                      color: Colors.black54,
+                      fontSize: 13,
+                      height: 1.5,
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  const Text(
+                    'A few things you can try',
+                    style: TextStyle(
+                      color: AppColors.navy,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  ...analysis.suggestions.map(
+                        (suggestion) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Padding(
+                              padding: EdgeInsets.only(top: 3),
+                              child: Icon(
+                                Icons.check_circle_outline_rounded,
+                                color: AppColors.mint,
+                                size: 17,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                suggestion,
+                                style: const TextStyle(
+                                  color: Colors.black54,
+                                  fontSize: 12.5,
+                                  height: 1.45,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(dialogContext).pop();
+
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(
+                            builder: (_) => const HomeScreen(),
+                          ),
+                              (route) => false,
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.mint,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      ),
+                      child: const Text(
+                        'Done',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
       },
     );
   }
+
+
 
   Widget _buildInlineError(String? error) {
     if (error == null) {
@@ -986,91 +1183,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
     );
   }
 
-  Widget _buildInsightCard() {
-    String title = 'A moment for yourself';
-    String description =
-        'Checking in with yourself is a small step toward understanding your wellbeing.';
 
-    if (_selectedMood == 0) {
-      title = 'Be gentle with yourself';
-      description =
-      'It sounds like today may feel a little difficult. Give yourself permission to slow down and take things one moment at a time.';
-    } else if (_selectedMood == 4) {
-      title = 'Hold on to this feeling';
-      description =
-      'It is wonderful to notice a good moment. Take a second to appreciate what is making today feel positive.';
-    } else if (_energySelected && _energyLevel <= 3) {
-      title = 'Your energy matters';
-      description =
-      'Low energy can be a sign that your mind and body need a little extra care today.';
-    } else if (_sleepSelected && _sleepQuality <= 3) {
-      title = 'Rest can make a difference';
-      description =
-      'If sleep has been difficult, consider giving yourself some extra space for rest and recovery today.';
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.lightMint,
-            Colors.white,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.borderMint,
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(13),
-            ),
-            child: const Center(
-              child: Text(
-                '🌿',
-                style: TextStyle(fontSize: 21),
-              ),
-            ),
-          ),
-          const SizedBox(width: 13),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: AppColors.navy,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  description,
-                  style: const TextStyle(
-                    color: Colors.black54,
-                    fontSize: 12,
-                    height: 1.45,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildSubmitButton() {
     return SizedBox(
@@ -1185,10 +1298,6 @@ class _CheckInScreenState extends State<CheckInScreen> {
                     const SizedBox(height: 30),
 
                     _buildReflectionSection(),
-
-                    const SizedBox(height: 24),
-
-                    _buildInsightCard(),
 
                     const SizedBox(height: 26),
 

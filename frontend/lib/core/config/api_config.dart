@@ -6,6 +6,6 @@ class ApiConfig {
 
   static String get chatUrl => '$baseUrl/api/chat';
 
-  // static String get moodAnalysisUrl =>
-  //     '$baseUrl/api/mood/analyze';
+   static String get moodAnalysisUrl =>
+       '$baseUrl/api/mood/analyze';
 }
