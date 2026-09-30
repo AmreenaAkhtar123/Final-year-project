@@ -1,4 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
 
 import '../../core/constants/app_colors.dart';
 import 'forgot_password_screen.dart';
@@ -162,9 +166,6 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    const String demoEmail = 'demo@mindmate.com';
-    const String demoPassword = 'Mindmate@123';
-
     final enteredEmail = _emailController.text.trim();
     final enteredPassword = _passwordController.text;
 
@@ -172,29 +173,78 @@ class _LoginScreenState extends State<LoginScreen> {
       _isLoading = true;
     });
 
-    // Temporary delay to simulate login processing.
-    await Future.delayed(
-      const Duration(seconds: 1),
-    );
+    try {
+      final baseUrl = dotenv.env['API_BASE_URL'];
 
-    if (!mounted) return;
+      if (baseUrl == null || baseUrl.isEmpty) {
+        if (!mounted) return;
 
-    setState(() {
-      _isLoading = false;
-    });
+        setState(() {
+          _isLoading = false;
+        });
 
-    // Temporary fixed credentials.
-    if (enteredEmail.toLowerCase() == demoEmail &&
-        enteredPassword == demoPassword) {
-      Navigator.pushReplacementNamed(
-        context,
-        '/home',
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Server configuration is missing.',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+
+        return;
+      }
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/auth/login'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'email': enteredEmail,
+          'password': enteredPassword,
+        }),
       );
-    } else {
+
+      if (!mounted) return;
+
+      final responseData = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        Navigator.pushReplacementNamed(
+          context,
+          '/home',
+        );
+      } else {
+        setState(() {
+          _isLoading = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              responseData['message'] ??
+                  'Incorrect email or password.',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Incorrect email or password.',
+            'Unable to connect to the MindMate server.',
           ),
           behavior: SnackBarBehavior.floating,
         ),
