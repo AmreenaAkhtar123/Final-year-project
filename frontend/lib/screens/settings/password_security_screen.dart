@@ -1,4 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/constants/app_colors.dart';
 
@@ -22,6 +27,8 @@ class _PasswordSecurityScreenState
   bool _hideNew = true;
   bool _hideConfirm = true;
 
+  bool _isSaving = false;
+
   @override
   void initState() {
     super.initState();
@@ -40,42 +47,216 @@ class _PasswordSecurityScreenState
     _confirmController.dispose();
     super.dispose();
   }
+  void _showSaveSuccess() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          contentPadding: const EdgeInsets.fromLTRB(
+            24,
+            26,
+            24,
+            22,
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  color: AppColors.lightMint,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_rounded,
+                  color: AppColors.mint,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Password Updated',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.navy,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Your password has been updated successfully.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.navy.withValues(alpha: 0.58),
+                  fontSize: 11.5,
+                  height: 1.45,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 45,
+                child: FilledButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.mint,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: const Text(
+                    'Done',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
-  void _changePassword() {
+  Future<void> _changePassword() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
     FocusScope.of(context).unfocus();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Row(
-          children: [
-            Icon(
-              Icons.check_circle_outline_rounded,
-              color: Colors.white,
-              size: 20,
+    if (_isSaving) {
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      final email = prefs.getString('logged_in_email');
+
+      if (email == null || email.isEmpty) {
+        if (!mounted) return;
+
+        setState(() {
+          _isSaving = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'No logged-in account found.',
             ),
-            SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Password updated successfully.',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+          ),
+        );
+
+        return;
+      }
+
+      final baseUrl = dotenv.env['API_BASE_URL'];
+
+      if (baseUrl == null || baseUrl.isEmpty) {
+        if (!mounted) return;
+
+        setState(() {
+          _isSaving = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'API base URL is not configured.',
             ),
-          ],
+          ),
+        );
+
+        return;
+      }
+
+      final response = await http.put(
+        Uri.parse('$baseUrl/api/auth/change-password'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'email': email,
+          'currentPassword': _currentController.text,
+          'newPassword': _newController.text,
+        }),
+      );
+
+      if (!mounted) return;
+
+      final responseData = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _isSaving = false;
+        });
+
+        _currentController.clear();
+        _newController.clear();
+        _confirmController.clear();
+
+        _showSaveSuccess();
+
+      } else {
+        setState(() {
+          _isSaving = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              responseData['message'] ??
+                  'Failed to update password.',
+            ),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: AppColors.navy,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            margin: const EdgeInsets.fromLTRB(
+              16,
+              0,
+              16,
+              18,
+            ),
+          ),
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _isSaving = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Unable to update your password. Please try again.',
+          ),
         ),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: AppColors.navy,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 18),
-      ),
-    );
+      );
+    }
   }
 
   String? _validatePassword(String? value) {
@@ -862,7 +1043,16 @@ class _PasswordSecurityScreenState
             borderRadius: BorderRadius.circular(17),
           ),
         ),
-        child: const Row(
+        child: _isSaving
+            ? const SizedBox(
+          width: 22,
+          height: 22,
+          child: CircularProgressIndicator(
+            strokeWidth: 2.5,
+            color: Colors.white,
+          ),
+        )
+            : const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(

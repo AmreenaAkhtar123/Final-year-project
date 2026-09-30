@@ -279,6 +279,78 @@ app.put('/api/auth/profile', async (req, res) => {
   }
 });
 
+//Update the password
+app.put('/api/auth/change-password', async (req, res) => {
+  try {
+    const {
+      email,
+      currentPassword,
+      newPassword,
+    } = req.body;
+
+    if (!email || !currentPassword || !newPassword) {
+      return res.status(400).json({
+        message: 'All password fields are required.',
+      });
+    }
+
+    const user = await User.findOne({
+      email: email.toLowerCase().trim(),
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        message: 'User not found.',
+      });
+    }
+
+    // Verify the current password.
+    const isCurrentPasswordCorrect = await bcrypt.compare(
+      currentPassword,
+      user.password,
+    );
+
+    if (!isCurrentPasswordCorrect) {
+      return res.status(401).json({
+        message: 'Current password is incorrect.',
+      });
+    }
+
+    // Make sure the new password is different.
+    const isSamePassword = await bcrypt.compare(
+      newPassword,
+      user.password,
+    );
+
+    if (isSamePassword) {
+      return res.status(400).json({
+        message: 'New password must be different from your current password.',
+      });
+    }
+
+    // Hash the new password before storing it.
+    const hashedPassword = await bcrypt.hash(
+      newPassword,
+      12,
+    );
+
+    user.password = hashedPassword;
+
+    await user.save();
+
+    res.status(200).json({
+      message: 'Password updated successfully.',
+    });
+  } catch (error) {
+    console.error('Change password error:', error);
+
+    res.status(500).json({
+      message: 'Failed to update password.',
+    });
+  }
+});
+
+
 app.get('/', (req, res) => {
   res.json({
     message: 'MindMate backend is running.',
