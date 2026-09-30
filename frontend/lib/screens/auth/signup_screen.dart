@@ -1,4 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
 
 import '../../core/constants/app_colors.dart';
 
@@ -340,26 +344,98 @@ class _SignUpScreenState extends State<SignUpScreen> {
       _isLoading = true;
     });
 
-    // Temporary delay.
-    // This will later be replaced with the backend API call.
-    await Future.delayed(
-      const Duration(seconds: 1),
-    );
+    try {
+      final baseUrl = dotenv.env['API_BASE_URL'];
 
-    if (!mounted) return;
+      if (baseUrl == null || baseUrl.isEmpty) {
+        if (!mounted) return;
 
-    setState(() {
-      _isLoading = false;
-    });
+        setState(() {
+          _isLoading = false;
+        });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Account information is valid.',
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Server configuration is missing.',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+
+        return;
+      }
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/auth/signup'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'fullName': _nameController.text.trim(),
+          'email': _emailController.text.trim(),
+          'dateOfBirth': _selectedDate!.toIso8601String(),
+          'gender': _selectedGender,
+          'password': _passwordController.text,
+        }),
+      );
+
+      if (!mounted) return;
+
+      final responseData = jsonDecode(response.body);
+
+      if (response.statusCode == 201) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Account created successfully.',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+
+        await Future.delayed(
+          const Duration(milliseconds: 800),
+        );
+
+        if (!mounted) return;
+
+        Navigator.pop(context);
+      } else {
+        setState(() {
+          _isLoading = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              responseData['message'] ??
+                  'Unable to create your account.',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Unable to connect to the MindMate server.',
+          ),
+          behavior: SnackBarBehavior.floating,
         ),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+      );
+    }
   }
 
   // ============================================================
