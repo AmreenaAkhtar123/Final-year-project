@@ -4,6 +4,9 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import { GoogleGenAI } from '@google/genai';
 
+import bcrypt from 'bcrypt';
+import User from './models/User.js';
+
 dotenv.config();
 
 const mongoUri = process.env.MONGODB_URI;
@@ -32,6 +35,138 @@ const ai = new GoogleGenAI({
 
 app.use(cors());
 app.use(express.json());
+
+//Adding the SIGNUP route
+app.post('/api/auth/signup', async (req, res) => {
+  try {
+    const {
+      fullName,
+      email,
+      dateOfBirth,
+      gender,
+      password,
+    } = req.body;
+
+    // Check required fields
+    if (!fullName || !email || !dateOfBirth || !password) {
+      return res.status(400).json({
+        message: 'Please provide all required fields.',
+      });
+    }
+
+    // Normalize email
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Check if email already exists
+    const existingUser = await User.findOne({
+      email: normalizedEmail,
+    });
+
+    if (existingUser) {
+      return res.status(409).json({
+        message: 'An account with this email already exists.',
+      });
+    }
+
+    // Validate date
+    const parsedDateOfBirth = new Date(dateOfBirth);
+
+    if (Number.isNaN(parsedDateOfBirth.getTime())) {
+      return res.status(400).json({
+        message: 'Invalid date of birth.',
+      });
+    }
+
+    // Hash password before saving
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Create user
+    const user = await User.create({
+      fullName: fullName.trim(),
+      email: normalizedEmail,
+      dateOfBirth: parsedDateOfBirth,
+      gender: gender || null,
+      password: hashedPassword,
+    });
+
+    // Never send the password back
+    return res.status(201).json({
+      message: 'Account created successfully.',
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        dateOfBirth: user.dateOfBirth,
+        gender: user.gender,
+      },
+    });
+  } catch (error) {
+    console.error('Signup error:', error);
+
+    return res.status(500).json({
+      message: 'Something went wrong while creating the account.',
+    });
+  }
+});
+
+
+//Adding the LOGIN route
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Check required fields
+    if (!email || !password) {
+      return res.status(400).json({
+        message: 'Email and password are required.',
+      });
+    }
+
+    // Normalize email
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Find user
+    const user = await User.findOne({
+      email: normalizedEmail,
+    });
+
+    if (!user) {
+      return res.status(401).json({
+        message: 'Incorrect email or password.',
+      });
+    }
+
+    // Compare password with stored bcrypt hash
+    const passwordMatches = await bcrypt.compare(
+      password,
+      user.password,
+    );
+
+    if (!passwordMatches) {
+      return res.status(401).json({
+        message: 'Incorrect email or password.',
+      });
+    }
+
+    // Successful login
+    return res.status(200).json({
+      message: 'Login successful.',
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        dateOfBirth: user.dateOfBirth,
+        gender: user.gender,
+      },
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+
+    return res.status(500).json({
+      message: 'Something went wrong while logging in.',
+    });
+  }
+});
 
 app.get('/', (req, res) => {
   res.json({
