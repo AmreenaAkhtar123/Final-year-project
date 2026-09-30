@@ -1,9 +1,27 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import mongoose from 'mongoose';
 import { GoogleGenAI } from '@google/genai';
 
 dotenv.config();
+
+const mongoUri = process.env.MONGODB_URI;
+
+if (!mongoUri) {
+  console.error('MONGODB_URI is not defined in .env');
+  process.exit(1);
+}
+
+mongoose
+  .connect(mongoUri)
+  .then(() => {
+    console.log('MongoDB Atlas connected successfully.');
+  })
+  .catch((error) => {
+    console.error('MongoDB Atlas connection failed:', error);
+  });
+
 
 const app = express();
 const port = process.env.PORT || 5000;
