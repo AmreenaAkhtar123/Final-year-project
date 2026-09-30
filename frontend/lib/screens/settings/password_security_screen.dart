@@ -47,85 +47,85 @@ class _PasswordSecurityScreenState
     _confirmController.dispose();
     super.dispose();
   }
+
   void _showSaveSuccess() {
-    showDialog(
+    showModalBottomSheet<void>(
       context: context,
-      barrierDismissible: false,
+      backgroundColor: Colors.transparent,
+      isDismissible: true,
       builder: (context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          contentPadding: const EdgeInsets.fromLTRB(
-            24,
-            26,
-            24,
-            22,
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 58,
-                height: 58,
-                decoration: BoxDecoration(
-                  color: AppColors.lightMint,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.check_rounded,
-                  color: AppColors.mint,
-                  size: 32,
-                ),
+        return SafeArea(
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+            decoration: const BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(28),
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'Password Updated',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppColors.navy,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Your password has been updated successfully.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppColors.navy.withValues(alpha: 0.58),
-                  fontSize: 11.5,
-                  height: 1.45,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                height: 45,
-                child: FilledButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.mint,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: AppColors.lightMint,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.borderMint,
                     ),
                   ),
-                  child: const Text(
-                    'Done',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
+                  child: const Icon(
+                    Icons.check_rounded,
+                    color: AppColors.mint,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                const Text(
+                  'Password Updated',
+                  style: TextStyle(
+                    color: AppColors.navy,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Your password has been updated successfully.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.navy.withValues(alpha: 0.55),
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.navy,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: const Text(
+                      'Done',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
@@ -258,6 +258,7 @@ class _PasswordSecurityScreenState
       );
     }
   }
+
 
   String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) {
@@ -1036,7 +1037,7 @@ class _PasswordSecurityScreenState
       child: FilledButton(
         onPressed: _changePassword,
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.mint,
+          backgroundColor: AppColors.navy,
           foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(

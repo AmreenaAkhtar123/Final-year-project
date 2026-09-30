@@ -270,9 +270,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
               child: const Icon(
-                Icons.arrow_back_rounded,
+                Icons.arrow_back_ios_new_rounded,
                 color: AppColors.navy,
-                size: 21,
+                size: 18,
               ),
             ),
           ),
@@ -476,8 +476,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
 
                   GestureDetector(
-                    onTap: () {
-                      Navigator.push(
+                    onTap: () async {
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => const PersonalInformationScreen(),
