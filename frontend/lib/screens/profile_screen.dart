@@ -1,9 +1,14 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'dart:io';
 
-import '../core/services/profile_image_service.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/services/profile_image_service.dart';
 import '../core/constants/app_colors.dart';
+
 import 'settings/about_mindmate_screen.dart';
 import 'settings/help_support_screen.dart';
 import 'settings/password_security_screen.dart';
@@ -37,6 +42,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   File? _profileImage;
   bool _isLoadingProfileImage = true;
 
+  String _fullName = '';
+  String _email = '';
+  bool _isLoadingProfile = true;
+
   @override
   void initState() {
     super.initState();
@@ -46,6 +55,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     _loadProfileImage();
+    _loadProfile();
   }
 
   Future<void> _loadProfileImage() async {
@@ -63,6 +73,68 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (ProfileImageService.profileImageNotifier.value?.path !=
         image?.path) {
       ProfileImageService.profileImageNotifier.value = image;
+    }
+  }
+
+  Future<void> _loadProfile() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      final email = prefs.getString('logged_in_email');
+
+      if (email == null || email.isEmpty) {
+        if (!mounted) return;
+
+        setState(() {
+          _isLoadingProfile = false;
+        });
+
+        return;
+      }
+
+      final baseUrl = dotenv.env['API_BASE_URL'];
+
+      if (baseUrl == null || baseUrl.isEmpty) {
+        if (!mounted) return;
+
+        setState(() {
+          _isLoadingProfile = false;
+        });
+
+        return;
+      }
+
+      final response = await http.get(
+        Uri.parse(
+          '$baseUrl/api/auth/profile?email=${Uri.encodeComponent(email)}',
+        ),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        final user = responseData['user'];
+
+        setState(() {
+          _fullName = user['fullName'] ?? '';
+          _email = user['email'] ?? '';
+          _isLoadingProfile = false;
+        });
+      } else {
+        setState(() {
+          _isLoadingProfile = false;
+        });
+      }
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoadingProfile = false;
+      });
     }
   }
 
@@ -333,9 +405,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Demo User',
-                          style: TextStyle(
+                        Text(
+                          _isLoadingProfile
+                              ? 'Loading...'
+                              : (_fullName.isEmpty ? 'Your Name' : _fullName),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 21,
                             fontWeight: FontWeight.w800,
@@ -346,7 +422,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(height: 5),
 
                         Text(
-                          'demo@mindmate.com',
+                          _isLoadingProfile ? 'Loading...' : _email,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.60),
                             fontSize: 11,
@@ -405,6 +483,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           builder: (_) => const PersonalInformationScreen(),
                         ),
                       );
+                      _loadProfile();
                     },
                     child: Container(
                       width: 36,
@@ -697,32 +776,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return _buildSettingsCard(
       children: [
         _buildSettingsTile(
-          icon: Icons.person_outline_rounded,
-          title: 'Personal Information',
-          subtitle: 'Name, date of birth and other details',
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const PersonalInformationScreen(),
-              ),
-            );
-          },
-        ),
-
-        _buildDivider(),
-
-        _buildSettingsTile(
           icon: Icons.email_outlined,
           title: 'Email Address',
-          subtitle: 'demo@mindmate.com',
-          onTap: () {
-            Navigator.push(
+          subtitle: _isLoadingProfile
+              ? 'Loading...'
+              : (_email.isEmpty ? 'No email available' : _email),
+          onTap: () async {
+            await Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (_) => const PersonalInformationScreen(),
               ),
             );
+
+            _loadProfile();
           },
         ),
 
@@ -1240,8 +1307,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             FilledButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.pop(context);
+
+                final prefs = await SharedPreferences.getInstance();
+
+                await prefs.remove('logged_in_email');
+
+                if (!mounted) return;
 
                 Navigator.pushNamedAndRemoveUntil(
                   context,
