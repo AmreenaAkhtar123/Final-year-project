@@ -1,8 +1,12 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/services/profile_image_service.dart';
@@ -30,10 +34,10 @@ class _PersonalInformationScreenState
 
 
   final TextEditingController _nameController =
-  TextEditingController(text: 'Demo User');
+  TextEditingController();
 
   final TextEditingController _emailController =
-  TextEditingController(text: 'demo@mindmate.com');
+  TextEditingController();
 
   final TextEditingController _phoneController =
   TextEditingController();
@@ -57,6 +61,7 @@ class _PersonalInformationScreenState
   // ===========================================================================
 
   bool _isSaving = false;
+  bool _isLoadingProfile = true;
   bool _hasChanges = false;
 
   // ===========================================================================
@@ -95,6 +100,8 @@ class _PersonalInformationScreenState
   void initState() {
     super.initState();
 
+    _loadProfile();
+
     _loadSavedProfileImage();
 
     _nameController.addListener(_markChanged);
@@ -104,6 +111,8 @@ class _PersonalInformationScreenState
   }
 
   void _markChanged() {
+    if (_isLoadingProfile) return;
+
     if (!_hasChanges && mounted) {
       setState(() {
         _hasChanges = true;
@@ -119,6 +128,83 @@ class _PersonalInformationScreenState
     _bioController.dispose();
 
     super.dispose();
+  }
+
+  Future<void> _loadProfile() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      final email = prefs.getString('logged_in_email');
+
+      if (email == null || email.isEmpty) {
+        if (!mounted) return;
+
+        setState(() {
+          _isLoadingProfile = false;
+        });
+
+        return;
+      }
+
+      final baseUrl = dotenv.env['API_BASE_URL'];
+
+      if (baseUrl == null || baseUrl.isEmpty) {
+        if (!mounted) return;
+
+        setState(() {
+          _isLoadingProfile = false;
+        });
+
+        return;
+      }
+
+      final response = await http.get(
+        Uri.parse(
+          '$baseUrl/api/auth/profile?email=${Uri.encodeComponent(email)}',
+        ),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        final user = responseData['user'];
+
+        setState(() {
+          _nameController.text = user['fullName'] ?? '';
+          _emailController.text = user['email'] ?? '';
+
+          _phoneController.text = user['phone'] ?? '';
+          _bioController.text = user['bio'] ?? '';
+
+          _occupation = user['occupation'];
+          _educationLevel = user['educationLevel'];
+          _gender = user['gender'];
+
+          if (user['dateOfBirth'] != null) {
+            _dateOfBirth = DateTime.tryParse(
+              user['dateOfBirth'].toString(),
+            );
+          }
+
+          _isLoadingProfile = false;
+          _hasChanges = false;
+        });
+      } else {
+        setState(() {
+          _isLoadingProfile = false;
+        });
+      }
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoadingProfile = false;
+      });
+    }
   }
 
   // ===========================================================================
@@ -561,20 +647,73 @@ class _PersonalInformationScreenState
       _isSaving = true;
     });
 
-    // Local/demo save for now.
-    // Backend/database integration can be added later.
-    await Future.delayed(
-      const Duration(milliseconds: 900),
-    );
+    try {
+      final prefs = await SharedPreferences.getInstance();
 
-    if (!mounted) return;
+      final email = prefs.getString('logged_in_email');
 
-    setState(() {
-      _isSaving = false;
-      _hasChanges = false;
-    });
+      if (email == null || email.isEmpty) {
+        throw Exception('No logged-in account found.');
+      }
 
-    _showSaveSuccess();
+      final baseUrl = dotenv.env['API_BASE_URL'];
+
+      if (baseUrl == null || baseUrl.isEmpty) {
+        throw Exception('API base URL is not configured.');
+      }
+
+      final response = await http.put(
+        Uri.parse('$baseUrl/api/auth/profile'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'email': email,
+          'fullName': _nameController.text.trim(),
+          'dateOfBirth': _dateOfBirth?.toIso8601String(),
+          'gender': _gender,
+          'phone': _phoneController.text.trim(),
+          'bio': _bioController.text.trim(),
+          'occupation': _occupation,
+          'educationLevel': _educationLevel,
+        }),
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _isSaving = false;
+          _hasChanges = false;
+        });
+
+        _showSaveSuccess();
+      } else {
+        setState(() {
+          _isSaving = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to update your personal information.'),
+          ),
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _isSaving = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Unable to save your information. Please try again.',
+          ),
+        ),
+      );
+    }
   }
 
   void _showSaveSuccess() {
@@ -622,7 +761,7 @@ class _PersonalInformationScreenState
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Your personal information has been updated locally.',
+                  'Your personal information has been updated successfully.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: AppColors.navy.withValues(alpha: 0.55),
@@ -1950,7 +2089,7 @@ class _PersonalInformationScreenState
         const SizedBox(width: 5),
         Flexible(
           child: Text(
-            'Profile changes are currently stored locally for this demo.',
+            'Your profile information is securely stored in your account.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: AppColors.navy.withValues(alpha: 0.38),

@@ -168,6 +168,117 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+
+//Get the USER profile
+app.get('/api/auth/profile', async (req, res) => {
+  try {
+    const { email } = req.query;
+
+    if (!email) {
+      return res.status(400).json({
+        message: 'Email is required.',
+      });
+    }
+
+    const user = await User.findOne({
+      email: email.toLowerCase().trim(),
+    }).select('-password');
+
+    if (!user) {
+      return res.status(404).json({
+        message: 'User not found.',
+      });
+    }
+
+    res.status(200).json({
+      message: 'Profile retrieved successfully.',
+      user,
+    });
+  } catch (error) {
+    console.error('Get profile error:', error);
+
+    res.status(500).json({
+      message: 'Failed to retrieve profile.',
+    });
+  }
+});
+
+// UPDATE user profile
+app.put('/api/auth/profile', async (req, res) => {
+  try {
+    const {
+      email,
+      fullName,
+      dateOfBirth,
+      gender,
+      phone,
+      bio,
+      occupation,
+      educationLevel,
+    } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        message: 'Email is required.',
+      });
+    }
+
+    const user = await User.findOne({
+      email: email.toLowerCase().trim(),
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        message: 'User not found.',
+      });
+    }
+
+    if (fullName !== undefined) {
+      user.fullName = fullName;
+    }
+
+    if (dateOfBirth !== undefined && dateOfBirth !== null) {
+      user.dateOfBirth = new Date(dateOfBirth);
+    }
+
+    if (gender !== undefined) {
+      user.gender = gender;
+    }
+
+    if (phone !== undefined) {
+      user.phone = phone;
+    }
+
+    if (bio !== undefined) {
+      user.bio = bio;
+    }
+
+    if (occupation !== undefined) {
+      user.occupation = occupation;
+    }
+
+    if (educationLevel !== undefined) {
+      user.educationLevel = educationLevel;
+    }
+
+    await user.save();
+
+    const safeUser = user.toObject();
+    delete safeUser.password;
+
+    res.status(200).json({
+      message: 'Profile updated successfully.',
+      user: safeUser,
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+
+    res.status(500).json({
+      message: 'Failed to update profile.',
+    });
+  }
+});
+
 app.get('/', (req, res) => {
   res.json({
     message: 'MindMate backend is running.',

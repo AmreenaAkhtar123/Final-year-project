@@ -34,6 +34,31 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
 
+    phone: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+
+    bio: {
+      type: String,
+      default: '',
+      trim: true,
+      maxlength: 500,
+    },
+
+    occupation: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+
+    educationLevel: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+
     password: {
       type: String,
       required: true,
