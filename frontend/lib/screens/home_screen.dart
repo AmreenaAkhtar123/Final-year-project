@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 
 import '../core/constants/app_colors.dart';
 import '../core/services/profile_image_service.dart';
+import '../core/services/check_in_service.dart';
+import '../models/check_in.dart';
+
 import 'ai_chat_screen.dart';
 import 'assessments/assessments_screen.dart';
 import 'check_in_screen.dart';
@@ -138,6 +141,10 @@ class _HomeFeed extends StatefulWidget {
 class _HomeFeedState extends State<_HomeFeed> {
   File? _profileImage;
 
+  CheckIn? _latestCheckIn;
+  List<CheckIn> _checkIns = [];
+  bool _isLoadingCheckIn = true;
+
   @override
   void initState() {
     super.initState();
@@ -148,6 +155,115 @@ class _HomeFeedState extends State<_HomeFeed> {
     ProfileImageService.profileImageNotifier.addListener(
       _onProfileImageChanged,
     );
+
+    _loadLatestCheckIn();
+  }
+
+  Future<void> _loadLatestCheckIn() async {
+    try {
+      final checkIns = await CheckInService.getCheckIns();
+
+      if (!mounted) return;
+
+      setState(() {
+        _checkIns = checkIns;
+        _latestCheckIn =
+        checkIns.isNotEmpty ? checkIns.first : null;
+        _isLoadingCheckIn = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _checkIns = [];
+        _latestCheckIn = null;
+        _isLoadingCheckIn = false;
+      });
+    }
+  }
+
+  int _calculateStreak() {
+    if (_checkIns.isEmpty) {
+      return 0;
+    }
+
+    final dates = _checkIns
+        .map(
+          (checkIn) => DateTime(
+        checkIn.createdAt.year,
+        checkIn.createdAt.month,
+        checkIn.createdAt.day,
+      ),
+    )
+        .toSet();
+
+    final today = DateTime.now();
+    final todayDate = DateTime(
+      today.year,
+      today.month,
+      today.day,
+    );
+
+    DateTime startDate = todayDate;
+
+    // If there is no check-in today, allow the streak
+    // to continue from yesterday.
+    if (!dates.contains(todayDate)) {
+      final yesterday = todayDate.subtract(
+        const Duration(days: 1),
+      );
+
+      if (!dates.contains(yesterday)) {
+        return 0;
+      }
+
+      startDate = yesterday;
+    }
+
+    int streak = 0;
+
+    for (int i = 0; ; i++) {
+      final day = startDate.subtract(
+        Duration(days: i),
+      );
+
+      if (dates.contains(day)) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+
+    return streak;
+  }
+
+  double _latestPulseScore() {
+    final checkIn = _latestCheckIn;
+
+    if (checkIn == null) {
+      return 0;
+    }
+
+    final moodValue = {
+      'Low': 2,
+      'Okay': 4,
+      'Neutral': 5,
+      'Good': 7,
+      'Great': 9,
+    }[checkIn.mood] ?? 5;
+
+    final average =
+        (moodValue + checkIn.energyLevel + checkIn.sleepQuality) / 3;
+
+    return average.clamp(0.0, 10.0);
+  }
+
+  bool _isToday(DateTime date) {
+    final now = DateTime.now();
+
+    return date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
   }
 
   void _onProfileImageChanged() {
@@ -399,6 +515,18 @@ class _HomeFeedState extends State<_HomeFeed> {
   // ==========================================================
 
   Widget _buildDailyPulse(BuildContext context) {
+    final checkIn = _latestCheckIn;
+
+    final pulseScore = _latestPulseScore();
+    final pulseValue = (pulseScore / 10).clamp(0.0, 1.0);
+    final pulseNumber = pulseScore.round();
+
+    final energy = checkIn != null
+        ? '${checkIn.energyLevel}/10'
+        : '--';
+
+    final streak = _calculateStreak();
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -490,7 +618,11 @@ class _HomeFeedState extends State<_HomeFeed> {
                   const Spacer(),
 
                   Text(
-                    'TODAY',
+                    checkIn == null
+                        ? 'NO DATA'
+                        : _isToday(checkIn.createdAt)
+                        ? 'TODAY'
+                        : 'LATEST',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.5),
                       fontSize: 8,
@@ -515,7 +647,7 @@ class _HomeFeedState extends State<_HomeFeed> {
                           width: 84,
                           height: 84,
                           child: CircularProgressIndicator(
-                            value: 0.72,
+                            value: _isLoadingCheckIn ? 0 : pulseValue,
                             strokeWidth: 7,
                             backgroundColor:
                             Colors.white.withValues(alpha: 0.1),
@@ -526,18 +658,22 @@ class _HomeFeedState extends State<_HomeFeed> {
                           ),
                         ),
 
-                        const Column(
+                        Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              '72',
-                              style: TextStyle(
+                              _isLoadingCheckIn
+                                  ? '--'
+                                  : _latestCheckIn == null
+                                  ? '--'
+                                  : '$pulseNumber',
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 25,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
-                            Text(
+                            const Text(
                               'pulse',
                               style: TextStyle(
                                 color: Colors.white60,
@@ -557,21 +693,23 @@ class _HomeFeedState extends State<_HomeFeed> {
                       crossAxisAlignment:
                       CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'A little check-in can change the whole day.',
-                          style: TextStyle(
+                        Text(
+                          checkIn == null
+                              ? 'Your wellbeing snapshot starts with a check-in.'
+                              : 'Your latest wellbeing snapshot is ready.',
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                             height: 1.2,
                           ),
                         ),
-
                         const SizedBox(height: 7),
 
                         Text(
-                          'Your latest wellbeing snapshot is ready. '
-                              'Keep the streak going gently.',
+                          checkIn == null
+                              ? 'Complete your first check-in to start tracking your wellbeing.'
+                              : 'Keep checking in gently to build a clearer picture over time.',
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.65),
                             fontSize: 10.5,
@@ -591,7 +729,7 @@ class _HomeFeedState extends State<_HomeFeed> {
                   Expanded(
                     child: _darkMetric(
                       'MOOD',
-                      'Calm',
+                      checkIn?.mood ?? '--',
                       Icons.mood_rounded,
                     ),
                   ),
@@ -601,7 +739,7 @@ class _HomeFeedState extends State<_HomeFeed> {
                   Expanded(
                     child: _darkMetric(
                       'ENERGY',
-                      '7/10',
+                      energy,
                       Icons.bolt_rounded,
                     ),
                   ),
@@ -611,7 +749,9 @@ class _HomeFeedState extends State<_HomeFeed> {
                   Expanded(
                     child: _darkMetric(
                       'STREAK',
-                      '6 days',
+                      streak == 0
+                          ? '--'
+                          : '$streak ${streak == 1 ? 'day' : 'days'}',
                       Icons.local_fire_department_rounded,
                     ),
                   ),
