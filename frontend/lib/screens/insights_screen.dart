@@ -79,6 +79,33 @@ class _InsightsScreenState extends State<InsightsScreen> {
     final score =
         (moodAverage + energyAverage + sleepAverage) / 3;
 
+    double overallScoreChange = 0;
+
+    if (periodCheckIns.length >= 2) {
+      final firstCheckIn = periodCheckIns.first;
+      final lastCheckIn = periodCheckIns.last;
+
+      final firstMood =
+      _moodToValue(firstCheckIn.mood);
+
+      final firstScore =
+          (firstMood +
+              firstCheckIn.energyLevel +
+              firstCheckIn.sleepQuality) /
+              3;
+
+      final lastMood =
+      _moodToValue(lastCheckIn.mood);
+
+      final lastScore =
+          (lastMood +
+              lastCheckIn.energyLevel +
+              lastCheckIn.sleepQuality) /
+              3;
+
+      overallScoreChange = lastScore - firstScore;
+    }
+
     final moodValues = periodCheckIns
         .map((checkIn) => _moodToValue(checkIn.mood))
         .toList();
@@ -157,7 +184,9 @@ class _InsightsScreenState extends State<InsightsScreen> {
 
     return _InsightsData(
       score: score,
-      change: 'LIVE',
+      change: overallScoreChange >= 0
+          ? '+${overallScoreChange.toStringAsFixed(1)}'
+          : overallScoreChange.toStringAsFixed(1),
       mood: moodAverage,
       energy: energyAverage,
       sleep: sleepAverage,
@@ -2160,7 +2189,7 @@ class _MoodChartPainter extends CustomPainter {
           (count - 1);
 
       final normalized =
-      ((value - 4) / 6).clamp(0.0, 1.0);
+      ((value - 1) / 9).clamp(0.0, 1.0);
 
       final y =
           size.height -
