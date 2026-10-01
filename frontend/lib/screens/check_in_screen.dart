@@ -3,6 +3,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../core/config/api_config.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/mood_analysis.dart';
@@ -168,41 +171,101 @@ class _CheckInScreenState extends State<CheckInScreen> {
     });
 
     try {
-      final response = await http.post(
+      // --------------------------------------------------
+      // 1. Get logged-in user's email
+      // --------------------------------------------------
+
+      final prefs = await SharedPreferences.getInstance();
+
+      final email = prefs.getString('logged_in_email');
+
+      if (email == null || email.isEmpty) {
+        if (!mounted) return;
+
+        setState(() {
+          _isSubmitting = false;
+          _aiError = 'No logged-in account found.';
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_aiError!),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+
+        return;
+      }
+
+      // --------------------------------------------------
+      // 2. Get backend URL
+      // --------------------------------------------------
+
+      final baseUrl = dotenv.env['API_BASE_URL'];
+
+      if (baseUrl == null || baseUrl.isEmpty) {
+        if (!mounted) return;
+
+        setState(() {
+          _isSubmitting = false;
+          _aiError = 'API base URL is not configured.';
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_aiError!),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+
+        return;
+      }
+
+      // --------------------------------------------------
+      // 3. Prepare check-in data
+      // --------------------------------------------------
+
+      final checkInData = {
+        'email': email,
+        'mood': _moods[_selectedMood]['label'],
+        'moodIntensity': _moodIntensity.round(),
+        'emotions': _selectedEmotions.toList(),
+        'energyLevel': _energyLevel.round(),
+        'sleepQuality': _sleepQuality.round(),
+        'factors': _selectedFactors.toList(),
+        'reflection': _reflectionController.text.trim(),
+      };
+
+      // --------------------------------------------------
+      // 4. Run existing Gemini mood analysis
+      // --------------------------------------------------
+
+      final aiResponse = await http.post(
         Uri.parse(ApiConfig.moodAnalysisUrl),
         headers: {
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
-          'mood': _moods[_selectedMood]['label'],
-          'moodIntensity': _moodIntensity.round(),
-          'emotions': _selectedEmotions.toList(),
-          'energyLevel': _energyLevel.round(),
-          'sleepQuality': _sleepQuality.round(),
-          'factors': _selectedFactors.toList(),
-          'reflection': _reflectionController.text.trim(),
+          'mood': checkInData['mood'],
+          'moodIntensity': checkInData['moodIntensity'],
+          'emotions': checkInData['emotions'],
+          'energyLevel': checkInData['energyLevel'],
+          'sleepQuality': checkInData['sleepQuality'],
+          'factors': checkInData['factors'],
+          'reflection': checkInData['reflection'],
         }),
       );
 
       if (!mounted) return;
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-
-        setState(() {
-          _moodAnalysis = MoodAnalysis.fromJson(data);
-          _isSubmitting = false;
-        });
-
-        _showMoodAnalysisDialog();
-      } else {
-        print('MOOD AI STATUS CODE: ${response.statusCode}');
-        print('MOOD AI RESPONSE: ${response.body}');
+      if (aiResponse.statusCode != 200) {
+        print('MOOD AI STATUS CODE: ${aiResponse.statusCode}');
+        print('MOOD AI RESPONSE: ${aiResponse.body}');
 
         setState(() {
           _isSubmitting = false;
           _aiError =
-          'Mood AI error: ${response.statusCode}\n${response.body}';
+          'Mood AI error: ${aiResponse.statusCode}\n${aiResponse.body}';
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -212,11 +275,68 @@ class _CheckInScreenState extends State<CheckInScreen> {
             duration: const Duration(seconds: 5),
           ),
         );
+
+        return;
       }
+
+      // --------------------------------------------------
+      // 5. Parse Gemini analysis
+      // --------------------------------------------------
+
+      final aiData = jsonDecode(aiResponse.body);
+
+      final analysis = MoodAnalysis.fromJson(aiData);
+
+      // --------------------------------------------------
+      // 6. Save check-in to MongoDB
+      // --------------------------------------------------
+
+      final saveResponse = await http.post(
+        Uri.parse('$baseUrl/api/check-ins'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(checkInData),
+      );
+
+      if (!mounted) return;
+
+      if (saveResponse.statusCode != 201) {
+        print('CHECK-IN SAVE STATUS CODE: ${saveResponse.statusCode}');
+        print('CHECK-IN SAVE RESPONSE: ${saveResponse.body}');
+
+        setState(() {
+          _isSubmitting = false;
+          _aiError =
+          'Unable to save your check-in. Please try again.';
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_aiError!),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+
+        return;
+      }
+
+      // --------------------------------------------------
+      // 7. Everything succeeded
+      // --------------------------------------------------
+
+      setState(() {
+        _moodAnalysis = analysis;
+        _isSubmitting = false;
+      });
+
+      // Keep your existing MindMate Insight dialog.
+      _showMoodAnalysisDialog();
     } catch (error) {
       if (!mounted) return;
 
-      print('MOOD AI CONNECTION ERROR: $error');
+      print('CHECK-IN ERROR: $error');
 
       setState(() {
         _isSubmitting = false;
