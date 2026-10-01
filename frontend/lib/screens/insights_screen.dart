@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../core/constants/app_colors.dart';
+import '../core/services/check_in_service.dart';
+import '../models/check_in.dart';
 import 'home_screen.dart';
 
 class InsightsScreen extends StatefulWidget {
@@ -18,11 +20,475 @@ class InsightsScreen extends StatefulWidget {
 class _InsightsScreenState extends State<InsightsScreen> {
   int _selectedPeriod = 0;
 
+  List<CheckIn> _checkIns = [];
+  bool _isLoadingCheckIns = true;
+  String? _checkInError;
+
   final List<String> _periods = [
     '7 Days',
     '30 Days',
     '3 Months',
   ];
+
+  _InsightsData _buildInsightsFromCheckIns() {
+    final now = DateTime.now();
+
+    final DateTime startDate;
+
+    switch (_selectedPeriod) {
+      case 0:
+        startDate = now.subtract(const Duration(days: 7));
+        break;
+
+      case 1:
+        startDate = now.subtract(const Duration(days: 30));
+        break;
+
+      default:
+        startDate = now.subtract(const Duration(days: 90));
+        break;
+    }
+
+    final periodCheckIns = _checkIns.where((checkIn) {
+      return !checkIn.createdAt.isBefore(startDate);
+    }).toList();
+
+    if (periodCheckIns.isEmpty) {
+      return _insightsData[_selectedPeriod];
+    }
+
+    periodCheckIns.sort(
+          (a, b) => a.createdAt.compareTo(b.createdAt),
+    );
+
+    final moodAverage = periodCheckIns
+        .map((checkIn) => _moodToValue(checkIn.mood))
+        .reduce((a, b) => a + b) /
+        periodCheckIns.length;
+
+    final energyAverage = periodCheckIns
+        .map((checkIn) => checkIn.energyLevel.toDouble())
+        .reduce((a, b) => a + b) /
+        periodCheckIns.length;
+
+    final sleepAverage = periodCheckIns
+        .map((checkIn) => checkIn.sleepQuality.toDouble())
+        .reduce((a, b) => a + b) /
+        periodCheckIns.length;
+
+    final score =
+        (moodAverage + energyAverage + sleepAverage) / 3;
+
+    final moodValues = periodCheckIns
+        .map((checkIn) => _moodToValue(checkIn.mood))
+        .toList();
+
+    final energyValues = periodCheckIns
+        .map((checkIn) => checkIn.energyLevel.toDouble())
+        .toList();
+
+    final chartLabels = periodCheckIns.map((checkIn) {
+      final date = checkIn.createdAt;
+
+      if (_selectedPeriod == 0) {
+        const days = [
+          'Mon',
+          'Tue',
+          'Wed',
+          'Thu',
+          'Fri',
+          'Sat',
+          'Sun',
+        ];
+
+        return days[date.weekday - 1];
+      }
+
+      if (_selectedPeriod == 1) {
+        return '${date.day}';
+      }
+
+      return _monthName(date.month);
+    }).toList();
+
+    final emotionCounts = <String, int>{};
+
+    for (final checkIn in periodCheckIns) {
+      for (final emotion in checkIn.emotions) {
+        emotionCounts[emotion] =
+            (emotionCounts[emotion] ?? 0) + 1;
+      }
+    }
+
+    final totalEmotionSelections = emotionCounts.values.fold(
+      0,
+          (sum, value) => sum + value,
+    );
+
+    final sortedEmotions = emotionCounts.entries.toList()
+      ..sort(
+            (a, b) => b.value.compareTo(a.value),
+      );
+
+    final emotions = sortedEmotions.take(4).map((entry) {
+      final percentage = totalEmotionSelections == 0
+          ? 0.0
+          : entry.value / totalEmotionSelections;
+
+      return _EmotionData(
+        name: entry.key,
+        value: percentage,
+        icon: _emotionIcon(entry.key),
+        negative: _isNegativeEmotion(entry.key),
+      );
+    }).toList();
+
+    while (emotions.length < 4) {
+      emotions.add(
+        const _EmotionData(
+          name: 'No data',
+          value: 0,
+          icon: Icons.remove_circle_outline,
+        ),
+      );
+    }
+
+    final streak = _calculateStreak();
+
+    return _InsightsData(
+      score: score,
+      change: 'LIVE',
+      mood: moodAverage,
+      energy: energyAverage,
+      sleep: sleepAverage,
+      scoreMessage: _scoreMessage(score),
+      chartLabels: chartLabels,
+      moodValues: moodValues,
+      energyValues: energyValues,
+      emotions: emotions,
+      insightTitle: _insightTitle(score),
+      insightText: _insightText(
+        moodAverage,
+        energyAverage,
+        sleepAverage,
+      ),
+      streak: streak,
+      streakGoal: _selectedPeriod == 0
+          ? 7
+          : _selectedPeriod == 1
+          ? 30
+          : 90,
+      streakMessage: _streakMessage(streak),
+      streakDays: _buildStreakDays(),
+      streakLabels: _buildStreakLabels(),
+    );
+  }
+
+  double _moodToValue(String mood) {
+    switch (mood.toLowerCase()) {
+      case 'low':
+        return 2.0;
+
+      case 'okay':
+        return 4.0;
+
+      case 'neutral':
+        return 5.0;
+
+      case 'good':
+        return 7.0;
+
+      case 'great':
+        return 9.0;
+
+      default:
+        return 5.0;
+    }
+  }
+
+  String _monthName(int month) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+
+    return months[month - 1];
+  }
+
+  IconData _emotionIcon(String emotion) {
+    switch (emotion.toLowerCase()) {
+      case 'calm':
+        return Icons.spa_outlined;
+
+      case 'happy':
+        return Icons.sentiment_satisfied_alt_outlined;
+
+      case 'motivated':
+        return Icons.rocket_launch_outlined;
+
+      case 'anxious':
+        return Icons.psychology_outlined;
+
+      case 'sad':
+        return Icons.sentiment_dissatisfied_outlined;
+
+      case 'stressed':
+        return Icons.warning_amber_outlined;
+
+      case 'angry':
+        return Icons.mood_bad_outlined;
+
+      case 'lonely':
+        return Icons.person_outline;
+
+      case 'overwhelmed':
+        return Icons.psychology_alt_outlined;
+
+      case 'hopeful':
+        return Icons.wb_sunny_outlined;
+
+      default:
+        return Icons.mood_outlined;
+    }
+  }
+
+  bool _isNegativeEmotion(String emotion) {
+    const negativeEmotions = {
+      'anxious',
+      'sad',
+      'stressed',
+      'angry',
+      'lonely',
+      'overwhelmed',
+    };
+
+    return negativeEmotions.contains(
+      emotion.toLowerCase(),
+    );
+  }
+
+  String _scoreMessage(double score) {
+    if (score >= 8) {
+      return 'Your recent wellbeing has been strong.';
+    }
+
+    if (score >= 6) {
+      return 'Your recent wellbeing is looking steady.';
+    }
+
+    if (score >= 4) {
+      return 'Your wellbeing has some room for care and attention.';
+    }
+
+    return 'Your recent check-ins suggest you may need some extra care.';
+  }
+
+  String _insightTitle(double score) {
+    if (score >= 8) {
+      return 'You’re building a positive pattern';
+    }
+
+    if (score >= 6) {
+      return 'Your patterns are becoming clearer';
+    }
+
+    if (score >= 4) {
+      return 'Your check-ins reveal useful patterns';
+    }
+
+    return 'Your check-ins are worth paying attention to';
+  }
+
+  String _insightText(
+      double mood,
+      double energy,
+      double sleep,
+      ) {
+    if (energy >= 7 && sleep >= 7) {
+      return 'Your recent check-ins show that your energy and sleep '
+          'have been relatively strong. Keep making space for rest '
+          'and activities that help you feel balanced.';
+    }
+
+    if (sleep < 5) {
+      return 'Your recent sleep ratings have been lower. Giving '
+          'yourself more opportunities for rest may help support '
+          'your overall wellbeing.';
+    }
+
+    if (energy < 5) {
+      return 'Your recent energy ratings have been lower. Small '
+          'breaks, rest, and manageable activities may help you '
+          'take care of yourself.';
+    }
+
+    return 'Your check-ins are helping reveal how your mood, '
+        'energy, and sleep relate over time.';
+  }
+
+  String _streakMessage(int streak) {
+    if (streak == 0) {
+      return 'Start checking in to build your streak';
+    }
+
+    if (streak == 1) {
+      return 'Keep checking in tomorrow';
+    }
+
+    return 'Keep checking in to build your streak';
+  }
+
+  int _calculateStreak() {
+    if (_checkIns.isEmpty) {
+      return 0;
+    }
+
+    final dates = _checkIns
+        .map(
+          (checkIn) => DateTime(
+        checkIn.createdAt.year,
+        checkIn.createdAt.month,
+        checkIn.createdAt.day,
+      ),
+    )
+        .toSet()
+        .toList()
+      ..sort((a, b) => b.compareTo(a));
+
+    if (dates.isEmpty) {
+      return 0;
+    }
+
+    final today = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    );
+
+    // If the user has not checked in today, start from yesterday.
+    DateTime currentDate;
+
+    if (dates.first == today) {
+      currentDate = today;
+    } else if (dates.first == today.subtract(
+      const Duration(days: 1),
+    )) {
+      currentDate = today.subtract(
+        const Duration(days: 1),
+      );
+    } else {
+      return 0;
+    }
+
+    int streak = 0;
+
+    for (final date in dates) {
+      if (date == currentDate) {
+        streak++;
+        currentDate = currentDate.subtract(
+          const Duration(days: 1),
+        );
+      } else if (date.isBefore(currentDate)) {
+        break;
+      }
+    }
+
+    return streak;
+  }
+
+  List<bool> _buildStreakDays() {
+    final now = DateTime.now();
+
+    final int numberOfDays;
+
+    switch (_selectedPeriod) {
+      case 0:
+        numberOfDays = 7;
+        break;
+
+      case 1:
+        numberOfDays = 7;
+        break;
+
+      default:
+        numberOfDays = 7;
+        break;
+    }
+
+    final today = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    );
+
+    final checkInDates = _checkIns.map(
+          (checkIn) => DateTime(
+        checkIn.createdAt.year,
+        checkIn.createdAt.month,
+        checkIn.createdAt.day,
+      ),
+    ).toSet();
+
+    return List.generate(
+      numberOfDays,
+          (index) {
+        final date = today.subtract(
+          Duration(days: numberOfDays - 1 - index),
+        );
+
+        return checkInDates.contains(date);
+      },
+    );
+  }
+
+  List<String> _buildStreakLabels() {
+    final now = DateTime.now();
+
+    final today = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    );
+
+    return List.generate(
+      7,
+          (index) {
+        final date = today.subtract(
+          Duration(days: 6 - index),
+        );
+
+        if (_selectedPeriod == 0) {
+          const days = [
+            'M',
+            'T',
+            'W',
+            'T',
+            'F',
+            'S',
+            'S',
+          ];
+
+          return days[date.weekday - 1];
+        }
+
+        if (_selectedPeriod == 1) {
+          return '${date.day}';
+        }
+
+        return _monthName(date.month);
+      },
+    );
+  }
 
   // ============================================================
   // PERIOD DATA
@@ -296,7 +762,39 @@ class _InsightsScreenState extends State<InsightsScreen> {
   ];
 
   _InsightsData get _currentData {
-    return _insightsData[_selectedPeriod];
+    if (_checkIns.isEmpty) {
+      return _insightsData[_selectedPeriod];
+    }
+
+    return _buildInsightsFromCheckIns();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    _loadCheckIns();
+  }
+
+  Future<void> _loadCheckIns() async {
+    try {
+      final checkIns = await CheckInService.getCheckIns();
+
+      if (!mounted) return;
+
+      setState(() {
+        _checkIns = checkIns;
+        _isLoadingCheckIns = false;
+        _checkInError = null;
+      });
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoadingCheckIns = false;
+        _checkInError = error.toString();
+      });
+    }
   }
 
   // ============================================================
@@ -433,11 +931,11 @@ class _InsightsScreenState extends State<InsightsScreen> {
           // TITLE
           // ------------------------------------------------------
 
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Your Insights',
                   style: TextStyle(
                     color: AppColors.textDark,
@@ -446,10 +944,16 @@ class _InsightsScreenState extends State<InsightsScreen> {
                     letterSpacing: -0.3,
                   ),
                 ),
-                SizedBox(height: 3),
+
+                const SizedBox(height: 3),
+
                 Text(
-                  'Understand your wellbeing journey',
-                  style: TextStyle(
+                  _isLoadingCheckIns
+                      ? 'Loading check-ins...'
+                      : _checkInError != null
+                      ? 'ERROR: $_checkInError'
+                      : '${_checkIns.length} check-in${_checkIns.length == 1 ? '' : 's'} recorded',
+                  style: const TextStyle(
                     color: Colors.black54,
                     fontSize: 11.5,
                     fontWeight: FontWeight.w500,
@@ -458,7 +962,6 @@ class _InsightsScreenState extends State<InsightsScreen> {
               ],
             ),
           ),
-
         ],
       ),
     );
@@ -930,7 +1433,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
               title: 'Mood',
               value: data.mood.toStringAsFixed(1),
               change: _getMetricChange('mood'),
-              positive: true,
+              positive: _getMetricChangeValue('mood') >= 0,
             ),
           ),
 
@@ -942,7 +1445,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
               title: 'Energy',
               value: data.energy.toStringAsFixed(1),
               change: _getMetricChange('energy'),
-              positive: true,
+              positive: _getMetricChangeValue('energy') >= 0,
             ),
           ),
 
@@ -954,7 +1457,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
               title: 'Sleep',
               value: data.sleep.toStringAsFixed(1),
               change: _getMetricChange('sleep'),
-              positive: true,
+              positive: _getMetricChangeValue('sleep') >= 0,
             ),
           ),
         ],
@@ -962,39 +1465,156 @@ class _InsightsScreenState extends State<InsightsScreen> {
     );
   }
 
-  String _getMetricChange(String type) {
-    if (_selectedPeriod == 0) {
-      switch (type) {
-        case 'mood':
-          return '+0.6';
-        case 'energy':
-          return '+0.3';
-        case 'sleep':
-          return '+0.8';
-      }
+  double _getMetricChangeValue(String type) {
+    final now = DateTime.now();
+
+    final DateTime startDate;
+
+    switch (_selectedPeriod) {
+      case 0:
+        startDate = now.subtract(
+          const Duration(days: 7),
+        );
+        break;
+
+      case 1:
+        startDate = now.subtract(
+          const Duration(days: 30),
+        );
+        break;
+
+      default:
+        startDate = now.subtract(
+          const Duration(days: 90),
+        );
+        break;
     }
 
-    if (_selectedPeriod == 1) {
-      switch (type) {
-        case 'mood':
-          return '+0.4';
-        case 'energy':
-          return '+0.2';
-        case 'sleep':
-          return '+0.5';
-      }
+    final periodCheckIns = _checkIns
+        .where(
+          (checkIn) =>
+      !checkIn.createdAt.isBefore(startDate),
+    )
+        .toList()
+      ..sort(
+            (a, b) => a.createdAt.compareTo(b.createdAt),
+      );
+
+    if (periodCheckIns.length < 2) {
+      return 0;
     }
+
+    double firstValue;
+    double lastValue;
 
     switch (type) {
       case 'mood':
-        return '+0.9';
+        firstValue = _moodToValue(
+          periodCheckIns.first.mood,
+        );
+        lastValue = _moodToValue(
+          periodCheckIns.last.mood,
+        );
+        break;
+
       case 'energy':
-        return '+0.7';
+        firstValue =
+            periodCheckIns.first.energyLevel.toDouble();
+        lastValue =
+            periodCheckIns.last.energyLevel.toDouble();
+        break;
+
       case 'sleep':
-        return '+0.6';
+        firstValue =
+            periodCheckIns.first.sleepQuality.toDouble();
+        lastValue =
+            periodCheckIns.last.sleepQuality.toDouble();
+        break;
+
+      default:
+        return 0;
     }
 
-    return '+0.0';
+    return lastValue - firstValue;
+  }
+
+  String _getMetricChange(String type) {
+    final now = DateTime.now();
+
+    final DateTime startDate;
+
+    switch (_selectedPeriod) {
+      case 0:
+        startDate = now.subtract(
+          const Duration(days: 7),
+        );
+        break;
+
+      case 1:
+        startDate = now.subtract(
+          const Duration(days: 30),
+        );
+        break;
+
+      default:
+        startDate = now.subtract(
+          const Duration(days: 90),
+        );
+        break;
+    }
+
+    final periodCheckIns = _checkIns
+        .where(
+          (checkIn) =>
+      !checkIn.createdAt.isBefore(startDate),
+    )
+        .toList()
+      ..sort(
+            (a, b) => a.createdAt.compareTo(b.createdAt),
+      );
+
+    if (periodCheckIns.length < 2) {
+      return '+0.0';
+    }
+
+    double firstValue;
+    double lastValue;
+
+    switch (type) {
+      case 'mood':
+        firstValue = _moodToValue(
+          periodCheckIns.first.mood,
+        );
+        lastValue = _moodToValue(
+          periodCheckIns.last.mood,
+        );
+        break;
+
+      case 'energy':
+        firstValue =
+            periodCheckIns.first.energyLevel.toDouble();
+        lastValue =
+            periodCheckIns.last.energyLevel.toDouble();
+        break;
+
+      case 'sleep':
+        firstValue =
+            periodCheckIns.first.sleepQuality.toDouble();
+        lastValue =
+            periodCheckIns.last.sleepQuality.toDouble();
+        break;
+
+      default:
+        return '+0.0';
+    }
+
+    final change = lastValue - firstValue;
+
+    if (change > 0) {
+      return '+${change.toStringAsFixed(1)}';
+    }
+
+    return change.toStringAsFixed(1);
   }
 
   Widget _buildMetricCard({

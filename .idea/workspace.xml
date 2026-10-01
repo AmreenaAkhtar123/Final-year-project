@@ -5,10 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f21d4447-cc26-4919-8eac-2323aaaa6e0a" name="Changes" comment="Initializing the project and make the UI of splash screen">
-      <change afterPath="$PROJECT_DIR$/backend/models/CheckIn.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/lib/core/services/check_in_service.dart" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/frontend/lib/models/check_in.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/server.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/screens/check_in_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/screens/check_in_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/screens/insights_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/screens/insights_screen.dart" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -117,5 +118,16 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Initializing the project and make the UI of splash screen" />
     <option name="LAST_COMMIT_MESSAGE" value="Initializing the project and make the UI of splash screen" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="Dart">
+          <url>file://$PROJECT_DIR$/frontend/lib/screens/insights_screen.dart</url>
+          <line>895</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

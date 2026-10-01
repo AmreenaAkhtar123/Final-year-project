@@ -429,6 +429,36 @@ app.post('/api/check-ins', async (req, res) => {
   }
 });
 
+//GEting the checkin
+app.get('/api/check-ins', async (req, res) => {
+  try {
+    const { email } = req.query;
+
+    if (!email) {
+      return res.status(400).json({
+        message: 'Email is required.',
+      });
+    }
+
+    const checkIns = await CheckIn.find({
+      email: email.toLowerCase().trim(),
+    }).sort({
+      createdAt: -1,
+    });
+
+    res.status(200).json({
+      message: 'Check-ins retrieved successfully.',
+      checkIns,
+    });
+  } catch (error) {
+    console.error('Get check-ins error:', error);
+
+    res.status(500).json({
+      message: 'Failed to retrieve check-ins.',
+    });
+  }
+});
+
 app.get('/', (req, res) => {
   res.json({
     message: 'MindMate backend is running.',
