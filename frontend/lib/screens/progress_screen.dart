@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../core/constants/app_colors.dart';
+import '../core/services/progress_service.dart';
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
@@ -13,29 +14,51 @@ class ProgressScreen extends StatefulWidget {
 
 class _ProgressScreenState extends State<ProgressScreen> {
   // ---------------------------------------------------------------------------
-  // TEMPORARY DATA
-  // We will connect these values to real MindMate data next.
+  // REAL PROGRESS DATA
   // ---------------------------------------------------------------------------
 
-  final int _journeyScore = 82;
+  ProgressData? _progress;
 
-  final int _totalCheckIns = 18;
-  final int _bestStreak = 12;
+  bool _isLoading = true;
+  String? _errorMessage;
 
-  final int _mostReflectiveWeek = 6;
-  final String _mostActivePeriod = 'September';
-  final int _aiInsights = 9;
+  @override
+  void initState() {
+    super.initState();
+    _loadProgress();
+  }
 
-  final double _reflectionProgress = 0.72;
-  final double _consistencyProgress = 0.84;
-  final double _selfAwarenessProgress = 0.78;
+  Future<void> _loadProgress() async {
+    try {
+      final progress = await ProgressService.getProgress();
 
-  final int _completedMilestones = 4;
+      if (!mounted) return;
 
-  final List<int> _weeklyCheckIns = [2, 4, 3, 5, 6];
+      setState(() {
+        _progress = progress;
+        _isLoading = false;
+        _errorMessage = null;
+      });
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Unable to load your progress.';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return _buildLoadingScreen();
+    }
+
+    if (_progress == null) {
+      return _buildErrorScreen();
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -45,82 +68,164 @@ class _ProgressScreenState extends State<ProgressScreen> {
             SliverToBoxAdapter(
               child: _buildHeader(),
             ),
-
             SliverToBoxAdapter(
               child: _buildJourneyScore(),
             ),
-
             SliverToBoxAdapter(
               child: _buildQuickStats(),
             ),
-
             SliverToBoxAdapter(
               child: _buildSectionTitle(
                 'Personal Records',
                 'The milestones that define your journey',
               ),
             ),
-
             SliverToBoxAdapter(
               child: _buildPersonalRecords(),
             ),
-
             SliverToBoxAdapter(
               child: _buildSectionTitle(
                 'Consistency Journey',
                 'Your check-in rhythm over recent weeks',
               ),
             ),
-
             SliverToBoxAdapter(
               child: _buildConsistencyChart(),
             ),
-
             SliverToBoxAdapter(
               child: _buildSectionTitle(
                 'Self-Awareness',
                 'How your reflection habits are developing',
               ),
             ),
-
             SliverToBoxAdapter(
               child: _buildSelfAwareness(),
             ),
-
             SliverToBoxAdapter(
               child: _buildSectionTitle(
                 'Milestone Roadmap',
                 'Small achievements that build your journey',
               ),
             ),
-
             SliverToBoxAdapter(
               child: _buildMilestoneRoadmap(),
             ),
-
             SliverToBoxAdapter(
               child: _buildSectionTitle(
                 'Your Journey',
                 'Important moments from your MindMate experience',
               ),
             ),
-
             SliverToBoxAdapter(
               child: _buildJourneyTimeline(),
             ),
-
             SliverToBoxAdapter(
               child: _buildNextMilestone(),
             ),
-
             SliverToBoxAdapter(
               child: _buildPrivacyNote(),
             ),
-
             const SliverToBoxAdapter(
               child: SizedBox(height: 28),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // LOADING
+  // ---------------------------------------------------------------------------
+
+  Widget _buildLoadingScreen() {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Center(
+          child: CircularProgressIndicator(
+            color: AppColors.mint,
+            strokeWidth: 2.5,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // ERROR
+  // ---------------------------------------------------------------------------
+
+  Widget _buildErrorScreen() {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(30),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    color: AppColors.lightMint,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: const Icon(
+                    Icons.cloud_off_rounded,
+                    color: AppColors.mint,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Unable to load your progress',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.navy,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 7),
+                Text(
+                  _errorMessage ??
+                      'Please check your connection and try again.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.navy.withOpacity(0.55),
+                    fontSize: 12.5,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _isLoading = true;
+                    });
+
+                    _loadProgress();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.mint,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                  ),
+                  child: const Text(
+                    'Try Again',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -137,14 +242,12 @@ class _ProgressScreenState extends State<ProgressScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildBackButton(),
-
           const SizedBox(width: 14),
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Your Growth Journey 🌱',
                   style: TextStyle(
                     color: AppColors.navy,
@@ -208,7 +311,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           colors: [
             AppColors.lightMint,
             Colors.white,
@@ -236,7 +339,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'YOUR JOURNEY',
                       style: TextStyle(
                         color: AppColors.mint,
@@ -246,7 +349,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                       ),
                     ),
                     const SizedBox(height: 7),
-                    Text(
+                    const Text(
                       'Journey Score',
                       style: TextStyle(
                         color: AppColors.navy,
@@ -266,15 +369,11 @@ class _ProgressScreenState extends State<ProgressScreen> {
                   ],
                 ),
               ),
-
               const SizedBox(width: 18),
-
               _buildScoreCircle(),
             ],
           ),
-
           const SizedBox(height: 20),
-
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: 14,
@@ -301,7 +400,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 Expanded(
                   child: Text(
                     'Great momentum — keep building your journey.',
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.navy,
                       fontSize: 12.5,
                       fontWeight: FontWeight.w600,
@@ -322,12 +421,14 @@ class _ProgressScreenState extends State<ProgressScreen> {
   }
 
   Widget _buildScoreCircle() {
+    final score = _progress!.journeyScore.clamp(0, 100);
+
     return SizedBox(
       width: 100,
       height: 100,
       child: CustomPaint(
         painter: _ScorePainter(
-          progress: _journeyScore / 100,
+          progress: score / 100,
           backgroundColor: AppColors.borderMint,
           progressColor: AppColors.mint,
         ),
@@ -336,7 +437,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                '$_journeyScore',
+                '$score',
                 style: const TextStyle(
                   color: AppColors.navy,
                   fontSize: 27,
@@ -372,7 +473,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
         children: [
           Expanded(
             child: _buildQuickStatCard(
-              value: '$_totalCheckIns',
+              value: '${_progress!.totalCheckIns}',
               label: 'Check-ins',
               icon: Icons.edit_note_rounded,
             ),
@@ -380,7 +481,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
           const SizedBox(width: 12),
           Expanded(
             child: _buildQuickStatCard(
-              value: '$_bestStreak',
+              value: '${_progress!.longestStreak}',
               label: 'Best streak',
               icon: Icons.local_fire_department_rounded,
             ),
@@ -510,25 +611,25 @@ class _ProgressScreenState extends State<ProgressScreen> {
           _buildRecordRow(
             icon: Icons.emoji_events_rounded,
             title: 'Longest streak',
-            value: '$_bestStreak days',
+            value: '${_progress!.longestStreak} days',
           ),
           _buildDivider(),
           _buildRecordRow(
             icon: Icons.edit_note_rounded,
             title: 'Most reflections in a week',
-            value: '$_mostReflectiveWeek',
+            value: '${_progress!.mostReflectiveWeek}',
           ),
           _buildDivider(),
           _buildRecordRow(
             icon: Icons.calendar_month_rounded,
             title: 'Most active period',
-            value: _mostActivePeriod,
+            value: _progress!.mostActiveMonth ?? 'Not enough data',
           ),
           _buildDivider(),
           _buildRecordRow(
             icon: Icons.auto_awesome_rounded,
             title: 'MindMate insights',
-            value: '$_aiInsights',
+            value: '${_progress!.aiInsightsReceived}',
           ),
         ],
       ),
@@ -594,7 +695,11 @@ class _ProgressScreenState extends State<ProgressScreen> {
   // ---------------------------------------------------------------------------
 
   Widget _buildConsistencyChart() {
-    final int highest = _weeklyCheckIns.reduce(math.max);
+    final weeklyCheckIns = _progress!.weeklyCheckIns;
+
+    final int highest = weeklyCheckIns.isEmpty
+        ? 0
+        : weeklyCheckIns.reduce(math.max);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -635,22 +740,22 @@ class _ProgressScreenState extends State<ProgressScreen> {
               ),
             ],
           ),
-
           const SizedBox(height: 24),
-
           SizedBox(
             height: 170,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: List.generate(
-                _weeklyCheckIns.length,
+                weeklyCheckIns.length,
                     (index) {
-                  final value = _weeklyCheckIns[index];
+                  final value = weeklyCheckIns[index];
                   final isHighest = value == highest;
 
                   return Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 7),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                      ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
@@ -669,14 +774,19 @@ class _ProgressScreenState extends State<ProgressScreen> {
                             child: Align(
                               alignment: Alignment.bottomCenter,
                               child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 500),
+                                duration: const Duration(
+                                  milliseconds: 500,
+                                ),
                                 width: 28,
-                                height: 105 * (value / highest),
+                                height: highest == 0
+                                    ? 0
+                                    : 105 * (value / highest),
                                 decoration: BoxDecoration(
                                   color: isHighest
                                       ? AppColors.mint
                                       : AppColors.lightMint,
-                                  borderRadius: const BorderRadius.vertical(
+                                  borderRadius:
+                                  const BorderRadius.vertical(
                                     top: Radius.circular(9),
                                   ),
                                 ),
@@ -700,9 +810,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
               ),
             ),
           ),
-
           const SizedBox(height: 5),
-
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: 12,
@@ -743,6 +851,13 @@ class _ProgressScreenState extends State<ProgressScreen> {
   // ---------------------------------------------------------------------------
 
   Widget _buildSelfAwareness() {
+    final consistency = _progress!.totalCheckIns == 0
+        ? 0.0
+        : math.min(
+      1.0,
+      _progress!.longestStreak / 30,
+    );
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(19),
@@ -758,19 +873,19 @@ class _ProgressScreenState extends State<ProgressScreen> {
           _buildProgressMetric(
             icon: Icons.edit_note_rounded,
             title: 'Reflection habit',
-            value: _reflectionProgress,
+            value: _progress!.reflectionRate,
           ),
           const SizedBox(height: 19),
           _buildProgressMetric(
             icon: Icons.event_repeat_rounded,
             title: 'Check-in consistency',
-            value: _consistencyProgress,
+            value: consistency,
           ),
           const SizedBox(height: 19),
           _buildProgressMetric(
             icon: Icons.psychology_alt_rounded,
             title: 'Self-awareness',
-            value: _selfAwarenessProgress,
+            value: _progress!.selfAwarenessRate,
           ),
         ],
       ),
@@ -782,7 +897,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
     required String title,
     required double value,
   }) {
-    final percentage = (value * 100).round();
+    final safeValue = value.clamp(0.0, 1.0);
+    final percentage = (safeValue * 100).round();
 
     return Column(
       children: [
@@ -826,7 +942,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
         ClipRRect(
           borderRadius: BorderRadius.circular(20),
           child: LinearProgressIndicator(
-            value: value,
+            value: safeValue,
             minHeight: 8,
             backgroundColor: AppColors.lightMint,
             valueColor: const AlwaysStoppedAnimation<Color>(
@@ -848,37 +964,38 @@ class _ProgressScreenState extends State<ProgressScreen> {
         title: 'First check-in',
         subtitle: 'You started your MindMate journey',
         icon: Icons.flag_rounded,
-        completed: true,
+        completed: _progress!.milestones.firstCheckIn,
       ),
       _Milestone(
         title: '7-day streak',
         subtitle: 'You built your first consistency streak',
         icon: Icons.local_fire_department_rounded,
-        completed: true,
+        completed: _progress!.milestones.sevenDayStreak,
       ),
       _Milestone(
         title: '10 reflections',
         subtitle: 'You made space for personal reflection',
         icon: Icons.edit_note_rounded,
-        completed: true,
+        completed: _progress!.milestones.tenReflections,
       ),
       _Milestone(
         title: 'First assessment',
         subtitle: 'You explored your wellbeing further',
         icon: Icons.assignment_rounded,
-        completed: true,
+        completed: _progress!.milestones.firstAssessment,
       ),
       _Milestone(
         title: '30 check-ins',
-        subtitle: '$_totalCheckIns / 30 completed',
+        subtitle:
+        '${_progress!.totalCheckIns.clamp(0, 30)} / 30 completed',
         icon: Icons.rocket_launch_rounded,
-        completed: false,
+        completed: _progress!.milestones.thirtyCheckIns,
       ),
       _Milestone(
         title: '30-day consistency',
         subtitle: 'Keep returning to your journey',
         icon: Icons.calendar_month_rounded,
-        completed: false,
+        completed: _progress!.milestones.thirtyDayConsistency,
       ),
     ];
 
@@ -949,7 +1066,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
                   Expanded(
                     child: Container(
                       width: 1.5,
-                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      margin: const EdgeInsets.symmetric(
+                        vertical: 4,
+                      ),
                       color: milestone.completed
                           ? AppColors.mint.withOpacity(0.45)
                           : AppColors.borderMint,
@@ -958,9 +1077,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
               ],
             ),
           ),
-
           const SizedBox(width: 12),
-
           Expanded(
             child: Padding(
               padding: const EdgeInsets.only(
@@ -972,7 +1089,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 children: [
                   Text(
                     milestone.title,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.navy,
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
@@ -1001,6 +1118,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
   // ---------------------------------------------------------------------------
 
   Widget _buildJourneyTimeline() {
+    final milestones = _progress!.milestones;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(19),
@@ -1017,34 +1136,35 @@ class _ProgressScreenState extends State<ProgressScreen> {
             icon: Icons.flag_rounded,
             title: 'Started your MindMate journey',
             description: 'You completed your first check-in.',
-            completed: true,
+            completed: milestones.firstCheckIn,
             isLast: false,
           ),
           _buildTimelineItem(
             icon: Icons.assignment_rounded,
             title: 'Explored self-awareness',
             description: 'You completed your first assessment.',
-            completed: true,
+            completed: milestones.firstAssessment,
             isLast: false,
           ),
           _buildTimelineItem(
             icon: Icons.local_fire_department_rounded,
             title: 'Built a consistent habit',
             description: 'You reached a 7-day streak.',
-            completed: true,
+            completed: milestones.sevenDayStreak,
             isLast: false,
           ),
           _buildTimelineItem(
             icon: Icons.emoji_events_rounded,
             title: 'Reached your longest streak',
-            description: 'Your personal record is $_bestStreak days.',
-            completed: true,
+            description:
+            'Your personal record is ${_progress!.longestStreak} days.',
+            completed: _progress!.longestStreak > 0,
             isLast: false,
           ),
           _buildTimelineItem(
             icon: Icons.rocket_launch_rounded,
             title: 'Your next milestone',
-            description: 'Reach 30 total check-ins.',
+            description: _buildNextMilestoneDescription(),
             completed: false,
             isLast: true,
           ),
@@ -1095,16 +1215,16 @@ class _ProgressScreenState extends State<ProgressScreen> {
                   Expanded(
                     child: Container(
                       width: 1,
-                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      margin: const EdgeInsets.symmetric(
+                        vertical: 4,
+                      ),
                       color: AppColors.borderMint,
                     ),
                   ),
               ],
             ),
           ),
-
           const SizedBox(width: 12),
-
           Expanded(
             child: Padding(
               padding: const EdgeInsets.only(
@@ -1146,11 +1266,52 @@ class _ProgressScreenState extends State<ProgressScreen> {
   // NEXT MILESTONE
   // ---------------------------------------------------------------------------
 
+  String _buildNextMilestoneDescription() {
+    switch (_progress!.nextMilestone) {
+      case 'firstCheckIn':
+        return 'Complete your first check-in.';
+
+      case 'thirtyCheckIns':
+        final remaining =
+            _progress!.nextMilestoneTarget -
+                _progress!.nextMilestoneCurrent;
+
+        return '$remaining more check-ins to reach 30.';
+
+      case 'thirtyDayConsistency':
+        final remaining =
+            _progress!.nextMilestoneTarget -
+                _progress!.nextMilestoneCurrent;
+
+        return '$remaining more days to reach a 30-day streak.';
+
+      case 'journeyMastery':
+        return 'Keep building your MindMate journey.';
+
+      default:
+        return 'Keep building your MindMate journey.';
+    }
+  }
+
   Widget _buildNextMilestone() {
-    const target = 30;
-    final completed = _totalCheckIns.clamp(0, target);
-    final progress = completed / target;
-    final remaining = target - completed;
+    final target = _progress!.nextMilestoneTarget;
+
+    final completed = _progress!.nextMilestoneCurrent.clamp(
+      0,
+      target,
+    );
+
+    final progress = _progress!.nextMilestoneProgress.clamp(
+      0.0,
+      1.0,
+    );
+
+    final remaining = math.max(
+      0,
+      target - completed,
+    );
+
+    final title = _getNextMilestoneTitle();
 
     return Container(
       margin: const EdgeInsets.fromLTRB(20, 28, 20, 0),
@@ -1196,20 +1357,16 @@ class _ProgressScreenState extends State<ProgressScreen> {
               ),
             ],
           ),
-
           const SizedBox(height: 18),
-
-          const Text(
-            '30 Check-ins',
-            style: TextStyle(
+          Text(
+            title,
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 22,
               fontWeight: FontWeight.w800,
             ),
           ),
-
           const SizedBox(height: 5),
-
           Text(
             '$completed / $target completed',
             style: TextStyle(
@@ -1217,9 +1374,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
               fontSize: 12,
             ),
           ),
-
           const SizedBox(height: 15),
-
           ClipRRect(
             borderRadius: BorderRadius.circular(20),
             child: LinearProgressIndicator(
@@ -1231,9 +1386,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
               ),
             ),
           ),
-
           const SizedBox(height: 12),
-
           Row(
             children: [
               Text(
@@ -1246,7 +1399,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
               ),
               const Spacer(),
               Text(
-                '$remaining more check-ins to unlock',
+                remaining > 0
+                    ? '$remaining more to unlock'
+                    : 'Milestone unlocked',
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.58),
                   fontSize: 10.5,
@@ -1257,6 +1412,25 @@ class _ProgressScreenState extends State<ProgressScreen> {
         ],
       ),
     );
+  }
+
+  String _getNextMilestoneTitle() {
+    switch (_progress!.nextMilestone) {
+      case 'firstCheckIn':
+        return 'First Check-in';
+
+      case 'thirtyCheckIns':
+        return '30 Check-ins';
+
+      case 'thirtyDayConsistency':
+        return '30-Day Consistency';
+
+      case 'journeyMastery':
+        return 'Journey Mastery';
+
+      default:
+        return 'Next Milestone';
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -1321,12 +1495,8 @@ class _ScorePainter extends CustomPainter {
       size.height / 2,
     );
 
-    final radius = math.min(
-      size.width,
-      size.height,
-    ) /
-        2 -
-        6;
+    final radius =
+        math.min(size.width, size.height) / 2 - 6;
 
     final backgroundPaint = Paint()
       ..color = backgroundColor
@@ -1360,7 +1530,9 @@ class _ScorePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _ScorePainter oldDelegate) {
-    return oldDelegate.progress != progress;
+    return oldDelegate.progress != progress ||
+        oldDelegate.backgroundColor != backgroundColor ||
+        oldDelegate.progressColor != progressColor;
   }
 }
 
