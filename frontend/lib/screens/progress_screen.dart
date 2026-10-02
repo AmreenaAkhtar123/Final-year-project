@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../core/constants/app_colors.dart';
@@ -10,208 +12,218 @@ class ProgressScreen extends StatefulWidget {
 }
 
 class _ProgressScreenState extends State<ProgressScreen> {
-  // Demo data for now.
-  // Later these values will come from the backend/database.
-  final int _checkInsCompleted = 18;
-  final int _currentStreak = 6;
-  final int _longestStreak = 12;
-  final int _assessmentsCompleted = 4;
-  final int _aiConversations = 23;
-  final double _monthlyGoalProgress = 0.72;
+  // ---------------------------------------------------------------------------
+  // TEMPORARY DATA
+  // We will connect these values to real MindMate data next.
+  // ---------------------------------------------------------------------------
 
-  final List<bool> _activityDays = [
-    true,
-    true,
-    false,
-    true,
-    true,
-    true,
-    false,
-    true,
-    false,
-    true,
-    true,
-    true,
-    true,
-    false,
-    true,
-    true,
-    false,
-    true,
-    true,
-    false,
-    true,
-    true,
-    true,
-    false,
-    true,
-    true,
-    true,
-    false,
-    true,
-    true,
-  ];
+  final int _journeyScore = 82;
+
+  final int _totalCheckIns = 18;
+  final int _bestStreak = 12;
+
+  final int _mostReflectiveWeek = 6;
+  final String _mostActivePeriod = 'September';
+  final int _aiInsights = 9;
+
+  final double _reflectionProgress = 0.72;
+  final double _consistencyProgress = 0.84;
+  final double _selfAwarenessProgress = 0.78;
+
+  final int _completedMilestones = 4;
+
+  final List<int> _weeklyCheckIns = [2, 4, 3, 5, 6];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(72),
-        child: Container(
-          color: AppColors.background,
-          padding: const EdgeInsets.fromLTRB(
-            18,
-            28,
-            18,
-            10,
-          ),
-          child: Row(
-            children: [
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                  borderRadius: BorderRadius.circular(10),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: AppColors.borderMint,
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: AppColors.navy,
-                      size: 15,
-                    ),
-                  ),
-                ),
-              ),
-
-              const Expanded(
-                child: Center(
-                  child: Text(
-                    'Progress',
-                    style: TextStyle(
-                      color: AppColors.navy,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-
-              // Keeps the title perfectly centered.
-              const SizedBox(
-                width: 34,
-                height: 34,
-              ),
-            ],
-          ),
-        ),
-      ),
-
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 30),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              const SizedBox(height: 22),
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: _buildHeader(),
+            ),
 
-              _buildStreakCard(),
-              const SizedBox(height: 20),
+            SliverToBoxAdapter(
+              child: _buildJourneyScore(),
+            ),
 
-              _buildSectionTitle('Your Activity'),
-              const SizedBox(height: 12),
+            SliverToBoxAdapter(
+              child: _buildQuickStats(),
+            ),
 
-              _buildActivityCalendar(),
-              const SizedBox(height: 22),
+            SliverToBoxAdapter(
+              child: _buildSectionTitle(
+                'Personal Records',
+                'The milestones that define your journey',
+              ),
+            ),
 
-              _buildSectionTitle('Your Progress'),
-              const SizedBox(height: 12),
+            SliverToBoxAdapter(
+              child: _buildPersonalRecords(),
+            ),
 
-              _buildProgressGrid(),
-              const SizedBox(height: 22),
+            SliverToBoxAdapter(
+              child: _buildSectionTitle(
+                'Consistency Journey',
+                'Your check-in rhythm over recent weeks',
+              ),
+            ),
 
-              _buildSectionTitle('Monthly Goal'),
-              const SizedBox(height: 12),
+            SliverToBoxAdapter(
+              child: _buildConsistencyChart(),
+            ),
 
-              _buildGoalCard(),
-              const SizedBox(height: 22),
+            SliverToBoxAdapter(
+              child: _buildSectionTitle(
+                'Self-Awareness',
+                'How your reflection habits are developing',
+              ),
+            ),
 
-              _buildSectionTitle('Milestones'),
-              const SizedBox(height: 12),
+            SliverToBoxAdapter(
+              child: _buildSelfAwareness(),
+            ),
 
-              _buildMilestones(),
-              const SizedBox(height: 22),
+            SliverToBoxAdapter(
+              child: _buildSectionTitle(
+                'Milestone Roadmap',
+                'Small achievements that build your journey',
+              ),
+            ),
 
-              _buildPrivacyNote(),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+            SliverToBoxAdapter(
+              child: _buildMilestoneRoadmap(),
+            ),
 
-  // ------------------------------------------------------------
-  // HEADER
-  // ------------------------------------------------------------
+            SliverToBoxAdapter(
+              child: _buildSectionTitle(
+                'Your Journey',
+                'Important moments from your MindMate experience',
+              ),
+            ),
 
-  Widget _buildHeader() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Keep moving forward 🌱',
-          style: TextStyle(
-            color: AppColors.navy,
-            fontSize: 25,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 7),
-        Text(
-          'Track your wellbeing journey and celebrate your progress.',
-          style: TextStyle(
-            color: AppColors.navy.withValues(alpha: 0.60),
-            fontSize: 13,
-            height: 1.5,
-          ),
-        ),
-      ],
-    );
-  }
+            SliverToBoxAdapter(
+              child: _buildJourneyTimeline(),
+            ),
 
-  // ------------------------------------------------------------
-  // STREAK
-  // ------------------------------------------------------------
+            SliverToBoxAdapter(
+              child: _buildNextMilestone(),
+            ),
 
-  Widget _buildStreakCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.navy,
-            AppColors.navy.withValues(alpha: 0.90),
+            SliverToBoxAdapter(
+              child: _buildPrivacyNote(),
+            ),
+
+            const SliverToBoxAdapter(
+              child: SizedBox(height: 28),
+            ),
           ],
         ),
-        borderRadius: BorderRadius.circular(24),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // HEADER
+  // ---------------------------------------------------------------------------
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildBackButton(),
+
+          const SizedBox(width: 14),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Your Growth Journey 🌱',
+                  style: TextStyle(
+                    color: AppColors.navy,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  'See how your MindMate journey has evolved over time.',
+                  style: TextStyle(
+                    color: AppColors.navy.withOpacity(0.58),
+                    fontSize: 13.5,
+                    height: 1.45,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBackButton() {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          Navigator.of(context).maybePop();
+        },
+        child: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppColors.borderMint,
+              width: 1,
+            ),
+          ),
+          child: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.navy,
+            size: 17,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // JOURNEY SCORE
+  // ---------------------------------------------------------------------------
+
+  Widget _buildJourneyScore() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.lightMint,
+            Colors.white,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: AppColors.borderMint,
+        ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.navy.withValues(alpha: 0.12),
-            blurRadius: 18,
+            color: AppColors.navy.withOpacity(0.045),
+            blurRadius: 20,
             offset: const Offset(0, 8),
           ),
         ],
@@ -220,385 +232,88 @@ class _ProgressScreenState extends State<ProgressScreen> {
         children: [
           Row(
             children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: AppColors.mint.withValues(alpha: 0.18),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.local_fire_department_rounded,
-                  color: AppColors.mint,
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 14),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Current Streak',
+                      'YOUR JOURNEY',
                       style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
+                        color: AppColors.mint,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.4,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 7),
                     Text(
-                      'You are building a healthy habit!',
+                      'Journey Score',
                       style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 11.5,
+                        color: AppColors.navy,
+                        fontSize: 21,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      'A snapshot of your overall engagement with MindMate.',
+                      style: TextStyle(
+                        color: AppColors.navy.withOpacity(0.58),
+                        fontSize: 12.5,
+                        height: 1.4,
                       ),
                     ),
                   ],
                 ),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '$_currentStreak',
-                    style: const TextStyle(
-                      color: AppColors.mint,
-                      fontSize: 30,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const Text(
-                    'days',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          Divider(
-            color: Colors.white.withValues(alpha: 0.10),
-            height: 1,
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStreakInfo(
-                  icon: Icons.calendar_month_rounded,
-                  label: 'Longest streak',
-                  value: '$_longestStreak days',
-                ),
-              ),
-              Container(
-                width: 1,
-                height: 34,
-                color: Colors.white.withValues(alpha: 0.10),
-              ),
-              Expanded(
-                child: _buildStreakInfo(
-                  icon: Icons.check_circle_outline_rounded,
-                  label: 'Check-ins',
-                  value: '$_checkInsCompleted',
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildStreakInfo({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          icon,
-          color: Colors.white70,
-          size: 18,
-        ),
-        const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white54,
-                fontSize: 9.5,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
+              const SizedBox(width: 18),
 
-  // ------------------------------------------------------------
-  // ACTIVITY CALENDAR
-  // ------------------------------------------------------------
-
-  Widget _buildActivityCalendar() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.borderMint,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.calendar_today_rounded,
-                color: AppColors.mint,
-                size: 19,
-              ),
-              const SizedBox(width: 9),
-              const Text(
-                'September Activity',
-                style: TextStyle(
-                  color: AppColors.navy,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                '$_checkInsCompleted check-ins',
-                style: TextStyle(
-                  color: AppColors.navy.withValues(alpha: 0.50),
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 17),
-
-          // Weekday labels
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              _DayLabel('M'),
-              _DayLabel('T'),
-              _DayLabel('W'),
-              _DayLabel('T'),
-              _DayLabel('F'),
-              _DayLabel('S'),
-              _DayLabel('S'),
+              _buildScoreCircle(),
             ],
           ),
 
-          const SizedBox(height: 9),
+          const SizedBox(height: 20),
 
-          // Activity boxes
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: _activityDays
-                .map(
-                  (completed) => _buildActivityBox(completed),
-            )
-                .toList(),
-          ),
-
-          const SizedBox(height: 14),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              _buildLegendItem(
-                color: AppColors.lightMint,
-                label: 'No activity',
-              ),
-              const SizedBox(width: 14),
-              _buildLegendItem(
-                color: AppColors.mint,
-                label: 'Completed',
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActivityBox(bool completed) {
-    return Container(
-      width: 25,
-      height: 25,
-      decoration: BoxDecoration(
-        color: completed
-            ? AppColors.mint
-            : AppColors.lightMint,
-        borderRadius: BorderRadius.circular(7),
-      ),
-      child: completed
-          ? const Icon(
-        Icons.check_rounded,
-        color: Colors.white,
-        size: 15,
-      )
-          : null,
-    );
-  }
-
-  Widget _buildLegendItem({
-    required Color color,
-    required String label,
-  }) {
-    return Row(
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(3),
-          ),
-        ),
-        const SizedBox(width: 5),
-        Text(
-          label,
-          style: TextStyle(
-            color: AppColors.navy.withValues(alpha: 0.50),
-            fontSize: 9.5,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ------------------------------------------------------------
-  // PROGRESS GRID
-  // ------------------------------------------------------------
-
-  Widget _buildProgressGrid() {
-    return GridView.count(
-      crossAxisCount: 2,
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 1.35,
-      children: [
-        _buildProgressCard(
-          icon: Icons.favorite_outline_rounded,
-          title: 'Check-ins',
-          value: '$_checkInsCompleted',
-          subtitle: 'completed',
-        ),
-        _buildProgressCard(
-          icon: Icons.assignment_outlined,
-          title: 'Assessments',
-          value: '$_assessmentsCompleted',
-          subtitle: 'completed',
-        ),
-        _buildProgressCard(
-          icon: Icons.chat_bubble_outline_rounded,
-          title: 'AI Chats',
-          value: '$_aiConversations',
-          subtitle: 'conversations',
-        ),
-        _buildProgressCard(
-          icon: Icons.local_fire_department_outlined,
-          title: 'Best Streak',
-          value: '$_longestStreak',
-          subtitle: 'days',
-        ),
-      ],
-    );
-  }
-
-  Widget _buildProgressCard({
-    required IconData icon,
-    required String title,
-    required String value,
-    required String subtitle,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: AppColors.borderMint,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
           Container(
-            width: 34,
-            height: 34,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 11,
+            ),
             decoration: BoxDecoration(
-              color: AppColors.lightMint,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(
-              icon,
-              color: AppColors.mint,
-              size: 18,
-            ),
-          ),
-          const Spacer(),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                value,
-                style: const TextStyle(
-                  color: AppColors.navy,
-                  fontSize: 23,
-                  fontWeight: FontWeight.w800,
-                ),
+              color: Colors.white.withOpacity(0.85),
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(
+                color: AppColors.borderMint,
               ),
-              const SizedBox(width: 5),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 3),
-                child: Text(
-                  subtitle,
-                  style: TextStyle(
-                    color: AppColors.navy.withValues(alpha: 0.45),
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w500,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: AppColors.mint,
+                    shape: BoxShape.circle,
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 2),
-          Text(
-            title,
-            style: TextStyle(
-              color: AppColors.navy.withValues(alpha: 0.65),
-              fontSize: 10.5,
-              fontWeight: FontWeight.w600,
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Text(
+                    'Great momentum — keep building your journey.',
+                    style: TextStyle(
+                      color: AppColors.navy,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const Icon(
+                  Icons.arrow_forward_rounded,
+                  color: AppColors.mint,
+                  size: 18,
+                ),
+              ],
             ),
           ),
         ],
@@ -606,148 +321,87 @@ class _ProgressScreenState extends State<ProgressScreen> {
     );
   }
 
-  // ------------------------------------------------------------
-  // MONTHLY GOAL
-  // ------------------------------------------------------------
+  Widget _buildScoreCircle() {
+    return SizedBox(
+      width: 100,
+      height: 100,
+      child: CustomPaint(
+        painter: _ScorePainter(
+          progress: _journeyScore / 100,
+          backgroundColor: AppColors.borderMint,
+          progressColor: AppColors.mint,
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                '$_journeyScore',
+                style: const TextStyle(
+                  color: AppColors.navy,
+                  fontSize: 27,
+                  fontWeight: FontWeight.w800,
+                  height: 1,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'SCORE',
+                style: TextStyle(
+                  color: AppColors.navy.withOpacity(0.48),
+                  fontSize: 8,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-  Widget _buildGoalCard() {
-    final percentage = (_monthlyGoalProgress * 100).round();
+  // ---------------------------------------------------------------------------
+  // QUICK STATS
+  // ---------------------------------------------------------------------------
 
+  Widget _buildQuickStats() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildQuickStatCard(
+              value: '$_totalCheckIns',
+              label: 'Check-ins',
+              icon: Icons.edit_note_rounded,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _buildQuickStatCard(
+              value: '$_bestStreak',
+              label: 'Best streak',
+              icon: Icons.local_fire_department_rounded,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickStatCard({
+    required String value,
+    required String label,
+    required IconData icon,
+  }) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(19),
+      padding: const EdgeInsets.all(17),
       decoration: BoxDecoration(
-        color: AppColors.lightMint,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: AppColors.borderMint,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.flag_outlined,
-                  color: AppColors.mint,
-                  size: 21,
-                ),
-              ),
-              const SizedBox(width: 11),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Monthly Check-in Goal',
-                      style: TextStyle(
-                        color: AppColors.navy,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    SizedBox(height: 3),
-                    Text(
-                      '25 check-ins this month',
-                      style: TextStyle(
-                        color: AppColors.navy,
-                        fontSize: 10.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Text(
-                '$percentage%',
-                style: const TextStyle(
-                  color: AppColors.mint,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: LinearProgressIndicator(
-              value: _monthlyGoalProgress,
-              minHeight: 9,
-              backgroundColor: Colors.white,
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                AppColors.mint,
-              ),
-            ),
-          ),
-          const SizedBox(height: 9),
-          Text(
-            '$_checkInsCompleted of 25 check-ins completed',
-            style: TextStyle(
-              color: AppColors.navy.withValues(alpha: 0.55),
-              fontSize: 10,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ------------------------------------------------------------
-  // MILESTONES
-  // ------------------------------------------------------------
-
-  Widget _buildMilestones() {
-    return Column(
-      children: [
-        _buildMilestoneCard(
-          icon: Icons.flag_rounded,
-          title: 'First Check-in',
-          subtitle: 'You completed your first wellbeing check-in.',
-          completed: true,
-        ),
-        const SizedBox(height: 10),
-        _buildMilestoneCard(
-          icon: Icons.local_fire_department_rounded,
-          title: '7 Day Streak',
-          subtitle: 'Complete 7 consecutive days of check-ins.',
-          completed: _longestStreak >= 7,
-        ),
-        const SizedBox(height: 10),
-        _buildMilestoneCard(
-          icon: Icons.emoji_events_outlined,
-          title: '25 Check-ins',
-          subtitle: 'Complete 25 wellbeing check-ins.',
-          completed: _checkInsCompleted >= 25,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMilestoneCard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required bool completed,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(17),
-        border: Border.all(
-          color: completed
-              ? AppColors.borderMint
-              : AppColors.borderMint.withValues(alpha: 0.60),
         ),
       ),
       child: Row(
@@ -756,96 +410,866 @@ class _ProgressScreenState extends State<ProgressScreen> {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: completed
-                  ? AppColors.lightMint
-                  : AppColors.background,
-              shape: BoxShape.circle,
+              color: AppColors.lightMint,
+              borderRadius: BorderRadius.circular(13),
             ),
             child: Icon(
-              completed
-                  ? Icons.check_rounded
-                  : icon,
-              color: completed
-                  ? AppColors.mint
-                  : AppColors.navy.withValues(alpha: 0.35),
-              size: 20,
+              icon,
+              color: AppColors.mint,
+              size: 21,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 11),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
-                  style: TextStyle(
+                  value,
+                  style: const TextStyle(
                     color: AppColors.navy,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 21,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 2),
                 Text(
-                  subtitle,
+                  label,
                   style: TextStyle(
-                    color: AppColors.navy.withValues(alpha: 0.48),
-                    fontSize: 10,
-                    height: 1.35,
+                    color: AppColors.navy.withOpacity(0.52),
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
           ),
-          if (completed)
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 9,
-                vertical: 5,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.lightMint,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Text(
-                'Done',
-                style: TextStyle(
-                  color: AppColors.mint,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
         ],
       ),
     );
   }
 
-  // ------------------------------------------------------------
+  // ---------------------------------------------------------------------------
   // SECTION TITLE
-  // ------------------------------------------------------------
+  // ---------------------------------------------------------------------------
 
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        color: AppColors.navy,
-        fontSize: 16,
-        fontWeight: FontWeight.w800,
+  Widget _buildSectionTitle(
+      String title,
+      String subtitle,
+      ) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 28, 20, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: AppColors.navy,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: TextStyle(
+              color: AppColors.navy.withOpacity(0.52),
+              fontSize: 12,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  // ------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // PERSONAL RECORDS
+  // ---------------------------------------------------------------------------
+
+  Widget _buildPersonalRecords() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(23),
+        border: Border.all(
+          color: AppColors.borderMint,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.navy.withOpacity(0.025),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          _buildRecordRow(
+            icon: Icons.emoji_events_rounded,
+            title: 'Longest streak',
+            value: '$_bestStreak days',
+          ),
+          _buildDivider(),
+          _buildRecordRow(
+            icon: Icons.edit_note_rounded,
+            title: 'Most reflections in a week',
+            value: '$_mostReflectiveWeek',
+          ),
+          _buildDivider(),
+          _buildRecordRow(
+            icon: Icons.calendar_month_rounded,
+            title: 'Most active period',
+            value: _mostActivePeriod,
+          ),
+          _buildDivider(),
+          _buildRecordRow(
+            icon: Icons.auto_awesome_rounded,
+            title: 'MindMate insights',
+            value: '$_aiInsights',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecordRow({
+    required IconData icon,
+    required String title,
+    required String value,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 9),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: AppColors.lightMint,
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Icon(
+              icon,
+              color: AppColors.mint,
+              size: 19,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                color: AppColors.navy,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              color: AppColors.navy,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Divider(
+      height: 1,
+      thickness: 1,
+      color: AppColors.borderMint.withOpacity(0.65),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // CONSISTENCY CHART
+  // ---------------------------------------------------------------------------
+
+  Widget _buildConsistencyChart() {
+    final int highest = _weeklyCheckIns.reduce(math.max);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.fromLTRB(18, 20, 18, 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(23),
+        border: Border.all(
+          color: AppColors.borderMint,
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.show_chart_rounded,
+                color: AppColors.mint,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Check-in rhythm',
+                  style: TextStyle(
+                    color: AppColors.navy,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              Text(
+                'Last 5 weeks',
+                style: TextStyle(
+                  color: AppColors.navy.withOpacity(0.45),
+                  fontSize: 10.5,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+
+          SizedBox(
+            height: 170,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: List.generate(
+                _weeklyCheckIns.length,
+                    (index) {
+                  final value = _weeklyCheckIns[index];
+                  final isHighest = value == highest;
+
+                  return Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 7),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text(
+                            '$value',
+                            style: TextStyle(
+                              color: isHighest
+                                  ? AppColors.mint
+                                  : AppColors.navy.withOpacity(0.55),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 7),
+                          Expanded(
+                            child: Align(
+                              alignment: Alignment.bottomCenter,
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 500),
+                                width: 28,
+                                height: 105 * (value / highest),
+                                decoration: BoxDecoration(
+                                  color: isHighest
+                                      ? AppColors.mint
+                                      : AppColors.lightMint,
+                                  borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(9),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'W${index + 1}',
+                            style: TextStyle(
+                              color: AppColors.navy.withOpacity(0.45),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 5),
+
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 9,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.lightMint,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.trending_up_rounded,
+                  color: AppColors.mint,
+                  size: 17,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Your most active week had $highest check-ins.',
+                    style: const TextStyle(
+                      color: AppColors.navy,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // SELF-AWARENESS
+  // ---------------------------------------------------------------------------
+
+  Widget _buildSelfAwareness() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(19),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(23),
+        border: Border.all(
+          color: AppColors.borderMint,
+        ),
+      ),
+      child: Column(
+        children: [
+          _buildProgressMetric(
+            icon: Icons.edit_note_rounded,
+            title: 'Reflection habit',
+            value: _reflectionProgress,
+          ),
+          const SizedBox(height: 19),
+          _buildProgressMetric(
+            icon: Icons.event_repeat_rounded,
+            title: 'Check-in consistency',
+            value: _consistencyProgress,
+          ),
+          const SizedBox(height: 19),
+          _buildProgressMetric(
+            icon: Icons.psychology_alt_rounded,
+            title: 'Self-awareness',
+            value: _selfAwarenessProgress,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressMetric({
+    required IconData icon,
+    required String title,
+    required double value,
+  }) {
+    final percentage = (value * 100).round();
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: AppColors.lightMint,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                icon,
+                color: AppColors.mint,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  color: AppColors.navy,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            Text(
+              '$percentage%',
+              style: const TextStyle(
+                color: AppColors.navy,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 9),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: LinearProgressIndicator(
+            value: value,
+            minHeight: 8,
+            backgroundColor: AppColors.lightMint,
+            valueColor: const AlwaysStoppedAnimation<Color>(
+              AppColors.mint,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // MILESTONE ROADMAP
+  // ---------------------------------------------------------------------------
+
+  Widget _buildMilestoneRoadmap() {
+    final milestones = [
+      _Milestone(
+        title: 'First check-in',
+        subtitle: 'You started your MindMate journey',
+        icon: Icons.flag_rounded,
+        completed: true,
+      ),
+      _Milestone(
+        title: '7-day streak',
+        subtitle: 'You built your first consistency streak',
+        icon: Icons.local_fire_department_rounded,
+        completed: true,
+      ),
+      _Milestone(
+        title: '10 reflections',
+        subtitle: 'You made space for personal reflection',
+        icon: Icons.edit_note_rounded,
+        completed: true,
+      ),
+      _Milestone(
+        title: 'First assessment',
+        subtitle: 'You explored your wellbeing further',
+        icon: Icons.assignment_rounded,
+        completed: true,
+      ),
+      _Milestone(
+        title: '30 check-ins',
+        subtitle: '$_totalCheckIns / 30 completed',
+        icon: Icons.rocket_launch_rounded,
+        completed: false,
+      ),
+      _Milestone(
+        title: '30-day consistency',
+        subtitle: 'Keep returning to your journey',
+        icon: Icons.calendar_month_rounded,
+        completed: false,
+      ),
+    ];
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.fromLTRB(18, 20, 18, 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(23),
+        border: Border.all(
+          color: AppColors.borderMint,
+        ),
+      ),
+      child: Column(
+        children: List.generate(
+          milestones.length,
+              (index) {
+            final milestone = milestones[index];
+            final isLast = index == milestones.length - 1;
+
+            return _buildMilestoneItem(
+              milestone,
+              isLast,
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMilestoneItem(
+      _Milestone milestone,
+      bool isLast,
+      ) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 38,
+            child: Column(
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: milestone.completed
+                        ? AppColors.mint
+                        : AppColors.lightMint,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: milestone.completed
+                          ? AppColors.mint
+                          : AppColors.borderMint,
+                    ),
+                  ),
+                  child: Icon(
+                    milestone.completed
+                        ? Icons.check_rounded
+                        : milestone.icon,
+                    color: milestone.completed
+                        ? Colors.white
+                        : AppColors.mint,
+                    size: 17,
+                  ),
+                ),
+                if (!isLast)
+                  Expanded(
+                    child: Container(
+                      width: 1.5,
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      color: milestone.completed
+                          ? AppColors.mint.withOpacity(0.45)
+                          : AppColors.borderMint,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+          const SizedBox(width: 12),
+
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(
+                top: 2,
+                bottom: 18,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    milestone.title,
+                    style: TextStyle(
+                      color: AppColors.navy,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    milestone.subtitle,
+                    style: TextStyle(
+                      color: AppColors.navy.withOpacity(0.52),
+                      fontSize: 11,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // JOURNEY TIMELINE
+  // ---------------------------------------------------------------------------
+
+  Widget _buildJourneyTimeline() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(19),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(23),
+        border: Border.all(
+          color: AppColors.borderMint,
+        ),
+      ),
+      child: Column(
+        children: [
+          _buildTimelineItem(
+            icon: Icons.flag_rounded,
+            title: 'Started your MindMate journey',
+            description: 'You completed your first check-in.',
+            completed: true,
+            isLast: false,
+          ),
+          _buildTimelineItem(
+            icon: Icons.assignment_rounded,
+            title: 'Explored self-awareness',
+            description: 'You completed your first assessment.',
+            completed: true,
+            isLast: false,
+          ),
+          _buildTimelineItem(
+            icon: Icons.local_fire_department_rounded,
+            title: 'Built a consistent habit',
+            description: 'You reached a 7-day streak.',
+            completed: true,
+            isLast: false,
+          ),
+          _buildTimelineItem(
+            icon: Icons.emoji_events_rounded,
+            title: 'Reached your longest streak',
+            description: 'Your personal record is $_bestStreak days.',
+            completed: true,
+            isLast: false,
+          ),
+          _buildTimelineItem(
+            icon: Icons.rocket_launch_rounded,
+            title: 'Your next milestone',
+            description: 'Reach 30 total check-ins.',
+            completed: false,
+            isLast: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimelineItem({
+    required IconData icon,
+    required String title,
+    required String description,
+    required bool completed,
+    required bool isLast,
+  }) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 36,
+            child: Column(
+              children: [
+                Container(
+                  width: 31,
+                  height: 31,
+                  decoration: BoxDecoration(
+                    color: completed
+                        ? AppColors.lightMint
+                        : Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: completed
+                          ? AppColors.mint
+                          : AppColors.borderMint,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: completed
+                        ? AppColors.mint
+                        : AppColors.navy.withOpacity(0.35),
+                    size: 16,
+                  ),
+                ),
+                if (!isLast)
+                  Expanded(
+                    child: Container(
+                      width: 1,
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      color: AppColors.borderMint,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+          const SizedBox(width: 12),
+
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(
+                top: 1,
+                bottom: 19,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: completed
+                          ? AppColors.navy
+                          : AppColors.navy.withOpacity(0.55),
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      color: AppColors.navy.withOpacity(0.48),
+                      fontSize: 10.8,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // NEXT MILESTONE
+  // ---------------------------------------------------------------------------
+
+  Widget _buildNextMilestone() {
+    const target = 30;
+    final completed = _totalCheckIns.clamp(0, target);
+    final progress = completed / target;
+    final remaining = target - completed;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(20, 28, 20, 0),
+      padding: const EdgeInsets.all(21),
+      decoration: BoxDecoration(
+        color: AppColors.navy,
+        borderRadius: BorderRadius.circular(25),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.navy.withOpacity(0.12),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                child: const Icon(
+                  Icons.rocket_launch_rounded,
+                  color: AppColors.mint,
+                  size: 19,
+                ),
+              ),
+              const SizedBox(width: 11),
+              const Text(
+                'NEXT MILESTONE',
+                style: TextStyle(
+                  color: AppColors.mint,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.4,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 18),
+
+          const Text(
+            '30 Check-ins',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+
+          const SizedBox(height: 5),
+
+          Text(
+            '$completed / $target completed',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.62),
+              fontSize: 12,
+            ),
+          ),
+
+          const SizedBox(height: 15),
+
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 9,
+              backgroundColor: Colors.white.withOpacity(0.12),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                AppColors.mint,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          Row(
+            children: [
+              Text(
+                '${(progress * 100).round()}%',
+                style: const TextStyle(
+                  color: AppColors.mint,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                '$remaining more check-ins to unlock',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.58),
+                  fontSize: 10.5,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
   // PRIVACY NOTE
-  // ------------------------------------------------------------
+  // ---------------------------------------------------------------------------
 
   Widget _buildPrivacyNote() {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.fromLTRB(20, 18, 20, 0),
+      padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: AppColors.lightMint.withValues(alpha: 0.65),
-        borderRadius: BorderRadius.circular(15),
+        color: AppColors.lightMint.withOpacity(0.65),
+        borderRadius: BorderRadius.circular(17),
         border: Border.all(
           color: AppColors.borderMint,
         ),
@@ -856,16 +1280,15 @@ class _ProgressScreenState extends State<ProgressScreen> {
           const Icon(
             Icons.lock_outline_rounded,
             color: AppColors.mint,
-            size: 17,
+            size: 18,
           ),
-          const SizedBox(width: 9),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Your progress is private and is only used to help '
-                  'you understand and build healthy wellbeing habits.',
+              'Your progress is personal. MindMate uses your activity to show your journey and milestones.',
               style: TextStyle(
-                color: AppColors.navy.withValues(alpha: 0.55),
-                fontSize: 9.5,
+                color: AppColors.navy.withOpacity(0.62),
+                fontSize: 10.5,
                 height: 1.45,
               ),
             ),
@@ -876,28 +1299,85 @@ class _ProgressScreenState extends State<ProgressScreen> {
   }
 }
 
-// ------------------------------------------------------------
-// SMALL WEEKDAY LABEL
-// ------------------------------------------------------------
+// =============================================================================
+// SCORE PAINTER
+// =============================================================================
 
-class _DayLabel extends StatelessWidget {
-  final String label;
+class _ScorePainter extends CustomPainter {
+  final double progress;
+  final Color backgroundColor;
+  final Color progressColor;
 
-  const _DayLabel(this.label);
+  _ScorePainter({
+    required this.progress,
+    required this.backgroundColor,
+    required this.progressColor,
+  });
 
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 25,
-      child: Text(
-        label,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: AppColors.navy.withValues(alpha: 0.40),
-          fontSize: 9,
-          fontWeight: FontWeight.w700,
-        ),
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(
+      size.width / 2,
+      size.height / 2,
+    );
+
+    final radius = math.min(
+      size.width,
+      size.height,
+    ) /
+        2 -
+        6;
+
+    final backgroundPaint = Paint()
+      ..color = backgroundColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 8
+      ..strokeCap = StrokeCap.round;
+
+    final progressPaint = Paint()
+      ..color = progressColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 8
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawCircle(
+      center,
+      radius,
+      backgroundPaint,
+    );
+
+    canvas.drawArc(
+      Rect.fromCircle(
+        center: center,
+        radius: radius,
       ),
+      -math.pi / 2,
+      math.pi * 2 * progress,
+      false,
+      progressPaint,
     );
   }
+
+  @override
+  bool shouldRepaint(covariant _ScorePainter oldDelegate) {
+    return oldDelegate.progress != progress;
+  }
+}
+
+// =============================================================================
+// MILESTONE MODEL
+// =============================================================================
+
+class _Milestone {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final bool completed;
+
+  const _Milestone({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.completed,
+  });
 }
