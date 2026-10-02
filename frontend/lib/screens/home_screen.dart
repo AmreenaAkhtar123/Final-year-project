@@ -1784,21 +1784,61 @@ class _HomeFeedState extends State<_HomeFeed> {
       ),
     );
   }
+  double _checkInScore(CheckIn checkIn) {
+    final moodValue = {
+      'Low': 2,
+      'Okay': 4,
+      'Neutral': 5,
+      'Good': 7,
+      'Great': 9,
+    }[checkIn.mood] ?? 5;
+
+    return (moodValue +
+        checkIn.energyLevel +
+        checkIn.sleepQuality) /
+        3;
+  }
 
   // ==========================================================
   // WEEKLY PROGRESS
   // ==========================================================
 
   Widget _buildWeeklyProgress(BuildContext context) {
-    const values = [
-      0.52,
-      0.68,
-      0.45,
-      0.78,
-      0.72,
-      0.86,
-      0.72,
-    ];
+    final today = DateTime.now();
+
+    final startOfWeek = DateTime(
+      today.year,
+      today.month,
+      today.day,
+    ).subtract(
+      Duration(days: today.weekday - 1),
+    );
+
+    final values = List<double>.generate(7, (index) {
+      final day = startOfWeek.add(
+        Duration(days: index),
+      );
+
+      final dayCheckIns = _checkIns.where((checkIn) {
+        final checkInDate = checkIn.createdAt;
+
+        return checkInDate.year == day.year &&
+            checkInDate.month == day.month &&
+            checkInDate.day == day.day;
+      }).toList();
+
+      if (dayCheckIns.isEmpty) {
+        return 0.0;
+      }
+
+      final averageScore =
+          dayCheckIns
+              .map(_checkInScore)
+              .reduce((a, b) => a + b) /
+              dayCheckIns.length;
+
+      return (averageScore / 10).clamp(0.0, 1.0);
+    });
 
     const days = [
       'M',
@@ -1809,6 +1849,34 @@ class _HomeFeedState extends State<_HomeFeed> {
       'S',
       'S',
     ];
+
+    final hasWeeklyData = values.any(
+          (value) => value > 0,
+    );
+
+    int strongestDayIndex = 0;
+
+    if (hasWeeklyData) {
+      for (int i = 1; i < values.length; i++) {
+        if (values[i] > values[strongestDayIndex]) {
+          strongestDayIndex = i;
+        }
+      }
+    }
+
+    final strongestDayName = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ][strongestDayIndex];
+
+    final strongestDayText = hasWeeklyData
+        ? 'Your strongest day was $strongestDayName. Tap to explore the full week.'
+        : 'Complete a check-in to start tracking your week.';
 
     return GestureDetector(
       onTap: () {
@@ -1892,7 +1960,9 @@ class _HomeFeedState extends State<_HomeFeed> {
                 children: List.generate(
                   values.length,
                       (index) {
-                    final active = index == 5;
+                    final active =
+                        hasWeeklyData &&
+                            index == strongestDayIndex;
 
                     return Column(
                       mainAxisAlignment:
@@ -1957,20 +2027,20 @@ class _HomeFeedState extends State<_HomeFeed> {
                 color: AppColors.lightMint,
                 borderRadius: BorderRadius.circular(13),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.auto_awesome_rounded,
                     color: AppColors.mint,
                     size: 15,
                   ),
 
-                  SizedBox(width: 7),
+                  const SizedBox(width: 7),
 
                   Expanded(
                     child: Text(
-                      'Your strongest day was Saturday. Tap to explore the full week.',
-                      style: TextStyle(
+                      strongestDayText,
+                      style: const TextStyle(
                         color: AppColors.navy,
                         fontSize: 9.5,
                         fontWeight: FontWeight.w600,
