@@ -7,7 +7,9 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/services/profile_image_service.dart';
+import '../core/services/check_in_service.dart';
 import '../core/constants/app_colors.dart';
+import '../models/check_in.dart';
 
 import 'settings/about_mindmate_screen.dart';
 import 'settings/help_support_screen.dart';
@@ -33,11 +35,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _notificationsEnabled = true;
   bool _privateModeEnabled = true;
 
-  // Demo wellbeing data for the UI.
-  // These can later come from the backend.
-  final int _checkIns = 18;
-  final int _currentStreak = 6;
-  final double _wellbeingScore = 7.4;
+  double _wellbeingScore = 0;
+  int _currentStreak = 0;
+  int _checkIns = 0;
+
+  bool _isLoadingWellbeing = true;
 
   File? _profileImage;
   bool _isLoadingProfileImage = true;
@@ -56,6 +58,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     _loadProfileImage();
     _loadProfile();
+    _loadWellbeingSnapshot();
   }
 
   Future<void> _loadProfileImage() async {
@@ -147,6 +150,144 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _profileImage = image;
       _isLoadingProfileImage = false;
     });
+  }
+
+  // ============================================================
+// WELLBEING SNAPSHOT DATA
+// ============================================================
+
+  double _moodToValue(String mood) {
+    switch (mood) {
+      case 'Low':
+        return 2.0;
+      case 'Okay':
+        return 4.0;
+      case 'Neutral':
+        return 5.0;
+      case 'Good':
+        return 7.0;
+      case 'Great':
+        return 9.0;
+      default:
+        return 5.0;
+    }
+  }
+
+  double _checkInScore(CheckIn checkIn) {
+    final moodValue = _moodToValue(checkIn.mood);
+
+    return (
+        moodValue +
+            checkIn.energyLevel +
+            checkIn.sleepQuality
+    ) / 3;
+  }
+
+  DateTime _dateOnly(DateTime date) {
+    final local = date.toLocal();
+
+    return DateTime(
+      local.year,
+      local.month,
+      local.day,
+    );
+  }
+
+  DateTime _startOfCurrentWeek() {
+    final today = _dateOnly(DateTime.now());
+
+    return today.subtract(
+      Duration(days: today.weekday - 1),
+    );
+  }
+
+  Future<void> _loadWellbeingSnapshot() async {
+    try {
+      final checkIns = await CheckInService.getCheckIns();
+
+      if (!mounted) return;
+
+      final startOfWeek = _startOfCurrentWeek();
+
+      final currentWeekCheckIns = checkIns.where((checkIn) {
+        final date = _dateOnly(checkIn.createdAt);
+
+        return !date.isBefore(startOfWeek) &&
+            date.isBefore(
+              startOfWeek.add(
+                const Duration(days: 7),
+              ),
+            );
+      }).toList();
+
+      double wellbeingScore = 0;
+
+      if (currentWeekCheckIns.isNotEmpty) {
+        final total = currentWeekCheckIns.fold<double>(
+          0,
+              (sum, checkIn) => sum + _checkInScore(checkIn),
+        );
+
+        wellbeingScore =
+            total / currentWeekCheckIns.length;
+      }
+
+      final currentStreak =
+      _calculateCurrentStreak(checkIns);
+
+      setState(() {
+        _wellbeingScore = wellbeingScore;
+        _checkIns = currentWeekCheckIns.length;
+        _currentStreak = currentStreak;
+        _isLoadingWellbeing = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _wellbeingScore = 0;
+        _checkIns = 0;
+        _currentStreak = 0;
+        _isLoadingWellbeing = false;
+      });
+    }
+  }
+
+  int _calculateCurrentStreak(List<CheckIn> checkIns) {
+    if (checkIns.isEmpty) {
+      return 0;
+    }
+
+    final completedDates = <DateTime>{};
+
+    for (final checkIn in checkIns) {
+      completedDates.add(
+        _dateOnly(checkIn.createdAt),
+      );
+    }
+
+    final today = _dateOnly(DateTime.now());
+
+    int streak = 0;
+    DateTime currentDate = today;
+
+    // If there is no check-in today, allow the streak
+    // to continue from yesterday.
+    if (!completedDates.contains(currentDate)) {
+      currentDate = currentDate.subtract(
+        const Duration(days: 1),
+      );
+    }
+
+    while (completedDates.contains(currentDate)) {
+      streak++;
+
+      currentDate = currentDate.subtract(
+        const Duration(days: 1),
+      );
+    }
+
+    return streak;
   }
 
   @override
@@ -632,40 +773,55 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           const SizedBox(height: 15),
 
-          Row(
-            children: [
-              Expanded(
-                child: _buildSnapshotMetric(
-                  value: _wellbeingScore.toStringAsFixed(1),
-                  label: 'Wellbeing',
-                  suffix: '/10',
-                  icon: Icons.insights_outlined,
+          if (_isLoadingWellbeing)
+            const SizedBox(
+              height: 70,
+              child: Center(
+                child: SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: AppColors.mint,
+                  ),
                 ),
               ),
-
-              _buildMetricDivider(),
-
-              Expanded(
-                child: _buildSnapshotMetric(
-                  value: '$_currentStreak',
-                  label: 'Day streak',
-                  suffix: ' days',
-                  icon: Icons.local_fire_department_outlined,
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: _buildSnapshotMetric(
+                    value: _wellbeingScore.toStringAsFixed(1),
+                    label: 'Wellbeing',
+                    suffix: '/10',
+                    icon: Icons.insights_outlined,
+                  ),
                 ),
-              ),
 
-              _buildMetricDivider(),
+                _buildMetricDivider(),
 
-              Expanded(
-                child: _buildSnapshotMetric(
-                  value: '$_checkIns',
-                  label: 'Check-ins',
-                  suffix: '',
-                  icon: Icons.check_circle_outline_rounded,
+                Expanded(
+                  child: _buildSnapshotMetric(
+                    value: '$_currentStreak',
+                    label: 'Day streak',
+                    suffix: ' days',
+                    icon: Icons.local_fire_department_outlined,
+                  ),
                 ),
-              ),
-            ],
-          ),
+
+                _buildMetricDivider(),
+
+                Expanded(
+                  child: _buildSnapshotMetric(
+                    value: '$_checkIns',
+                    label: 'Check-ins',
+                    suffix: '',
+                    icon: Icons.check_circle_outline_rounded,
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );
