@@ -1,9 +1,26 @@
 import 'package:flutter/material.dart';
 
 import '../core/constants/app_colors.dart';
+import 'ai_chat_screen.dart';
+import 'assessments/assessments_screen.dart';
+import 'mood_screen.dart';
+import 'emotion_screen.dart';
+import 'progress_screen.dart';
+import 'weekly_wellbeing_screen.dart';
+import 'exercise/calm_grounding_screen.dart';
+import 'exercise/exam_pressure_reset_screen.dart';
+import 'exercise/focus_reset_screen.dart';
+import 'exercise/sleep_wind_down_screen.dart';
+import 'exercise/stress_release_screen.dart';
+import 'exercise/thought_reset_screen.dart';
 
 class StudentWellbeingScreen extends StatefulWidget {
-  const StudentWellbeingScreen({super.key});
+  final VoidCallback? onBackToHome;
+
+  const StudentWellbeingScreen({
+    super.key,
+    this.onBackToHome,
+  });
 
   @override
   State<StudentWellbeingScreen> createState() =>
@@ -11,516 +28,661 @@ class StudentWellbeingScreen extends StatefulWidget {
 }
 
 class _StudentWellbeingScreenState extends State<StudentWellbeingScreen> {
-  // ------------------------------------------------------------
-  // DEMO / UI DATA
-  // ------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // COLORS
+  // ---------------------------------------------------------------------------
+
+  static const Color _navy = AppColors.navy;
+
+  // Navy is intentionally NOT used for normal text, selected states,
+  // borders, progress indicators, section headers, etc.
+  static const Color _ink = Color(0xFF293438);
+  static const Color _muted = Color(0xFF738084);
+  static const Color _softText = Color(0xFF96A1A4);
+
+  static const Color _mint = AppColors.mint;
+  static const Color _lightMint = AppColors.lightMint;
+  static const Color _border = AppColors.borderMint;
+
+  static const Color _page = Color(0xFFFCFCFC);
+  static const Color _white = Colors.white;
+
+  static const Color _softGrey = Color(0xFFF4F7F6);
+  static const Color _warningBg = Color(0xFFFFF8E8);
+  static const Color _warning = Color(0xFFB88921);
+
+  // ---------------------------------------------------------------------------
+  // STUDENT INPUT
+  // ---------------------------------------------------------------------------
+
+  final Set<String> _struggles = {};
+  final Set<String> _effects = {};
+  final Set<String> _pressureSources = {};
+
+  final TextEditingController _somethingElseController =
+  TextEditingController();
+
+  bool _showResults = false;
+
+  // ---------------------------------------------------------------------------
+  // ORIGINAL / EXISTING ANALYTICS DATA
+  // ---------------------------------------------------------------------------
+  //
+  // These are professional demo values for now.
+  // Later these can be replaced with MongoDB + CheckInService values.
+  //
+
+  double _studentPulse = 72;
+  double _pressureIndex = 58;
+  double _focusReadiness = 64;
+  double _recoveryIndex = 55;
+  double _overloadIndex = 46;
+
+  double _academicHealth = 6.7;
+  double _mentalHealth = 7.2;
+  double _lifestyleHealth = 7.4;
 
   double _stress = 6;
   double _examPressure = 7;
   double _burnout = 5;
-
   double _sleep = 5;
   double _energy = 6;
   double _workload = 7;
   double _socialConnection = 6;
   double _motivation = 6;
 
-  bool _showDetails = false;
+  // ---------------------------------------------------------------------------
+  // OPTIONS
+  // ---------------------------------------------------------------------------
 
-  // ------------------------------------------------------------
-  // CALCULATIONS
-  // ------------------------------------------------------------
+  final List<_StudentOption> _struggleOptions = const [
+    _StudentOption(
+      id: 'assignments',
+      title: 'Assignments',
+      subtitle: 'Coursework & tasks',
+      icon: Icons.menu_book_rounded,
+    ),
+    _StudentOption(
+      id: 'exams',
+      title: 'Exams',
+      subtitle: 'Tests & preparation',
+      icon: Icons.fact_check_rounded,
+    ),
+    _StudentOption(
+      id: 'deadlines',
+      title: 'Deadlines',
+      subtitle: 'Time pressure',
+      icon: Icons.schedule_rounded,
+    ),
+    _StudentOption(
+      id: 'projects',
+      title: 'Projects / FYP',
+      subtitle: 'Long-term work',
+      icon: Icons.laptop_mac_rounded,
+    ),
+    _StudentOption(
+      id: 'workload',
+      title: 'Workload',
+      subtitle: 'Too much to manage',
+      icon: Icons.layers_rounded,
+    ),
+    _StudentOption(
+      id: 'concentration',
+      title: 'Concentration',
+      subtitle: 'Staying focused',
+      icon: Icons.center_focus_strong_rounded,
+    ),
+    _StudentOption(
+      id: 'sleep',
+      title: 'Sleep / Energy',
+      subtitle: 'Rest & energy',
+      icon: Icons.bedtime_rounded,
+    ),
+    _StudentOption(
+      id: 'personal',
+      title: 'Personal / Social',
+      subtitle: 'Life outside study',
+      icon: Icons.people_alt_rounded,
+    ),
+    _StudentOption(
+      id: 'something_else',
+      title: 'Something else',
+      subtitle: 'Tell MindMate',
+      icon: Icons.edit_note_rounded,
+    ),
+  ];
 
-  double get _overallScore {
-    final pressureScore =
-    ((_stress + _examPressure + _burnout) / 3);
+  final List<_StudentOption> _effectOptions = const [
+    _StudentOption(
+      id: 'stress',
+      title: 'Stress',
+      subtitle: 'Feeling tense',
+      icon: Icons.bolt_rounded,
+    ),
+    _StudentOption(
+      id: 'overwhelmed',
+      title: 'Overwhelmed',
+      subtitle: 'Too much at once',
+      icon: Icons.waves_rounded,
+    ),
+    _StudentOption(
+      id: 'exhausted',
+      title: 'Exhausted',
+      subtitle: 'Mentally or physically',
+      icon: Icons.battery_2_bar_rounded,
+    ),
+    _StudentOption(
+      id: 'low_motivation',
+      title: 'Low motivation',
+      subtitle: 'Hard to get started',
+      icon: Icons.trending_down_rounded,
+    ),
+    _StudentOption(
+      id: 'cant_focus',
+      title: "Can't focus",
+      subtitle: 'Mind keeps drifting',
+      icon: Icons.filter_center_focus_rounded,
+    ),
+    _StudentOption(
+      id: 'poor_sleep',
+      title: 'Poor sleep',
+      subtitle: 'Rest is affected',
+      icon: Icons.nightlight_round,
+    ),
+    _StudentOption(
+      id: 'overthinking',
+      title: 'Overthinking',
+      subtitle: 'Thoughts keep looping',
+      icon: Icons.psychology_alt_rounded,
+    ),
+    _StudentOption(
+      id: 'emotionally_drained',
+      title: 'Emotionally drained',
+      subtitle: 'Low emotional energy',
+      icon: Icons.sentiment_dissatisfied_rounded,
+    ),
+    _StudentOption(
+      id: 'okay',
+      title: 'Feeling okay',
+      subtitle: 'Managing fairly well',
+      icon: Icons.sentiment_satisfied_alt_rounded,
+    ),
+  ];
 
-    final wellbeingFactors =
-    ((_sleep + _energy + _socialConnection + _motivation) / 4);
+  final List<_StudentOption> _pressureOptions = const [
+    _StudentOption(
+      id: 'academic',
+      title: 'Academic workload',
+      subtitle: 'Study demands',
+      icon: Icons.school_rounded,
+    ),
+    _StudentOption(
+      id: 'deadlines',
+      title: 'Deadlines',
+      subtitle: 'Limited time',
+      icon: Icons.timer_rounded,
+    ),
+    _StudentOption(
+      id: 'expectations',
+      title: 'Expectations',
+      subtitle: 'Pressure to perform',
+      icon: Icons.track_changes_rounded,
+    ),
+    _StudentOption(
+      id: 'personal',
+      title: 'Personal',
+      subtitle: 'Life circumstances',
+      icon: Icons.person_outline_rounded,
+    ),
+    _StudentOption(
+      id: 'financial',
+      title: 'Financial',
+      subtitle: 'Money concerns',
+      icon: Icons.account_balance_wallet_outlined,
+    ),
+    _StudentOption(
+      id: 'relationships',
+      title: 'Relationships',
+      subtitle: 'People & connections',
+      icon: Icons.favorite_border_rounded,
+    ),
+    _StudentOption(
+      id: 'other',
+      title: 'Other',
+      subtitle: 'Something different',
+      icon: Icons.more_horiz_rounded,
+    ),
+  ];
 
-    final score = ((10 - pressureScore) * 0.55) +
-        (wellbeingFactors * 0.45);
+  // ---------------------------------------------------------------------------
+  // DERIVED STATE
+  // ---------------------------------------------------------------------------
 
-    return score.clamp(0, 10);
+  bool get _hasInput =>
+      _struggles.isNotEmpty ||
+          _effects.isNotEmpty ||
+          _pressureSources.isNotEmpty;
+
+  bool get _hasHighStress =>
+      _effects.contains('stress') ||
+          _effects.contains('overwhelmed');
+
+  bool get _hasLowRecovery =>
+      _effects.contains('exhausted') ||
+          _effects.contains('poor_sleep') ||
+          _effects.contains('emotionally_drained');
+
+  bool get _hasFocusIssue =>
+      _effects.contains('cant_focus') ||
+          _struggles.contains('concentration');
+
+  bool get _hasMotivationIssue =>
+      _effects.contains('low_motivation');
+
+  bool get _hasOverthinking =>
+      _effects.contains('overthinking');
+
+  bool get _hasAcademicPressure =>
+      _struggles.contains('assignments') ||
+          _struggles.contains('exams') ||
+          _struggles.contains('deadlines') ||
+          _struggles.contains('projects') ||
+          _struggles.contains('workload') ||
+          _pressureSources.contains('academic') ||
+          _pressureSources.contains('deadlines');
+
+  int get _strainSignals {
+    int score = 0;
+
+    if (_hasHighStress) score++;
+    if (_hasLowRecovery) score++;
+    if (_hasFocusIssue) score++;
+    if (_hasMotivationIssue) score++;
+    if (_hasOverthinking) score++;
+    if (_hasAcademicPressure) score++;
+    if (_effects.contains('emotionally_drained')) score++;
+
+    return score;
   }
 
-  String get _overallLabel {
-    if (_overallScore >= 7.5) {
-      return 'Doing Well';
-    } else if (_overallScore >= 5) {
-      return 'Needs Attention';
+  String get _monitorTitle {
+    if (_strainSignals >= 5) return 'High Strain';
+    if (_strainSignals >= 3) return 'Needs Attention';
+    return 'Stable';
+  }
+
+  String get _monitorDescription {
+    if (_strainSignals >= 5) {
+      return 'Your current responses suggest that several areas are putting pressure on your wellbeing.';
     }
 
-    return 'High Pressure';
-  }
-
-  Color get _overallColor {
-    if (_overallScore >= 7.5) {
-      return AppColors.mint;
-    } else if (_overallScore >= 5) {
-      return const Color(0xFFD99A3D);
+    if (_strainSignals >= 3) {
+      return 'You have reported a few areas that may benefit from some attention and support.';
     }
 
-    return const Color(0xFFD86B6B);
+    return 'Your current responses do not show a strong overload signal.';
   }
 
-  String get _mainConcern {
-    final values = {
-      'Stress': _stress,
-      'Exam Pressure': _examPressure,
-      'Burnout': _burnout,
-      'Study Workload': _workload,
-    };
+  String get _primarySignal {
+    if (_hasLowRecovery) return 'Recovery needs attention';
+    if (_hasHighStress) return 'Stress is elevated';
+    if (_hasFocusIssue) return 'Focus may need support';
+    if (_hasMotivationIssue) return 'Motivation may be affected';
+    if (_hasOverthinking) return 'Your mind may need a reset';
+    if (_hasAcademicPressure) return 'Academic pressure is present';
 
-    return values.entries.reduce(
-          (a, b) => a.value > b.value ? a : b,
-    ).key;
+    return 'Your wellbeing looks fairly balanced';
   }
 
-  // ------------------------------------------------------------
+  String get _aiInsight {
+    final parts = <String>[];
+
+    if (_hasAcademicPressure) {
+      parts.add('You have identified academic demands as part of your current situation.');
+    }
+
+    if (_hasHighStress) {
+      parts.add('You are also reporting stress or feeling overwhelmed.');
+    }
+
+    if (_hasLowRecovery) {
+      parts.add('Recovery appears to be an important area to protect right now.');
+    }
+
+    if (_hasFocusIssue) {
+      parts.add('Difficulty maintaining focus may be connected with the pressure you described.');
+    }
+
+    if (parts.isEmpty) {
+      return 'Your responses suggest that you currently have a manageable situation. Keep checking in with yourself as your student life changes.';
+    }
+
+    return '${parts.join(' ')} This is a wellbeing reflection based on your responses, not a diagnosis.';
+  }
+
+  // ---------------------------------------------------------------------------
+  // ACTION
+  // ---------------------------------------------------------------------------
+
+  void _generateWellbeingSnapshot() {
+    if (!_hasInput) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Tell MindMate a little about your situation first.'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: _navy,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      double pressureAdjustment = 0;
+      double recoveryAdjustment = 0;
+      double focusAdjustment = 0;
+      double pulseAdjustment = 0;
+
+      pressureAdjustment += _pressureSources.length * 4;
+      pressureAdjustment += _struggles.length * 2;
+
+      if (_hasHighStress) {
+        pressureAdjustment += 8;
+        pulseAdjustment -= 7;
+      }
+
+      if (_hasLowRecovery) {
+        recoveryAdjustment += 10;
+        pulseAdjustment -= 6;
+      }
+
+      if (_hasFocusIssue) {
+        focusAdjustment += 12;
+        pulseAdjustment -= 4;
+      }
+
+      if (_hasMotivationIssue) {
+        recoveryAdjustment += 5;
+        pulseAdjustment -= 3;
+      }
+
+      if (_effects.contains('okay')) {
+        pulseAdjustment += 6;
+      }
+
+      _pressureIndex =
+          (58 + pressureAdjustment).clamp(0, 100).toDouble();
+
+      _recoveryIndex =
+          (55 - recoveryAdjustment).clamp(0, 100).toDouble();
+
+      _focusReadiness =
+          (64 - focusAdjustment).clamp(0, 100).toDouble();
+
+      _overloadIndex =
+          (46 + pressureAdjustment * 0.65).clamp(0, 100).toDouble();
+
+      _studentPulse =
+          (72 + pulseAdjustment).clamp(0, 100).toDouble();
+
+      _stress = ((_hasHighStress ? 7.5 : 6.0).clamp(0.0, 10.0)).toDouble();
+
+      _energy = ((_hasLowRecovery ? 4.0 : 6.0).clamp(0.0, 10.0)).toDouble();
+
+      _sleep =
+          ((_effects.contains('poor_sleep') ? 3.5 : 5.0)
+              .clamp(0.0, 10.0))
+              .toDouble();
+
+      _motivation =
+          ((_hasMotivationIssue ? 4.0 : 6.0).clamp(0.0, 10.0)).toDouble();
+
+      _workload =
+          (_hasAcademicPressure ? 7.5 : 6.5).clamp(0, 10);
+
+      _burnout =
+          ((_stress + (10 - _energy) + (10 - _motivation)) / 3)
+              .clamp(0, 10);
+
+      _academicHealth =
+          (_hasAcademicPressure ? 6.2 : 6.7).clamp(0, 10);
+
+      _mentalHealth =
+          (_hasHighStress || _hasLowRecovery ? 6.4 : 7.2)
+              .clamp(0, 10);
+
+      _lifestyleHealth =
+          (_hasLowRecovery ? 6.2 : 7.4).clamp(0, 10);
+
+      _showResults = true;
+    });
+  }
+
+  void _resetCheckpoint() {
+    setState(() {
+      _struggles.clear();
+      _effects.clear();
+      _pressureSources.clear();
+      _somethingElseController.clear();
+      _showResults = false;
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // NAVIGATION
+  // ---------------------------------------------------------------------------
+
+  void _openScreen(Widget screen) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => screen),
+    );
+  }
+
+  void _openRecommendedAction() {
+    if (_hasLowRecovery) {
+      _openScreen(const SleepWindDownScreen());
+      return;
+    }
+
+    if (_hasHighStress) {
+      _openScreen(const StressReleaseScreen());
+      return;
+    }
+
+    if (_hasOverthinking) {
+      _openScreen(const ThoughtResetScreen());
+      return;
+    }
+
+    if (_hasFocusIssue) {
+      _openScreen(const FocusResetScreen());
+      return;
+    }
+
+    if (_struggles.contains('exams')) {
+      _openScreen(const ExamPressureResetScreen());
+      return;
+    }
+
+    if (_effects.contains('okay')) {
+      _openScreen(const CalmGroundingScreen());
+      return;
+    }
+
+    _openScreen(const AiChatScreen());
+  }
+
+  // ---------------------------------------------------------------------------
   // BUILD
-  // ------------------------------------------------------------
+  // ---------------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(72),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 30, 18, 6),
-          child: Row(
-            children: [
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                  borderRadius: BorderRadius.circular(10),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: AppColors.borderMint,
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: AppColors.navy,
-                      size: 15,
-                    ),
+      backgroundColor: _page,
+      body: SafeArea(
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: _buildTopBar(),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 36),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  _buildHero(),
+                  const SizedBox(height: 28),
+
+                  _buildCheckpointIntro(),
+                  const SizedBox(height: 18),
+
+                  _buildQuestionSection(
+                    number: '01',
+                    title: 'What are you dealing with?',
+                    subtitle:
+                    'Choose anything that feels relevant right now.',
+                    options: _struggleOptions,
+                    selected: _struggles,
+                    allowMultiple: true,
                   ),
-                ),
-              ),
 
-              const Expanded(
-                child: Center(
-                  child: Text(
-                    'Student Wellbeing',
-                    style: TextStyle(
-                      color: AppColors.navy,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: _showInfoDialog,
-                  borderRadius: BorderRadius.circular(10),
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    alignment: Alignment.center,
-                    child: const Icon(
-                      Icons.info_outline_rounded,
-                      color: AppColors.navy,
-                      size: 21,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 35),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildOverviewCard(),
-
-            const SizedBox(height: 24),
-
-            _buildSectionHeader(
-              'Student Wellbeing Check',
-              'Reflect on the areas that can affect your student life.',
-            ),
-
-            const SizedBox(height: 18),
-
-            _buildAssessmentCard(
-              icon: Icons.bolt_rounded,
-              title: 'Stress',
-              description:
-              'How much stress have you been experiencing recently?',
-              value: _stress,
-              onChanged: (value) {
-                setState(() => _stress = value);
-              },
-            ),
-
-            const SizedBox(height: 14),
-
-            _buildAssessmentCard(
-              icon: Icons.menu_book_rounded,
-              title: 'Exam Pressure',
-              description:
-              'How much pressure are your studies or exams causing?',
-              value: _examPressure,
-              onChanged: (value) {
-                setState(() => _examPressure = value);
-              },
-            ),
-
-            const SizedBox(height: 14),
-
-            _buildAssessmentCard(
-              icon: Icons.battery_alert_rounded,
-              title: 'Burnout',
-              description:
-              'How mentally and emotionally exhausted have you been?',
-              value: _burnout,
-              onChanged: (value) {
-                setState(() => _burnout = value);
-              },
-            ),
-
-            const SizedBox(height: 26),
-
-            _buildSectionHeader(
-              'Student-Life Factors',
-              'These areas can influence your overall wellbeing.',
-            ),
-
-            const SizedBox(height: 18),
-
-            _buildFactorGrid(),
-
-            const SizedBox(height: 22),
-
-            _buildDetailsButton(),
-
-            if (_showDetails) ...[
-              const SizedBox(height: 16),
-              _buildDetailedSummary(),
-            ],
-
-            const SizedBox(height: 22),
-
-            _buildSubmitButton(),
-
-
-            const SizedBox(height: 26),
-
-            _buildInsightCard(),
-
-            const SizedBox(height: 22),
-
-            _buildHistoryCard(),
-
-
-            const SizedBox(height: 18),
-
-            _buildDisclaimer(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSubmitButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 54,
-      child: ElevatedButton(
-        onPressed: _submitWellbeingReport,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.navy,
-          foregroundColor: Colors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(17),
-          ),
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.check_circle_outline_rounded,
-              size: 21,
-            ),
-            SizedBox(width: 9),
-            Text(
-              'Submit Wellbeing Report',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _submitWellbeingReport() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          title: const Text(
-            'Wellbeing Report Submitted',
-            style: TextStyle(
-              color: AppColors.navy,
-              fontSize: 19,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(15),
-                decoration: BoxDecoration(
-                  color: AppColors.lightMint,
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.insights_rounded,
-                      color: AppColors.mint,
-                      size: 28,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Overall wellbeing: '
-                            '${_overallScore.toStringAsFixed(1)}/10',
-                        style: const TextStyle(
-                          color: AppColors.navy,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
+                  if (_struggles.contains('something_else')) ...[
+                    const SizedBox(height: 12),
+                    _buildSomethingElseField(),
                   ],
-                ),
-              ),
 
-              const SizedBox(height: 16),
+                  const SizedBox(height: 24),
 
-              Text(
-                'Your responses have been reviewed as a wellbeing reflection.',
-                style: TextStyle(
-                  color: AppColors.navy.withValues(alpha: 0.62),
-                  fontSize: 13,
-                  height: 1.5,
-                ),
-              ),
+                  _buildQuestionSection(
+                    number: '02',
+                    title: 'How is it affecting you?',
+                    subtitle:
+                    'Select the experiences that describe how you feel.',
+                    options: _effectOptions,
+                    selected: _effects,
+                    allowMultiple: true,
+                  ),
 
-              const SizedBox(height: 10),
+                  const SizedBox(height: 24),
 
-              Text(
-                'Main area to watch: $_mainConcern',
-                style: const TextStyle(
-                  color: AppColors.navy,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text(
-                'Done',
-                style: TextStyle(
-                  color: AppColors.mint,
-                  fontWeight: FontWeight.w700,
-                ),
+                  _buildQuestionSection(
+                    number: '03',
+                    title: 'What is creating the most pressure?',
+                    subtitle:
+                    'There can be more than one reason.',
+                    options: _pressureOptions,
+                    selected: _pressureSources,
+                    allowMultiple: true,
+                  ),
+
+                  const SizedBox(height: 22),
+
+                  _buildUpdateButton(),
+
+                  if (_showResults) ...[
+                    const SizedBox(height: 34),
+                    _buildCurrentState(),
+                    const SizedBox(height: 28),
+                    _buildCoreMetrics(),
+                    const SizedBox(height: 28),
+                    _buildWellbeingAreas(),
+                    const SizedBox(height: 28),
+                    _buildBurnoutSection(),
+                    const SizedBox(height: 28),
+                    _buildMonitor(),
+                    const SizedBox(height: 28),
+                    _buildWhatChanged(),
+                    const SizedBox(height: 28),
+                    _buildAiInsight(),
+                    const SizedBox(height: 28),
+                    _buildRecommendedActions(),
+                    const SizedBox(height: 28),
+                    _buildExistingTools(),
+                    const SizedBox(height: 28),
+                    _buildHistorySection(),
+                  ],
+                ]),
               ),
             ),
           ],
-        );
-      },
+        ),
+      ),
     );
   }
-  // ------------------------------------------------------------
-  // OVERVIEW
-  // ------------------------------------------------------------
 
-  Widget _buildOverviewCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.navy,
-            AppColors.navy.withValues(alpha: 0.91),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(26),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  // ---------------------------------------------------------------------------
+  // TOP BAR
+  // ---------------------------------------------------------------------------
+
+  Widget _buildTopBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
+      child: Row(
         children: [
-          const Row(
-            children: [
-              Icon(
-                Icons.school_rounded,
-                color: AppColors.mint,
-                size: 22,
+          GestureDetector(
+            onTap: () {
+              if (widget.onBackToHome != null) {
+                widget.onBackToHome!();
+              } else {
+                Navigator.pop(context);
+              }
+            },
+            child: Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: _white,
+                borderRadius: BorderRadius.circular(13),
+                border: Border.all(color: _border),
               ),
-              SizedBox(width: 9),
-              Text(
-                'YOUR WELLBEING',
-                style: TextStyle(
-                  color: AppColors.mint,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1,
-                ),
+              child: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                size: 17,
+                color: _navy,
               ),
-            ],
-          ),
-
-          const SizedBox(height: 20),
-
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              SizedBox(
-                width: 112,
-                height: 112,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    SizedBox(
-                      width: 112,
-                      height: 112,
-                      child: CircularProgressIndicator(
-                        value: _overallScore / 10,
-                        strokeWidth: 9,
-                        backgroundColor:
-                        Colors.white.withValues(alpha: 0.12),
-                        valueColor:
-                        AlwaysStoppedAnimation<Color>(_overallColor),
-                      ),
-                    ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _overallScore.toStringAsFixed(1),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 28,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        Text(
-                          '/ 10',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.55),
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(width: 20),
-
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _overallLabel,
-                      style: TextStyle(
-                        color: _overallColor,
-                        fontSize: 21,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-
-                    const SizedBox(height: 7),
-
-                    Text(
-                      'Your current wellbeing picture based on your check-in responses.',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.68),
-                        fontSize: 12,
-                        height: 1.45,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 20),
-
-          Container(
-            padding: const EdgeInsets.all(13),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.07),
-              borderRadius: BorderRadius.circular(14),
             ),
-            child: Row(
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(
-                  Icons.flag_outlined,
-                  color: AppColors.mint,
-                  size: 19,
+                Text(
+                  'Student Wellbeing',
+                  style: TextStyle(
+                    color: _ink,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.4,
+                  ),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Main area to watch: $_mainConcern',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
+                const SizedBox(height: 2),
+                Text(
+                  'Your personal student checkpoint',
+                  style: TextStyle(
+                    color: _muted,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
+            ),
+          ),
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: _lightMint,
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: const Icon(
+              Icons.auto_awesome_rounded,
+              color: _mint,
+              size: 20,
             ),
           ),
         ],
@@ -528,59 +690,1165 @@ class _StudentWellbeingScreenState extends State<StudentWellbeingScreen> {
     );
   }
 
-  // ------------------------------------------------------------
-  // SECTION HEADER
-  // ------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // HERO
+  // ---------------------------------------------------------------------------
 
-  Widget _buildSectionHeader(
-      String title,
-      String subtitle,
-      ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildHero() {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: _navy,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: _navy.withOpacity(0.14),
+            blurRadius: 26,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -38,
+            top: -48,
+            child: Container(
+              width: 150,
+              height: 150,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: _mint.withOpacity(0.18),
+                  width: 24,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            right: 30,
+            bottom: -60,
+            child: Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _mint.withOpacity(0.08),
+              ),
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 11,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _mint.withOpacity(0.16),
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: const Text(
+                      'STUDENT WELLBEING',
+                      style: TextStyle(
+                        color: _mint,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.1,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    Icons.insights_rounded,
+                    color: _mint.withOpacity(0.9),
+                    size: 20,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 22),
+              const Text(
+                'Understand what is\nhappening right now.',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 27,
+                  height: 1.12,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.7,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Tell MindMate what you are dealing with and get a clearer picture of your pressure, focus and recovery.',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.72),
+                  fontSize: 13.5,
+                  height: 1.55,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // INTRO
+  // ---------------------------------------------------------------------------
+
+  Widget _buildCheckpointIntro() {
+    return Row(
       children: [
-        Text(
-          title,
-          style: const TextStyle(
-            color: AppColors.navy,
-            fontSize: 19,
-            fontWeight: FontWeight.w700,
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: _lightMint,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(
+            Icons.tune_rounded,
+            color: _mint,
+            size: 19,
           ),
         ),
-        const SizedBox(height: 5),
-        Text(
-          subtitle,
-          style: TextStyle(
-            color: AppColors.navy.withValues(alpha: 0.52),
-            fontSize: 12,
-            height: 1.4,
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            'A few answers help MindMate personalize your wellbeing snapshot.',
+            style: TextStyle(
+              color: _muted,
+              fontSize: 12.5,
+              height: 1.45,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
       ],
     );
   }
 
-  // ------------------------------------------------------------
-  // MAIN ASSESSMENT CARD
-  // ------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // QUESTION SECTION
+  // ---------------------------------------------------------------------------
 
-  Widget _buildAssessmentCard({
-    required IconData icon,
+  Widget _buildQuestionSection({
+    required String number,
     required String title,
-    required String description,
-    required double value,
-    required ValueChanged<double> onChanged,
+    required String subtitle,
+    required List<_StudentOption> options,
+    required Set<String> selected,
+    required bool allowMultiple,
   }) {
-    //final percentage = value / 10;
-
     return Container(
-      width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.025),
+            blurRadius: 18,
+            offset: const Offset(0, 7),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: _lightMint,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  number,
+                  style: const TextStyle(
+                    color: _mint,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: _ink,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: _muted,
+                        fontSize: 12,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          ...options.map(
+                (option) => Padding(
+              padding: const EdgeInsets.only(bottom: 9),
+              child: _buildSelectableOption(
+                option: option,
+                selected: selected.contains(option.id),
+                onTap: () {
+                  setState(() {
+                    if (selected.contains(option.id)) {
+                      selected.remove(option.id);
+                    } else {
+                      selected.add(option.id);
+                    }
+                  });
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // SELECTABLE OPTION
+  // ---------------------------------------------------------------------------
+
+  Widget _buildSelectableOption({
+    required _StudentOption option,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 13,
+          vertical: 12,
+        ),
+        decoration: BoxDecoration(
+          // IMPORTANT:
+          // selected = LIGHT MINT, NEVER NAVY.
+          color: selected ? _lightMint : _softGrey,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected ? _mint : Colors.transparent,
+            width: selected ? 1.2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 39,
+              height: 39,
+              decoration: BoxDecoration(
+                color: selected ? _mint.withOpacity(0.14) : _white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                option.icon,
+                color: _mint,
+                size: 19,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    option.title,
+                    style: TextStyle(
+                      color: _ink,
+                      fontSize: 13.5,
+                      fontWeight:
+                      selected ? FontWeight.w800 : FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    option.subtitle,
+                    style: TextStyle(
+                      color: _muted,
+                      fontSize: 10.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: selected ? _mint : Colors.transparent,
+                border: Border.all(
+                  color: selected ? _mint : _border,
+                  width: 1.5,
+                ),
+              ),
+              child: selected
+                  ? const Icon(
+                Icons.check_rounded,
+                color: Colors.white,
+                size: 14,
+              )
+                  : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // SOMETHING ELSE
+  // ---------------------------------------------------------------------------
+
+  Widget _buildSomethingElseField() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _lightMint,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.edit_note_rounded,
+                color: _mint,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Tell MindMate in your own words',
+                style: TextStyle(
+                  color: _ink,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _somethingElseController,
+            maxLines: 3,
+            style: const TextStyle(
+              color: _ink,
+              fontSize: 13,
+            ),
+            decoration: InputDecoration(
+              hintText:
+              'For example: I am finding it difficult to balance university and other responsibilities...',
+              hintStyle: TextStyle(
+                color: _muted.withOpacity(0.75),
+                fontSize: 12,
+                height: 1.4,
+              ),
+              filled: true,
+              fillColor: _white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: const BorderSide(
+                  color: _mint,
+                  width: 1.2,
+                ),
+              ),
+              contentPadding: const EdgeInsets.all(14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // UPDATE BUTTON
+  // ---------------------------------------------------------------------------
+
+  Widget _buildUpdateButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 54,
+      child: ElevatedButton(
+        onPressed: _generateWellbeingSnapshot,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _navy,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(17),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              _showResults
+                  ? Icons.refresh_rounded
+                  : Icons.auto_awesome_rounded,
+              size: 19,
+            ),
+            const SizedBox(width: 9),
+            Text(
+              _showResults
+                  ? 'Update My Wellbeing Snapshot'
+                  : 'See My Wellbeing Snapshot',
+              style: const TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // CURRENT STATE
+  // ---------------------------------------------------------------------------
+
+  Widget _buildCurrentState() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeading(
+          eyebrow: 'YOUR CURRENT STATE',
+          title: 'What MindMate sees',
+        ),
+        const SizedBox(height: 14),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: _white,
+            borderRadius: BorderRadius.circular(25),
+            border: Border.all(color: _border),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  _stateCircle(
+                    value: _studentPulse.round().toString(),
+                    label: 'Pulse',
+                  ),
+                  const SizedBox(width: 18),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _primarySignal,
+                          style: const TextStyle(
+                            color: _ink,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          _monitorDescription,
+                          style: TextStyle(
+                            color: _muted,
+                            fontSize: 12,
+                            height: 1.45,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (_hasAcademicPressure)
+                    _miniMintTag('Academic pressure'),
+                  if (_hasHighStress) _miniMintTag('Stress'),
+                  if (_hasLowRecovery) _miniMintTag('Recovery'),
+                  if (_hasFocusIssue) _miniMintTag('Focus'),
+                  if (_hasOverthinking) _miniMintTag('Overthinking'),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _stateCircle({
+    required String value,
+    required String label,
+  }) {
+    return Container(
+      width: 82,
+      height: 82,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: _lightMint,
         border: Border.all(
-          color: AppColors.borderMint,
+          color: _mint.withOpacity(0.35),
+          width: 7,
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              color: _ink,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          Text(
+            label,
+            style: const TextStyle(
+              color: _muted,
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _miniMintTag(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 6,
+      ),
+      decoration: BoxDecoration(
+        color: _lightMint,
+        borderRadius: BorderRadius.circular(100),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: _mint,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // CORE METRICS
+  // ---------------------------------------------------------------------------
+
+  Widget _buildCoreMetrics() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeading(
+          eyebrow: 'MINDMATE INTELLIGENCE',
+          title: 'Your wellbeing signals',
+        ),
+        const SizedBox(height: 14),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 1.42,
+          children: [
+            _metricCard(
+              title: 'Student Pulse',
+              value: '${_studentPulse.round()}',
+              suffix: '/100',
+              icon: Icons.favorite_rounded,
+              progress: _studentPulse / 100,
+            ),
+            _metricCard(
+              title: 'Pressure Index',
+              value: '${_pressureIndex.round()}',
+              suffix: '/100',
+              icon: Icons.speed_rounded,
+              progress: _pressureIndex / 100,
+            ),
+            _metricCard(
+              title: 'Focus Readiness',
+              value: '${_focusReadiness.round()}',
+              suffix: '/100',
+              icon: Icons.center_focus_strong_rounded,
+              progress: _focusReadiness / 100,
+            ),
+            _metricCard(
+              title: 'Recovery Index',
+              value: '${_recoveryIndex.round()}',
+              suffix: '/100',
+              icon: Icons.battery_charging_full_rounded,
+              progress: _recoveryIndex / 100,
+            ),
+            _metricCard(
+              title: 'Overload Index',
+              value: '${_overloadIndex.round()}',
+              suffix: '/100',
+              icon: Icons.stacked_bar_chart_rounded,
+              progress: _overloadIndex / 100,
+            ),
+            _metricCard(
+              title: 'Burnout Signal',
+              value: _burnout.toStringAsFixed(1),
+              suffix: '/10',
+              icon: Icons.local_fire_department_outlined,
+              progress: _burnout / 10,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _metricCard({
+    required String title,
+    required String value,
+    required String suffix,
+    required IconData icon,
+    required double progress,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: _white,
+        borderRadius: BorderRadius.circular(21),
+        border: Border.all(color: _border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: _lightMint,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  icon,
+                  color: _mint,
+                  size: 17,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: _muted,
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const Spacer(),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                value,
+                style: const TextStyle(
+                  color: _ink,
+                  fontSize: 23,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(width: 3),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 3),
+                child: Text(
+                  suffix,
+                  style: const TextStyle(
+                    color: _softText,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 9),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(100),
+            child: LinearProgressIndicator(
+              value: progress.clamp(0, 1),
+              minHeight: 5,
+              backgroundColor: _lightMint,
+              valueColor: const AlwaysStoppedAnimation<Color>(_mint),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // PRESSURE / RECOVERY
+  // ---------------------------------------------------------------------------
+
+  Widget _buildPressureRecovery() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeading(
+          eyebrow: 'PRESSURE & RECOVERY',
+          title: 'How your system is balancing',
+        ),
+        const SizedBox(height: 14),
+        _largeAnalyticsCard(
+          title: 'Pressure load',
+          value: '${_pressureIndex.round()}',
+          description:
+          'A combined view of workload, pressure sources and reported stress.',
+          icon: Icons.trending_up_rounded,
+          progress: _pressureIndex / 100,
+        ),
+        const SizedBox(height: 12),
+        _largeAnalyticsCard(
+          title: 'Recovery capacity',
+          value: '${_recoveryIndex.round()}',
+          description:
+          'Reflects energy, sleep, emotional recovery and motivation signals.',
+          icon: Icons.spa_rounded,
+          progress: _recoveryIndex / 100,
+        ),
+        const SizedBox(height: 12),
+        _largeAnalyticsCard(
+          title: 'Focus readiness',
+          value: '${_focusReadiness.round()}',
+          description:
+          'Reflects how prepared you currently feel to concentrate and engage.',
+          icon: Icons.psychology_rounded,
+          progress: _focusReadiness / 100,
+        ),
+      ],
+    );
+  }
+
+  Widget _largeAnalyticsCard({
+    required String title,
+    required String value,
+    required String description,
+    required IconData icon,
+    required double progress,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: _white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: _border),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: _lightMint,
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Icon(
+                  icon,
+                  color: _mint,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: _ink,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  color: _ink,
+                  fontSize: 19,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 13),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              description,
+              style: const TextStyle(
+                color: _muted,
+                fontSize: 11.5,
+                height: 1.45,
+              ),
+            ),
+          ),
+          const SizedBox(height: 13),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(100),
+            child: LinearProgressIndicator(
+              value: progress.clamp(0, 1),
+              minHeight: 6,
+              backgroundColor: _lightMint,
+              valueColor: const AlwaysStoppedAnimation<Color>(_mint),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // WELLBEING AREAS
+  // ---------------------------------------------------------------------------
+
+  Widget _buildWellbeingAreas() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeading(
+          eyebrow: 'WELLBEING AREAS',
+          title: 'The bigger picture',
+        ),
+        const SizedBox(height: 14),
+        _areaCard(
+          title: 'Academic',
+          value: _academicHealth,
+          icon: Icons.school_outlined,
+          description: 'Workload, pressure and study demands.',
+        ),
+        const SizedBox(height: 10),
+        _areaCard(
+          title: 'Mental wellbeing',
+          value: _mentalHealth,
+          icon: Icons.psychology_outlined,
+          description: 'Stress, emotions, motivation and mental load.',
+        ),
+        const SizedBox(height: 10),
+        _areaCard(
+          title: 'Lifestyle',
+          value: _lifestyleHealth,
+          icon: Icons.self_improvement_rounded,
+          description: 'Sleep, energy, recovery and balance.',
+        ),
+      ],
+    );
+  }
+
+  Widget _areaCard({
+    required String title,
+    required double value,
+    required IconData icon,
+    required String description,
+  }) {
+    final progress = (value / 10).clamp(0, 1);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _border),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: _lightMint,
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: Icon(
+              icon,
+              color: _mint,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: _ink,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  description,
+                  style: const TextStyle(
+                    color: _muted,
+                    fontSize: 10.5,
+                  ),
+                ),
+                const SizedBox(height: 9),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(100),
+                  child: LinearProgressIndicator(
+                    value: progress.toDouble().clamp(0.0, 1.0),
+                    minHeight: 5,
+                    backgroundColor: _lightMint,
+                    valueColor:
+                    const AlwaysStoppedAnimation<Color>(_mint),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 14),
+          Text(
+            value.toStringAsFixed(1),
+            style: const TextStyle(
+              color: _ink,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // BURNOUT
+  // ---------------------------------------------------------------------------
+
+  Widget _buildBurnoutSection() {
+    final burnoutHigh = _burnout >= 6.5;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeading(
+          eyebrow: 'BURNOUT MONITOR',
+          title: 'Energy, motivation & recovery',
+        ),
+        const SizedBox(height: 14),
+        Container(
+          padding: const EdgeInsets.all(19),
+          decoration: BoxDecoration(
+            color: _white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: _border),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: burnoutHigh
+                          ? _warningBg
+                          : _lightMint,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      burnoutHigh
+                          ? Icons.warning_amber_rounded
+                          : Icons.battery_5_bar_rounded,
+                      color: burnoutHigh ? _warning : _mint,
+                      size: 23,
+                    ),
+                  ),
+                  const SizedBox(width: 13),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          burnoutHigh
+                              ? 'Higher strain pattern'
+                              : 'Current strain pattern',
+                          style: const TextStyle(
+                            color: _ink,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          'This is a wellbeing signal, not a diagnosis.',
+                          style: const TextStyle(
+                            color: _muted,
+                            fontSize: 10.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    _burnout.toStringAsFixed(1),
+                    style: const TextStyle(
+                      color: _ink,
+                      fontSize: 21,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              _burnoutRow(
+                label: 'Energy',
+                value: _energy,
+                inverse: true,
+              ),
+              _burnoutRow(
+                label: 'Motivation',
+                value: _motivation,
+                inverse: true,
+              ),
+              _burnoutRow(
+                label: 'Mental exhaustion',
+                value: _stress,
+                inverse: false,
+              ),
+              _burnoutRow(
+                label: 'Recovery',
+                value: _sleep,
+                inverse: true,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _burnoutRow({
+    required String label,
+    required double value,
+    required bool inverse,
+  }) {
+    final displayValue = inverse ? value : value;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 13),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 105,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: _muted,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(100),
+              child: LinearProgressIndicator(
+                value: (displayValue / 10).clamp(0, 1),
+                minHeight: 6,
+                backgroundColor: _lightMint,
+                valueColor:
+                const AlwaysStoppedAnimation<Color>(_mint),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 25,
+            child: Text(
+              displayValue.toStringAsFixed(0),
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                color: _ink,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // MONITOR
+  // ---------------------------------------------------------------------------
+
+  Widget _buildMonitor() {
+    final high = _strainSignals >= 5;
+    final attention = _strainSignals >= 3;
+
+    final Color statusColor = high
+        ? _warning
+        : attention
+        ? _mint
+        : _mint;
+
+    final Color statusBackground =
+    high ? _warningBg : _lightMint;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: statusBackground,
+        borderRadius: BorderRadius.circular(25),
+        border: Border.all(
+          color: high ? _warning.withOpacity(0.25) : _border,
         ),
       ),
       child: Column(
@@ -591,710 +1859,731 @@ class _StudentWellbeingScreenState extends State<StudentWellbeingScreen> {
                 width: 45,
                 height: 45,
                 decoration: BoxDecoration(
-                  color: AppColors.lightMint,
-                  borderRadius: BorderRadius.circular(14),
+                  color: _white.withOpacity(0.8),
+                  shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  icon,
-                  color: AppColors.mint,
-                  size: 23,
+                  high
+                      ? Icons.priority_high_rounded
+                      : Icons.monitor_heart_rounded,
+                  color: statusColor,
+                  size: 22,
                 ),
               ),
-
               const SizedBox(width: 12),
-
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: AppColors.navy,
+                    const Text(
+                      'MindMate Monitor',
+                      style: TextStyle(
+                        color: _ink,
                         fontSize: 15,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      description,
+                      _monitorTitle,
                       style: TextStyle(
-                        color: AppColors.navy.withValues(alpha: 0.53),
-                        fontSize: 11.5,
-                        height: 1.35,
+                        color: statusColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                   ],
                 ),
               ),
-
-              Text(
-                '${value.toInt()}/10',
-                style: const TextStyle(
-                  color: AppColors.mint,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
             ],
           ),
-
-          const SizedBox(height: 15),
-
-
-          SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              activeTrackColor: AppColors.mint,
-              inactiveTrackColor: AppColors.borderMint,
-              thumbColor: AppColors.mint,
-              overlayColor:
-              AppColors.mint.withValues(alpha: 0.12),
-              trackHeight: 4,
-            ),
-            child: Slider(
-              value: value,
-              min: 1,
-              max: 10,
-              divisions: 9,
-              onChanged: onChanged,
+          const SizedBox(height: 14),
+          Text(
+            _monitorDescription,
+            style: const TextStyle(
+              color: _muted,
+              fontSize: 12,
+              height: 1.5,
             ),
           ),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Low',
+          if (high) ...[
+            const SizedBox(height: 13),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: _white.withOpacity(0.75),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Text(
+                'Your responses suggest you may need some additional support right now. Consider talking with someone you trust or using MindMate support tools.',
                 style: TextStyle(
-                  color: AppColors.navy.withValues(alpha: 0.42),
-                  fontSize: 10,
+                  color: _muted,
+                  fontSize: 11,
+                  height: 1.45,
                 ),
               ),
-              Text(
-                'High',
-                style: TextStyle(
-                  color: AppColors.navy.withValues(alpha: 0.42),
-                  fontSize: 10,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  // ------------------------------------------------------------
-  // FACTOR GRID
-  // ------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // WHAT CHANGED
+  // ---------------------------------------------------------------------------
 
-  Widget _buildFactorGrid() {
+  Widget _buildWhatChanged() {
+    final changes = <String>[];
+
+    if (_hasHighStress) {
+      changes.add('Stress signals are higher than your baseline snapshot.');
+    }
+
+    if (_hasLowRecovery) {
+      changes.add('Recovery indicators are currently lower.');
+    }
+
+    if (_hasFocusIssue) {
+      changes.add('Focus readiness may be affected by your current situation.');
+    }
+
+    if (_hasAcademicPressure) {
+      changes.add('Academic demands are contributing to your current pressure.');
+    }
+
+    if (changes.isEmpty) {
+      changes.add(
+        'No major strain signal was identified from this checkpoint.',
+      );
+    }
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _buildFactorCard(
-                icon: Icons.bedtime_outlined,
-                title: 'Sleep',
-                value: _sleep,
-                onChanged: (value) {
-                  setState(() => _sleep = value);
-                },
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildFactorCard(
-                icon: Icons.battery_5_bar_rounded,
-                title: 'Energy',
-                value: _energy,
-                onChanged: (value) {
-                  setState(() => _energy = value);
-                },
-              ),
-            ),
-          ],
+        _sectionHeading(
+          eyebrow: 'PATTERN',
+          title: 'What stands out',
         ),
-
-        const SizedBox(height: 12),
-
-        Row(
-          children: [
-            Expanded(
-              child: _buildFactorCard(
-                icon: Icons.menu_book_outlined,
-                title: 'Workload',
-                value: _workload,
-                onChanged: (value) {
-                  setState(() => _workload = value);
-                },
+        const SizedBox(height: 14),
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: _white,
+            borderRadius: BorderRadius.circular(23),
+            border: Border.all(color: _border),
+          ),
+          child: Column(
+            children: changes
+                .map(
+                  (text) => Padding(
+                padding: const EdgeInsets.only(bottom: 13),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.only(top: 3),
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: _mint,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        text,
+                        style: const TextStyle(
+                          color: _muted,
+                          fontSize: 12,
+                          height: 1.45,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildFactorCard(
-                icon: Icons.people_outline_rounded,
-                title: 'Social',
-                value: _socialConnection,
-                onChanged: (value) {
-                  setState(() => _socialConnection = value);
-                },
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 12),
-
-        _buildFactorCard(
-          icon: Icons.psychology_alt_outlined,
-          title: 'Motivation',
-          value: _motivation,
-          onChanged: (value) {
-            setState(() => _motivation = value);
-          },
-          fullWidth: true,
+            )
+                .toList(),
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildFactorCard({
-    required IconData icon,
-    required String title,
-    required double value,
-    required ValueChanged<double> onChanged,
-    bool fullWidth = false,
-  }) {
+  // ---------------------------------------------------------------------------
+  // AI INSIGHT
+  // ---------------------------------------------------------------------------
+
+  Widget _buildAiInsight() {
     return Container(
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: AppColors.borderMint,
-        ),
+        color: _navy,
+        borderRadius: BorderRadius.circular(25),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(
-                icon,
-                color: AppColors.mint,
-                size: 21,
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: _mint.withOpacity(0.16),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: _mint,
+                  size: 19,
+                ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
+              const SizedBox(width: 11),
+              const Expanded(
                 child: Text(
-                  title,
-                  style: const TextStyle(
-                    color: AppColors.navy,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
+                  'MindMate Insight',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
-              Text(
-                '${value.toInt()}',
-                style: const TextStyle(
-                  color: AppColors.mint,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
             ],
           ),
-
-          const SizedBox(height: 7),
-
-          SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              activeTrackColor: AppColors.mint,
-              inactiveTrackColor: AppColors.borderMint,
-              thumbColor: AppColors.mint,
-              overlayColor:
-              AppColors.mint.withValues(alpha: 0.1),
-              trackHeight: 3,
-            ),
-            child: Slider(
-              value: value,
-              min: 1,
-              max: 10,
-              divisions: 9,
-              onChanged: onChanged,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ------------------------------------------------------------
-  // INSIGHT
-  // ------------------------------------------------------------
-
-  Widget _buildInsightCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(19),
-      decoration: BoxDecoration(
-        color: AppColors.lightMint,
-        borderRadius: BorderRadius.circular(21),
-        border: Border.all(
-          color: AppColors.borderMint,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(
-                Icons.auto_awesome_rounded,
-                color: AppColors.mint,
-                size: 22,
-              ),
-              SizedBox(width: 9),
-              Text(
-                'WELLBEING INSIGHT',
-                style: TextStyle(
-                  color: AppColors.mint,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.8,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 13),
-
+          const SizedBox(height: 16),
           Text(
-            _buildInsightText(),
-            style: const TextStyle(
-              color: AppColors.navy,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              height: 1.5,
+            _aiInsight,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.78),
+              fontSize: 12.5,
+              height: 1.55,
             ),
           ),
-
-          const SizedBox(height: 10),
-
+          const SizedBox(height: 16),
           Text(
-            _buildSuggestionText(),
+            'Your wellbeing can change from day to day. Check in again whenever your situation changes.',
             style: TextStyle(
-              color: AppColors.navy.withValues(alpha: 0.58),
-              fontSize: 11.5,
-              height: 1.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _buildInsightText() {
-    if (_examPressure >= 8) {
-      return 'Exam pressure is currently one of the strongest areas affecting your wellbeing.';
-    }
-
-    if (_stress >= 8) {
-      return 'Your current stress level appears to be one of the main areas needing attention.';
-    }
-
-    if (_burnout >= 8) {
-      return 'Your responses show a high level of mental and emotional exhaustion.';
-    }
-
-    if (_sleep <= 4) {
-      return 'Your sleep level may be affecting your energy and ability to manage academic pressure.';
-    }
-
-    return 'Your responses show a mix of academic pressure and positive wellbeing factors.';
-  }
-
-  String _buildSuggestionText() {
-    if (_examPressure >= 8) {
-      return 'Consider breaking large study tasks into smaller sessions and scheduling regular recovery breaks.';
-    }
-
-    if (_stress >= 8) {
-      return 'Try creating a short daily reset routine and identifying the specific situations contributing to your stress.';
-    }
-
-    if (_burnout >= 8) {
-      return 'Prioritize recovery, sleep and meaningful breaks rather than continuously increasing study time.';
-    }
-
-    if (_sleep <= 4) {
-      return 'A consistent sleep routine and reducing late-night study sessions may help support your daily energy.';
-    }
-
-    return 'Keep checking in with yourself regularly so you can notice changes before pressure builds up.';
-  }
-
-  // ------------------------------------------------------------
-  // HISTORY
-  // ------------------------------------------------------------
-
-  Widget _buildHistoryCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(19),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(21),
-        border: Border.all(
-          color: AppColors.borderMint,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(
-                Icons.history_rounded,
-                color: AppColors.navy,
-                size: 21,
-              ),
-              SizedBox(width: 9),
-              Text(
-                'RECENT CHECKS',
-                style: TextStyle(
-                  color: AppColors.navy,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.8,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 17),
-
-          _buildHistoryRow(
-            'Today',
-            'Current check-in',
-            _overallScore,
-          ),
-
-          const Divider(height: 22),
-
-          _buildHistoryRow(
-            'Sep 15',
-            'Previous check-in',
-            5.9,
-          ),
-
-          const Divider(height: 22),
-
-          _buildHistoryRow(
-            'Sep 12',
-            'Previous check-in',
-            4.7,
-          ),
-
-          const Divider(height: 22),
-
-          _buildHistoryRow(
-            'Sep 08',
-            'Previous check-in',
-            6.1,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHistoryRow(
-      String date,
-      String subtitle,
-      double score,
-      ) {
-    return Row(
-      children: [
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: AppColors.lightMint,
-            borderRadius: BorderRadius.circular(13),
-          ),
-          child: const Icon(
-            Icons.insights_rounded,
-            color: AppColors.mint,
-            size: 21,
-          ),
-        ),
-
-        const SizedBox(width: 12),
-
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                date,
-                style: const TextStyle(
-                  color: AppColors.navy,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  color: AppColors.navy.withValues(alpha: 0.45),
-                  fontSize: 10.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        Text(
-          '${score.toStringAsFixed(1)}/10',
-          style: const TextStyle(
-            color: AppColors.mint,
-            fontSize: 13,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ------------------------------------------------------------
-  // DETAILS
-  // ------------------------------------------------------------
-
-  Widget _buildDetailsButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 50,
-      child: OutlinedButton(
-        onPressed: () {
-          setState(() {
-            _showDetails = !_showDetails;
-          });
-        },
-        style: OutlinedButton.styleFrom(
-          side: const BorderSide(
-            color: AppColors.borderMint,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              _showDetails
-                  ? 'Hide Detailed Summary'
-                  : 'View Detailed Summary',
-              style: const TextStyle(
-                color: AppColors.navy,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Icon(
-              _showDetails
-                  ? Icons.keyboard_arrow_up_rounded
-                  : Icons.keyboard_arrow_down_rounded,
-              color: AppColors.navy,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDetailedSummary() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(19),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.borderMint,
-        ),
-      ),
-      child: Column(
-        children: [
-          _buildSummaryMetric(
-            'Stress',
-            _stress,
-            Icons.bolt_rounded,
-          ),
-          const SizedBox(height: 15),
-          _buildSummaryMetric(
-            'Exam Pressure',
-            _examPressure,
-            Icons.menu_book_rounded,
-          ),
-          const SizedBox(height: 15),
-          _buildSummaryMetric(
-            'Burnout',
-            _burnout,
-            Icons.battery_alert_rounded,
-          ),
-          const SizedBox(height: 15),
-          _buildSummaryMetric(
-            'Sleep',
-            _sleep,
-            Icons.bedtime_outlined,
-          ),
-          const SizedBox(height: 15),
-          _buildSummaryMetric(
-            'Energy',
-            _energy,
-            Icons.battery_5_bar_rounded,
-          ),
-          const SizedBox(height: 15),
-          _buildSummaryMetric(
-            'Motivation',
-            _motivation,
-            Icons.psychology_alt_outlined,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSummaryMetric(
-      String title,
-      double value,
-      IconData icon,
-      ) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          color: AppColors.mint,
-          size: 20,
-        ),
-        const SizedBox(width: 10),
-        SizedBox(
-          width: 105,
-          child: Text(
-            title,
-            style: const TextStyle(
-              color: AppColors.navy,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        Expanded(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: LinearProgressIndicator(
-              value: value / 10,
-              minHeight: 7,
-              backgroundColor: AppColors.lightMint,
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                AppColors.mint,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 9),
-        Text(
-          '${value.toInt()}/10',
-          style: const TextStyle(
-            color: AppColors.navy,
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ------------------------------------------------------------
-  // DISCLAIMER
-  // ------------------------------------------------------------
-
-  Widget _buildDisclaimer() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(
-          Icons.info_outline_rounded,
-          color: AppColors.navy.withValues(alpha: 0.35),
-          size: 17,
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            'This wellbeing check is intended for self-reflection and '
-                'awareness. It is not a medical or psychological diagnosis.',
-            style: TextStyle(
-              color: AppColors.navy.withValues(alpha: 0.4),
+              color: Colors.white.withOpacity(0.5),
               fontSize: 10.5,
               height: 1.45,
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // RECOMMENDED ACTIONS
+  // ---------------------------------------------------------------------------
+
+  Widget _buildRecommendedActions() {
+    final actions = <_ActionItem>[];
+
+    if (_hasLowRecovery) {
+      actions.add(
+        const _ActionItem(
+          title: 'Wind down & recover',
+          subtitle: 'Create space for better sleep and recovery.',
+          icon: Icons.bedtime_rounded,
+          type: _ActionType.sleep,
+        ),
+      );
+    }
+
+    if (_hasHighStress) {
+      actions.add(
+        const _ActionItem(
+          title: 'Release some stress',
+          subtitle: 'Try a short guided stress reset.',
+          icon: Icons.spa_rounded,
+          type: _ActionType.stress,
+        ),
+      );
+    }
+
+    if (_hasFocusIssue) {
+      actions.add(
+        const _ActionItem(
+          title: 'Reset your focus',
+          subtitle: 'Take a short break and restart intentionally.',
+          icon: Icons.center_focus_strong_rounded,
+          type: _ActionType.focus,
+        ),
+      );
+    }
+
+    if (_hasOverthinking) {
+      actions.add(
+        const _ActionItem(
+          title: 'Quiet the mental loop',
+          subtitle: 'Use a guided thought reset.',
+          icon: Icons.psychology_alt_rounded,
+          type: _ActionType.thought,
+        ),
+      );
+    }
+
+    if (_struggles.contains('exams')) {
+      actions.add(
+        const _ActionItem(
+          title: 'Exam pressure reset',
+          subtitle: 'Work through exam-related pressure.',
+          icon: Icons.fact_check_rounded,
+          type: _ActionType.exam,
+        ),
+      );
+    }
+
+    if (actions.isEmpty) {
+      actions.add(
+        const _ActionItem(
+          title: 'Take a calm moment',
+          subtitle: 'Use a short grounding exercise.',
+          icon: Icons.self_improvement_rounded,
+          type: _ActionType.calm,
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeading(
+          eyebrow: 'NEXT STEP',
+          title: 'What could help right now?',
+        ),
+        const SizedBox(height: 14),
+        ...actions.take(3).map(
+              (action) => Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _buildActionCard(action),
+          ),
+        ),
+        const SizedBox(height: 3),
+        SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: ElevatedButton(
+            onPressed: () => _openScreen(const AiChatScreen()),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _navy,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.chat_bubble_outline_rounded, size: 18),
+                SizedBox(width: 8),
+                Text(
+                  'Talk to MindMate',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ],
     );
   }
 
-  // ------------------------------------------------------------
-  // INFO DIALOG
-  // ------------------------------------------------------------
+  Widget _buildActionCard(_ActionItem action) {
+    return GestureDetector(
+      onTap: () => _handleAction(action.type),
+      child: Container(
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: _white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: _border),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 43,
+              height: 43,
+              decoration: BoxDecoration(
+                color: _lightMint,
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: Icon(
+                action.icon,
+                color: _mint,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    action.title,
+                    style: const TextStyle(
+                      color: _ink,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    action.subtitle,
+                    style: const TextStyle(
+                      color: _muted,
+                      fontSize: 10.5,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: _mint,
+              size: 14,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-  void _showInfoDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(22),
-          ),
-          title: const Text(
-            'About Student Wellbeing',
-            style: TextStyle(
-              color: AppColors.navy,
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
+  void _handleAction(_ActionType type) {
+    switch (type) {
+      case _ActionType.sleep:
+        _openScreen(const SleepWindDownScreen());
+        break;
+      case _ActionType.stress:
+        _openScreen(const StressReleaseScreen());
+        break;
+      case _ActionType.focus:
+        _openScreen(const FocusResetScreen());
+        break;
+      case _ActionType.thought:
+        _openScreen(const ThoughtResetScreen());
+        break;
+      case _ActionType.exam:
+        _openScreen(const ExamPressureResetScreen());
+        break;
+      case _ActionType.calm:
+        _openScreen(const CalmGroundingScreen());
+        break;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // EXISTING TOOLS
+  // ---------------------------------------------------------------------------
+
+  Widget _buildExistingTools() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeading(
+          eyebrow: 'YOUR MINDMATE TOOLKIT',
+          title: 'Explore more',
+        ),
+        const SizedBox(height: 14),
+        Wrap(
+          spacing: 9,
+          runSpacing: 9,
+          children: [
+            _toolButton(
+              'Mood check',
+              Icons.mood_rounded,
+                  () => _openScreen(const MoodScreen()),
             ),
-          ),
-          content: Text(
-            'This section helps you reflect on common student-life '
-                'factors such as academic stress, exam pressure, burnout, '
-                'sleep, energy and motivation.',
-            style: TextStyle(
-              color: AppColors.navy.withValues(alpha: 0.62),
-              fontSize: 13,
-              height: 1.5,
+            _toolButton(
+              'Emotions',
+              Icons.emoji_emotions_outlined,
+                  () => _openScreen(const EmotionScreen()),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'Got it',
-                style: TextStyle(
-                  color: AppColors.mint,
-                  fontWeight: FontWeight.w700,
-                ),
+            _toolButton(
+              'Assessments',
+              Icons.assignment_outlined,
+                  () => _openScreen(const AssessmentsScreen()),
+            ),
+            _toolButton(
+              'Focus reset',
+              Icons.center_focus_strong_rounded,
+                  () => _openScreen(const FocusResetScreen()),
+            ),
+            _toolButton(
+              'Calm',
+              Icons.self_improvement_rounded,
+                  () => _openScreen(const CalmGroundingScreen()),
+            ),
+            _toolButton(
+              'Talk',
+              Icons.chat_bubble_outline_rounded,
+                  () => _openScreen(const AiChatScreen()),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _toolButton(
+      String title,
+      IconData icon,
+      VoidCallback onTap,
+      ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 13,
+          vertical: 11,
+        ),
+        decoration: BoxDecoration(
+          color: _white,
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: _border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: _mint,
+              size: 17,
+            ),
+            const SizedBox(width: 7),
+            Text(
+              title,
+              style: const TextStyle(
+                color: _ink,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
-        );
-      },
+        ),
+      ),
     );
   }
+
+  // ---------------------------------------------------------------------------
+  // HISTORY
+  // ---------------------------------------------------------------------------
+
+  Widget _buildHistorySection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeading(
+          eyebrow: 'YOUR PATTERNS',
+          title: 'Keep understanding yourself',
+        ),
+        const SizedBox(height: 14),
+        _historyCard(
+          icon: Icons.show_chart_rounded,
+          title: 'View Progress',
+          subtitle:
+          'See your longer-term wellbeing patterns and changes.',
+          onTap: () => _openScreen(const ProgressScreen()),
+        ),
+        const SizedBox(height: 10),
+        _historyCard(
+          icon: Icons.calendar_month_rounded,
+          title: 'Weekly Wellbeing',
+          subtitle:
+          'Review your weekly check-ins, mood and recovery patterns.',
+          onTap: () => _openScreen(const WeeklyWellbeingScreen()),
+        ),
+        const SizedBox(height: 18),
+        GestureDetector(
+          onTap: _resetCheckpoint,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              color: _lightMint,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: _border),
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.edit_rounded,
+                  color: _mint,
+                  size: 17,
+                ),
+                SizedBox(width: 7),
+                Text(
+                  'Update my situation',
+                  style: TextStyle(
+                    color: _mint,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _historyCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: _white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: _border),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 43,
+              height: 43,
+              decoration: BoxDecoration(
+                color: _lightMint,
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: Icon(
+                icon,
+                color: _mint,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: _ink,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: _muted,
+                      fontSize: 10.5,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: _mint,
+              size: 14,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // SECTION HEADING
+  // ---------------------------------------------------------------------------
+
+  Widget _sectionHeading({
+    required String eyebrow,
+    required String title,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          eyebrow,
+          style: const TextStyle(
+            color: _mint,
+            fontSize: 9.5,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.25,
+          ),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          title,
+          style: const TextStyle(
+            color: _ink,
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.35,
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  void dispose() {
+    _somethingElseController.dispose();
+    super.dispose();
+  }
+}
+
+// =============================================================================
+// MODELS
+// =============================================================================
+
+class _StudentOption {
+  final String id;
+  final String title;
+  final String subtitle;
+  final IconData icon;
+
+  const _StudentOption({
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+  });
+}
+
+class _ActionItem {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final _ActionType type;
+
+  const _ActionItem({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.type,
+  });
+}
+
+enum _ActionType {
+  sleep,
+  stress,
+  focus,
+  thought,
+  exam,
+  calm,
 }
