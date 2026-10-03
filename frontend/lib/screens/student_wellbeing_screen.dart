@@ -18,6 +18,8 @@ import 'exercise/sleep_wind_down_screen.dart';
 import 'exercise/stress_release_screen.dart';
 import 'exercise/thought_reset_screen.dart';
 
+import '../../core/services/student_wellbeing_calculator.dart';
+
 class StudentWellbeingScreen extends StatefulWidget {
   final VoidCallback? onBackToHome;
 
@@ -385,115 +387,31 @@ class _StudentWellbeingScreenState extends State<StudentWellbeingScreen> {
       return;
     }
 
+    final result = StudentWellbeingCalculator.calculate(
+      struggles: _struggles,
+      effects: _effects,
+      pressureSources: _pressureSources,
+    );
+
     setState(() {
-      double pressureAdjustment = 0;
-      double recoveryAdjustment = 0;
-      double focusAdjustment = 0;
-      double pulseAdjustment = 0;
+      _studentPulse = result.studentPulse;
+      _pressureIndex = result.pressureIndex;
+      _focusReadiness = result.focusReadiness;
+      _recoveryIndex = result.recoveryIndex;
+      _overloadIndex = result.overloadIndex;
 
-      pressureAdjustment += _pressureSources.length * 4;
-      pressureAdjustment += _struggles.length * 2;
+      _academicHealth = result.academicHealth;
+      _mentalHealth = result.mentalHealth;
+      _lifestyleHealth = result.lifestyleHealth;
 
-      if (_hasHighStress) {
-        pressureAdjustment += 8;
-        pulseAdjustment -= 7;
-      }
-
-      if (_hasLowRecovery) {
-        recoveryAdjustment += 10;
-        pulseAdjustment -= 6;
-      }
-
-      if (_hasFocusIssue) {
-        focusAdjustment += 12;
-        pulseAdjustment -= 4;
-      }
-
-      if (_hasMotivationIssue) {
-        recoveryAdjustment += 5;
-        pulseAdjustment -= 3;
-      }
-
-      if (_effects.contains('okay')) {
-        pulseAdjustment += 6;
-      }
-
-      // -----------------------------------------------------------------------
-      // CORE METRICS
-      // -----------------------------------------------------------------------
-
-      _pressureIndex =
-          (58 + pressureAdjustment).clamp(0, 100).toDouble();
-
-      _recoveryIndex =
-          (55 - recoveryAdjustment).clamp(0, 100).toDouble();
-
-      _focusReadiness =
-          (64 - focusAdjustment).clamp(0, 100).toDouble();
-
-      _overloadIndex =
-          (46 + pressureAdjustment * 0.65)
-              .clamp(0, 100)
-              .toDouble();
-
-      _studentPulse =
-          (72 + pulseAdjustment).clamp(0, 100).toDouble();
-
-      // -----------------------------------------------------------------------
-      // WELLBEING INDICATORS
-      // -----------------------------------------------------------------------
-
-      _stress =
-          (_hasHighStress ? 7.5 : 6.0)
-              .clamp(0.0, 10.0)
-              .toDouble();
-
-      _energy =
-          (_hasLowRecovery ? 4.0 : 6.0)
-              .clamp(0.0, 10.0)
-              .toDouble();
-
-      _sleep =
-          (_effects.contains('poor_sleep') ? 3.5 : 5.0)
-              .clamp(0.0, 10.0)
-              .toDouble();
-
-      _motivation =
-          (_hasMotivationIssue ? 4.0 : 6.0)
-              .clamp(0.0, 10.0)
-              .toDouble();
-
-      _workload =
-          (_hasAcademicPressure ? 7.5 : 6.5)
-              .clamp(0.0, 10.0)
-              .toDouble();
-
-      _burnout =
-          ((_stress +
-              (10 - _energy) +
-              (10 - _motivation)) /
-              3)
-              .clamp(0.0, 10.0)
-              .toDouble();
-
-      // -----------------------------------------------------------------------
-      // WELLBEING AREAS
-      // -----------------------------------------------------------------------
-
-      _academicHealth =
-          (_hasAcademicPressure ? 6.2 : 6.7)
-              .clamp(0.0, 10.0)
-              .toDouble();
-
-      _mentalHealth =
-          (_hasHighStress || _hasLowRecovery ? 6.4 : 7.2)
-              .clamp(0.0, 10.0)
-              .toDouble();
-
-      _lifestyleHealth =
-          (_hasLowRecovery ? 6.2 : 7.4)
-              .clamp(0.0, 10.0)
-              .toDouble();
+      _stress = result.stress;
+      _examPressure = result.examPressure;
+      _burnout = result.burnout;
+      _sleep = result.sleep;
+      _energy = result.energy;
+      _workload = result.workload;
+      _socialConnection = result.socialConnection;
+      _motivation = result.motivation;
 
       _showResults = true;
     });
@@ -555,6 +473,12 @@ class _StudentWellbeingScreenState extends State<StudentWellbeingScreen> {
     }
 
     _openScreen(const AiChatScreen());
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLatestWellbeing();
   }
 
   // ---------------------------------------------------------------------------
@@ -2442,6 +2366,102 @@ class _StudentWellbeingScreenState extends State<StudentWellbeingScreen> {
       case _ActionType.calm:
         _openScreen(const CalmGroundingScreen());
         break;
+    }
+  }
+
+  Future<void> _loadLatestWellbeing() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      final savedEmail = prefs.getString('logged_in_email');
+
+      if (savedEmail == null || savedEmail.trim().isEmpty) {
+        return;
+      }
+
+      final email = savedEmail.trim().toLowerCase();
+
+      final response = await http.get(
+        Uri.parse(
+          '${ApiConfig.latestStudentWellbeingUrl}'
+              '?email=${Uri.encodeComponent(email)}',
+        ),
+      );
+
+      debugPrint(
+        'Latest student wellbeing response: '
+            '${response.statusCode}',
+      );
+
+      debugPrint(
+        'Latest student wellbeing body: '
+            '${response.body}',
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final wellbeing = data['wellbeing'];
+
+        if (wellbeing == null) return;
+
+        setState(() {
+          _studentPulse =
+              (wellbeing['studentPulse'] ?? _studentPulse).toDouble();
+
+          _pressureIndex =
+              (wellbeing['pressureIndex'] ?? _pressureIndex).toDouble();
+
+          _focusReadiness =
+              (wellbeing['focusReadiness'] ?? _focusReadiness).toDouble();
+
+          _recoveryIndex =
+              (wellbeing['recoveryIndex'] ?? _recoveryIndex).toDouble();
+
+          _overloadIndex =
+              (wellbeing['overloadIndex'] ?? _overloadIndex).toDouble();
+
+          _academicHealth =
+              (wellbeing['academicHealth'] ?? _academicHealth).toDouble();
+
+          _mentalHealth =
+              (wellbeing['mentalHealth'] ?? _mentalHealth).toDouble();
+
+          _lifestyleHealth =
+              (wellbeing['lifestyleHealth'] ?? _lifestyleHealth).toDouble();
+
+          _stress =
+              (wellbeing['stress'] ?? _stress).toDouble();
+
+          _examPressure =
+              (wellbeing['examPressure'] ?? _examPressure).toDouble();
+
+          _burnout =
+              (wellbeing['burnout'] ?? _burnout).toDouble();
+
+          _sleep =
+              (wellbeing['sleep'] ?? _sleep).toDouble();
+
+          _energy =
+              (wellbeing['energy'] ?? _energy).toDouble();
+
+          _workload =
+              (wellbeing['workload'] ?? _workload).toDouble();
+
+          _socialConnection =
+              (wellbeing['socialConnection'] ?? _socialConnection).toDouble();
+
+          _motivation =
+              (wellbeing['motivation'] ?? _motivation).toDouble();
+
+          _showResults = true;
+        });
+      }
+    } catch (error) {
+      debugPrint(
+        'Load latest student wellbeing error: $error',
+      );
     }
   }
 
