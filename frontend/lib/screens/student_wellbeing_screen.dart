@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/config/api_config.dart';
 import '../core/constants/app_colors.dart';
 import 'ai_chat_screen.dart';
 import 'assessments/assessments_screen.dart';
@@ -364,11 +368,13 @@ class _StudentWellbeingScreenState extends State<StudentWellbeingScreen> {
   // ACTION
   // ---------------------------------------------------------------------------
 
-  void _generateWellbeingSnapshot() {
+  Future<void> _generateWellbeingSnapshot() async {
     if (!_hasInput) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Tell MindMate a little about your situation first.'),
+          content: const Text(
+            'Tell MindMate a little about your situation first.',
+          ),
           behavior: SnackBarBehavior.floating,
           backgroundColor: _navy,
           shape: RoundedRectangleBorder(
@@ -412,6 +418,10 @@ class _StudentWellbeingScreenState extends State<StudentWellbeingScreen> {
         pulseAdjustment += 6;
       }
 
+      // -----------------------------------------------------------------------
+      // CORE METRICS
+      // -----------------------------------------------------------------------
+
       _pressureIndex =
           (58 + pressureAdjustment).clamp(0, 100).toDouble();
 
@@ -422,42 +432,74 @@ class _StudentWellbeingScreenState extends State<StudentWellbeingScreen> {
           (64 - focusAdjustment).clamp(0, 100).toDouble();
 
       _overloadIndex =
-          (46 + pressureAdjustment * 0.65).clamp(0, 100).toDouble();
+          (46 + pressureAdjustment * 0.65)
+              .clamp(0, 100)
+              .toDouble();
 
       _studentPulse =
           (72 + pulseAdjustment).clamp(0, 100).toDouble();
 
-      _stress = ((_hasHighStress ? 7.5 : 6.0).clamp(0.0, 10.0)).toDouble();
+      // -----------------------------------------------------------------------
+      // WELLBEING INDICATORS
+      // -----------------------------------------------------------------------
 
-      _energy = ((_hasLowRecovery ? 4.0 : 6.0).clamp(0.0, 10.0)).toDouble();
+      _stress =
+          (_hasHighStress ? 7.5 : 6.0)
+              .clamp(0.0, 10.0)
+              .toDouble();
+
+      _energy =
+          (_hasLowRecovery ? 4.0 : 6.0)
+              .clamp(0.0, 10.0)
+              .toDouble();
 
       _sleep =
-          ((_effects.contains('poor_sleep') ? 3.5 : 5.0)
-              .clamp(0.0, 10.0))
+          (_effects.contains('poor_sleep') ? 3.5 : 5.0)
+              .clamp(0.0, 10.0)
               .toDouble();
 
       _motivation =
-          ((_hasMotivationIssue ? 4.0 : 6.0).clamp(0.0, 10.0)).toDouble();
+          (_hasMotivationIssue ? 4.0 : 6.0)
+              .clamp(0.0, 10.0)
+              .toDouble();
 
       _workload =
-          (_hasAcademicPressure ? 7.5 : 6.5).clamp(0, 10);
+          (_hasAcademicPressure ? 7.5 : 6.5)
+              .clamp(0.0, 10.0)
+              .toDouble();
 
       _burnout =
-          ((_stress + (10 - _energy) + (10 - _motivation)) / 3)
-              .clamp(0, 10);
+          ((_stress +
+              (10 - _energy) +
+              (10 - _motivation)) /
+              3)
+              .clamp(0.0, 10.0)
+              .toDouble();
+
+      // -----------------------------------------------------------------------
+      // WELLBEING AREAS
+      // -----------------------------------------------------------------------
 
       _academicHealth =
-          (_hasAcademicPressure ? 6.2 : 6.7).clamp(0, 10);
+          (_hasAcademicPressure ? 6.2 : 6.7)
+              .clamp(0.0, 10.0)
+              .toDouble();
 
       _mentalHealth =
           (_hasHighStress || _hasLowRecovery ? 6.4 : 7.2)
-              .clamp(0, 10);
+              .clamp(0.0, 10.0)
+              .toDouble();
 
       _lifestyleHealth =
-          (_hasLowRecovery ? 6.2 : 7.4).clamp(0, 10);
+          (_hasLowRecovery ? 6.2 : 7.4)
+              .clamp(0.0, 10.0)
+              .toDouble();
 
       _showResults = true;
     });
+
+    // Save the exact snapshot after the local calculations are complete.
+    await _saveWellbeingSnapshot();
   }
 
   void _resetCheckpoint() {
@@ -1427,7 +1469,127 @@ class _StudentWellbeingScreenState extends State<StudentWellbeingScreen> {
       ),
     );
   }
+  Future<void> _saveWellbeingSnapshot() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
 
+      final savedEmail = prefs.getString('logged_in_email');
+
+      if (savedEmail == null || savedEmail.trim().isEmpty) {
+        debugPrint(
+          'Student wellbeing save failed: logged-in email not found.',
+        );
+
+        if (!mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Unable to identify your account.',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+
+        return;
+      }
+
+      final email = savedEmail.trim().toLowerCase();
+
+      final response = await http.post(
+        Uri.parse(ApiConfig.studentWellbeingUrl),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'email': email,
+
+          // User selections
+          'dealingWith': _struggles.toList(),
+          'effects': _effects.toList(),
+          'pressureSources': _pressureSources.toList(),
+
+          // Actual text entered by the student
+          'somethingElse':
+          _somethingElseController.text.trim(),
+
+          // Core metrics
+          'studentPulse': _studentPulse,
+          'pressureIndex': _pressureIndex,
+          'focusReadiness': _focusReadiness,
+          'recoveryIndex': _recoveryIndex,
+          'overloadIndex': _overloadIndex,
+
+          // Wellbeing indicators
+          'stress': _stress,
+          'examPressure': _examPressure,
+          'burnout': _burnout,
+          'sleep': _sleep,
+          'energy': _energy,
+          'workload': _workload,
+          'socialConnection': _socialConnection,
+          'motivation': _motivation,
+
+          // Wellbeing areas
+          'academicHealth': _academicHealth,
+          'mentalHealth': _mentalHealth,
+          'lifestyleHealth': _lifestyleHealth,
+
+          // Current interpretation
+          'monitorStatus': _monitorTitle,
+          'primarySignal': _primarySignal,
+          'aiInsight': _aiInsight,
+        }),
+      );
+
+      debugPrint(
+        'Student wellbeing response: '
+            '${response.statusCode}',
+      );
+
+      debugPrint(
+        'Student wellbeing response body: '
+            '${response.body}',
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 201) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Your wellbeing snapshot has been saved.',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Unable to save your wellbeing snapshot.',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (error) {
+      debugPrint(
+        'Student wellbeing connection error: $error',
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Could not connect to the MindMate server.',
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
   // ---------------------------------------------------------------------------
   // PRESSURE / RECOVERY
   // ---------------------------------------------------------------------------
