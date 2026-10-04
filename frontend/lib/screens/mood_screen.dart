@@ -517,10 +517,94 @@ class _MoodScreenState extends State<MoodScreen> {
           );
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Mood entry deleted successfully.'),
-          ),
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(26),
+              ),
+              contentPadding: const EdgeInsets.fromLTRB(
+                24,
+                28,
+                24,
+                16,
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: AppColors.lightMint,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppColors.borderMint,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.delete_outline_rounded,
+                      color: AppColors.mint,
+                      size: 38,
+                    ),
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  const Text(
+                    'Mood Entry Deleted',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: AppColors.navy,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  Text(
+                    'Your mood entry has been successfully deleted.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: AppColors.navy.withValues(alpha: 0.55),
+                      fontSize: 11.5,
+                      height: 1.45,
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 46,
+                    child: FilledButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.mint,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: const Text(
+                        'Continue',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
