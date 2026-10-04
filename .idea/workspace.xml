@@ -5,10 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f21d4447-cc26-4919-8eac-2323aaaa6e0a" name="Changes" comment="Initializing the project and make the UI of splash screen">
-      <change afterPath="$PROJECT_DIR$/backend/models/MoodTracker.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/backend/server.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/core/config/api_config.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/core/config/api_config.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/frontend/lib/screens/mood_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/screens/mood_screen.dart" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />

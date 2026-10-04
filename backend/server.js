@@ -1218,6 +1218,37 @@ app.get('/api/mood-tracker', async (req, res) => {
   }
 });
 
+//Deleting the MOOD card
+app.delete('/api/mood-tracker/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        message: 'Invalid mood entry ID.',
+      });
+    }
+
+    const deletedMood = await MoodTracker.findByIdAndDelete(id);
+
+    if (!deletedMood) {
+      return res.status(404).json({
+        message: 'Mood entry not found.',
+      });
+    }
+
+    return res.status(200).json({
+      message: 'Mood entry deleted successfully.',
+    });
+  } catch (error) {
+    console.error('Delete mood error:', error);
+
+    return res.status(500).json({
+      message: 'Failed to delete mood entry.',
+    });
+  }
+});
+
 
 app.get('/', (req, res) => {
   res.json({

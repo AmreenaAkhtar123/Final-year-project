@@ -421,7 +421,132 @@ class _MoodScreenState extends State<MoodScreen> {
     }
   }
 
+  Future<void> _deleteMood(String moodId) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+          ),
+          title: const Text(
+            'Delete Mood Entry?',
+            style: TextStyle(
+              color: AppColors.navy,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          content: Text(
+            'Are you sure you want to delete this mood entry? This action cannot be undone.',
+            style: TextStyle(
+              color: AppColors.navy.withValues(alpha: 0.60),
+              fontSize: 12,
+              height: 1.45,
+            ),
+          ),
+          actionsPadding: const EdgeInsets.fromLTRB(
+            16,
+            0,
+            16,
+            14,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context, false);
+              },
+              child: const Text(
+                'Cancel',
+                style: TextStyle(
+                  color: AppColors.navy,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(context, true);
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(11),
+                ),
+              ),
+              child: const Text(
+                'Delete',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
 
+    if (shouldDelete != true) {
+      return;
+    }
+
+    try {
+      final response = await http.delete(
+        Uri.parse(
+          '${ApiConfig.moodTrackerUrl}/$moodId',
+        ),
+      );
+
+      debugPrint(
+        'Delete mood response: ${response.statusCode}',
+      );
+
+      debugPrint(
+        'Delete mood body: ${response.body}',
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _moodHistory.removeWhere(
+                (entry) => entry['_id']?.toString() == moodId,
+          );
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Mood entry deleted successfully.'),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Failed to delete mood entry. Please try again.',
+            ),
+          ),
+        );
+      }
+    } catch (error) {
+      debugPrint(
+        'Delete mood error: $error',
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Unable to delete mood entry. Please try again.',
+          ),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -769,23 +894,53 @@ class _MoodScreenState extends State<MoodScreen> {
                 ),
               ),
 
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.lightMint,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  '$intensity / 10',
-                  style: const TextStyle(
-                    color: AppColors.mint,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      final moodId = entry['_id']?.toString();
+
+                      if (moodId != null && moodId.isNotEmpty) {
+                        _deleteMood(moodId);
+                      }
+                    },
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Colors.red.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(9),
+                      ),
+                      child: const Icon(
+                        Icons.delete_outline_rounded,
+                        color: Colors.red,
+                        size: 17,
+                      ),
+                    ),
                   ),
-                ),
+
+                  const SizedBox(height: 7),
+
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.lightMint,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '$intensity / 10',
+                      style: const TextStyle(
+                        color: AppColors.mint,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
