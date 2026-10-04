@@ -15,4 +15,7 @@ class ApiConfig {
 
   static String get latestStudentWellbeingUrl =>
       '$baseUrl/api/student-wellbeing/latest';
+
+  static String get moodTrackerUrl =>
+      '$baseUrl/api/mood-tracker';
 }

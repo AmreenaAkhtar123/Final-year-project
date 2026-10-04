@@ -8,6 +8,7 @@ import bcrypt from 'bcrypt';
 import User from './models/User.js';
 import CheckIn from './models/CheckIn.js';
 import StudentWellbeing from './models/StudentWellbeing.js';
+import MoodTracker from './models/MoodTracker.js';
 
 dotenv.config();
 
@@ -1111,6 +1112,112 @@ app.get('/api/student-wellbeing/latest', async (req, res) => {
     });
   }
 });
+
+// Save the Mode Tracker details
+app.post('/api/mood-tracker', async (req, res) => {
+  try {
+    const {
+      email,
+      mood,
+      moodIntensity,
+      factors,
+      note,
+    } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        message: 'Email is required.',
+      });
+    }
+
+    if (!mood) {
+      return res.status(400).json({
+        message: 'Mood is required.',
+      });
+    }
+
+    if (
+      moodIntensity === undefined ||
+      moodIntensity === null
+    ) {
+      return res.status(400).json({
+        message: 'Mood intensity is required.',
+      });
+    }
+
+    const user = await User.findOne({
+      email: email.toLowerCase().trim(),
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        message: 'User not found.',
+      });
+    }
+
+    const moodTracker = await MoodTracker.create({
+      email: user.email,
+      mood,
+      moodIntensity,
+      factors: Array.isArray(factors) ? factors : [],
+      note: note ?? '',
+    });
+
+    return res.status(201).json({
+      message: 'Mood entry saved successfully.',
+      moodTracker,
+    });
+  } catch (error) {
+    console.error('Save mood tracker error:', error);
+
+    return res.status(500).json({
+      message: 'Failed to save mood entry.',
+    });
+  }
+});
+
+//Get the Mode Tracker Details
+app.get('/api/mood-tracker', async (req, res) => {
+  try {
+    const { email } = req.query;
+
+    if (!email) {
+      return res.status(400).json({
+        message: 'Email is required.',
+      });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const user = await User.findOne({
+      email: normalizedEmail,
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        message: 'User not found.',
+      });
+    }
+
+    const moods = await MoodTracker.find({
+      email: normalizedEmail,
+    }).sort({
+      createdAt: -1,
+    });
+
+    return res.status(200).json({
+      message: 'Mood history retrieved successfully.',
+      moods,
+    });
+  } catch (error) {
+    console.error('Get mood history error:', error);
+
+    return res.status(500).json({
+      message: 'Failed to retrieve mood history.',
+    });
+  }
+});
+
 
 app.get('/', (req, res) => {
   res.json({
