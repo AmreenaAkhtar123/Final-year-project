@@ -898,6 +898,18 @@ class _InsightsScreenState extends State<InsightsScreen> {
               child: _buildInsightCard(),
             ),
 
+
+            SliverToBoxAdapter(
+              child: _buildSectionTitle(
+                'Your milestones',
+                'Small steps worth celebrating',
+              ),
+            ),
+
+            SliverToBoxAdapter(
+              child: _buildMilestonesCard(),
+            ),
+
             SliverToBoxAdapter(
               child: _buildSectionTitle(
                 'Your wellbeing streak',
@@ -1917,6 +1929,376 @@ class _InsightsScreenState extends State<InsightsScreen> {
   }
 
   // ============================================================
+  // MILESTONES
+  // ============================================================
+
+  Widget _buildMilestonesCard() {
+    final now = DateTime.now();
+
+    final DateTime startDate;
+
+    switch (_selectedPeriod) {
+      case 0:
+        startDate = now.subtract(
+          const Duration(days: 7),
+        );
+        break;
+
+      case 1:
+        startDate = now.subtract(
+          const Duration(days: 30),
+        );
+        break;
+
+      default:
+        startDate = now.subtract(
+          const Duration(days: 90),
+        );
+        break;
+    }
+
+    final periodCheckIns = _checkIns.where((checkIn) {
+      return !checkIn.createdAt.isBefore(startDate);
+    }).toList();
+
+    final checkInDates = periodCheckIns
+        .map(
+          (checkIn) => DateTime(
+        checkIn.createdAt.year,
+        checkIn.createdAt.month,
+        checkIn.createdAt.day,
+      ),
+    )
+        .toSet();
+
+    final int completedDays = checkInDates.length;
+
+    final List<_MilestoneData> milestones;
+
+    switch (_selectedPeriod) {
+    // ----------------------------------------------------------
+    // 7 DAYS
+    // ----------------------------------------------------------
+      case 0:
+        milestones = [
+          _MilestoneData(
+            icon: Icons.flag_rounded,
+            title: 'First Day',
+            subtitle: '1 day',
+            unlocked: completedDays >= 1,
+          ),
+          _MilestoneData(
+            icon: Icons.calendar_today_rounded,
+            title: 'Getting Started',
+            subtitle: '3 days',
+            unlocked: completedDays >= 3,
+          ),
+          _MilestoneData(
+            icon: Icons.local_fire_department_rounded,
+            title: 'Consistent',
+            subtitle: '5 days',
+            unlocked: completedDays >= 5,
+          ),
+          _MilestoneData(
+            icon: Icons.star_rounded,
+            title: 'Full Week',
+            subtitle: '7 days',
+            unlocked: completedDays >= 7,
+          ),
+        ];
+        break;
+
+    // ----------------------------------------------------------
+    // 30 DAYS
+    // ----------------------------------------------------------
+      case 1:
+        milestones = [
+          _MilestoneData(
+            icon: Icons.flag_rounded,
+            title: 'First Week',
+            subtitle: '7 days',
+            unlocked: completedDays >= 7,
+          ),
+          _MilestoneData(
+            icon: Icons.local_fire_department_rounded,
+            title: 'Two Weeks',
+            subtitle: '14 days',
+            unlocked: completedDays >= 14,
+          ),
+          _MilestoneData(
+            icon: Icons.trending_up_rounded,
+            title: 'Three Weeks',
+            subtitle: '21 days',
+            unlocked: completedDays >= 21,
+          ),
+          _MilestoneData(
+            icon: Icons.star_rounded,
+            title: 'Full Month',
+            subtitle: '30 days',
+            unlocked: completedDays >= 30,
+          ),
+        ];
+        break;
+
+    // ----------------------------------------------------------
+    // 3 MONTHS
+    // ----------------------------------------------------------
+      default:
+        milestones = [
+          _MilestoneData(
+            icon: Icons.flag_rounded,
+            title: 'One Month',
+            subtitle: '30 days',
+            unlocked: completedDays >= 30,
+          ),
+          _MilestoneData(
+            icon: Icons.local_fire_department_rounded,
+            title: 'Two Months',
+            subtitle: '60 days',
+            unlocked: completedDays >= 60,
+          ),
+          _MilestoneData(
+            icon: Icons.trending_up_rounded,
+            title: '75 Days',
+            subtitle: '75 days',
+            unlocked: completedDays >= 75,
+          ),
+          _MilestoneData(
+            icon: Icons.workspace_premium_rounded,
+            title: 'Three Months',
+            subtitle: '90 days',
+            unlocked: completedDays >= 90,
+          ),
+        ];
+        break;
+    }
+
+    final unlockedCount =
+        milestones.where((milestone) => milestone.unlocked).length;
+
+    final periodName = _selectedPeriod == 0
+        ? '7-day'
+        : _selectedPeriod == 1
+        ? '30-day'
+        : '3-month';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        padding: const EdgeInsets.all(17),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: AppColors.borderMint,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: AppColors.lightMint,
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: const Icon(
+                    Icons.auto_awesome_rounded,
+                    color: AppColors.mint,
+                    size: 21,
+                  ),
+                ),
+
+                const SizedBox(width: 12),
+
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Your milestones',
+                        style: TextStyle(
+                          color: AppColors.navy,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+
+                      const SizedBox(height: 3),
+
+                      Text(
+                        'Your $periodName journey',
+                        style: const TextStyle(
+                          color: Colors.black45,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                Text(
+                  '$unlockedCount/${milestones.length}',
+                  style: const TextStyle(
+                    color: AppColors.mint,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 17),
+
+            ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: LinearProgressIndicator(
+                value: milestones.isEmpty
+                    ? 0
+                    : unlockedCount / milestones.length,
+                minHeight: 6,
+                backgroundColor: AppColors.lightMint,
+                valueColor:
+                const AlwaysStoppedAnimation(
+                  AppColors.mint,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 17),
+
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: milestones.length,
+              gridDelegate:
+              const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 9,
+                mainAxisSpacing: 9,
+                childAspectRatio: 2.25,
+              ),
+              itemBuilder: (context, index) {
+                return _buildMilestone(
+                  milestones[index],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMilestone(
+      _MilestoneData milestone,
+      ) {
+    final unlocked = milestone.unlocked;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 9,
+        vertical: 8,
+      ),
+      decoration: BoxDecoration(
+        color: unlocked
+            ? AppColors.lightMint
+            : const Color(0xFFF8FAF9),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: unlocked
+              ? AppColors.mint.withValues(alpha: 0.35)
+              : AppColors.borderMint,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 31,
+            height: 31,
+            decoration: BoxDecoration(
+              color: unlocked
+                  ? Colors.white
+                  : const Color(0xFFF1F4F3),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              milestone.icon,
+              color: unlocked
+                  ? AppColors.mint
+                  : AppColors.navy.withValues(alpha: 0.25),
+              size: 16,
+            ),
+          ),
+
+          const SizedBox(width: 7),
+
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment:
+              CrossAxisAlignment.start,
+              children: [
+                Text(
+                  milestone.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: unlocked
+                        ? AppColors.navy
+                        : AppColors.navy.withValues(
+                      alpha: 0.42,
+                    ),
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+
+                const SizedBox(height: 2),
+
+                Text(
+                  unlocked
+                      ? 'Unlocked'
+                      : milestone.subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: unlocked
+                        ? AppColors.mint
+                        : Colors.black38,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          if (unlocked)
+            const Icon(
+              Icons.check_circle_rounded,
+              color: AppColors.mint,
+              size: 15,
+            )
+          else
+            Icon(
+              Icons.lock_outline_rounded,
+              color: AppColors.navy.withValues(
+                alpha: 0.22,
+              ),
+              size: 14,
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
   // STREAK
   // ============================================================
 
@@ -2114,6 +2496,24 @@ class _EmotionData {
     required this.value,
     required this.icon,
     this.negative = false,
+  });
+}
+
+// ================================================================
+// MILESTONE DATA MODEL
+// ================================================================
+
+class _MilestoneData {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool unlocked;
+
+  const _MilestoneData({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.unlocked,
   });
 }
 

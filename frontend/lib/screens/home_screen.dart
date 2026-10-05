@@ -326,14 +326,6 @@ class _HomeFeedState extends State<_HomeFeed> {
 
               const SizedBox(height: 30),
 
-              _buildWeeklyProgress(context),
-
-              const SizedBox(height: 30),
-
-              _buildSupportCard(context),
-
-              const SizedBox(height: 22),
-
               _buildPrivacyNote(),
             ]),
           ),
