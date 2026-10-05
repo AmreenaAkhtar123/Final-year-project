@@ -14,6 +14,7 @@ import '../models/check_in.dart';
 import 'settings/about_mindmate_screen.dart';
 import 'settings/help_support_screen.dart';
 import 'settings/password_security_screen.dart';
+import 'settings/email_address_screen.dart';
 import 'settings/personal_information_screen.dart';
 import 'settings/privacy_data_screen.dart';
 import 'settings/wellbeing_preferences_screen.dart';
@@ -936,16 +937,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           title: 'Email Address',
           subtitle: _isLoadingProfile
               ? 'Loading...'
-              : (_email.isEmpty ? 'No email available' : _email),
-          onTap: () async {
-            await Navigator.push(
+              : (_email.isEmpty
+              ? 'No email available'
+              : _email),
+          onTap: () {
+            Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => const PersonalInformationScreen(),
+                builder: (_) => const EmailAddressScreen(),
               ),
             );
-
-            _loadProfile();
           },
         ),
 
