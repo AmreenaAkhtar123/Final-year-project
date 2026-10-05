@@ -17,8 +17,8 @@ import 'notifications_screen.dart';
 import 'profile_screen.dart';
 import 'progress_screen.dart';
 import 'safety_support_screen.dart';
-import 'student_wellbeing_screen.dart';
 import 'voice_screen.dart';
+import 'student_wellbeing_screen.dart';
 import 'weekly_wellbeing_screen.dart';
 import 'exercise/body_scan_screen.dart';
 import 'exercise/thought_reset_screen.dart';
@@ -70,6 +70,14 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
 
+            StudentWellbeingScreen(
+              onBackToHome: () {
+                setState(() {
+                  _selectedIndex = 0;
+                });
+              },
+            ),
+
             InsightsScreen(
               onBackToHome: () {
                 setState(() {
@@ -106,16 +114,25 @@ class _HomeScreenState extends State<HomeScreen> {
             selectedIcon: Icon(Icons.home_rounded),
             label: 'Home',
           ),
+
           NavigationDestination(
             icon: Icon(Icons.favorite_outline_rounded),
             selectedIcon: Icon(Icons.favorite_rounded),
             label: 'Check-in',
           ),
+
+          NavigationDestination(
+            icon: Icon(Icons.school_outlined),
+            selectedIcon: Icon(Icons.school_rounded),
+            label: 'Student',
+          ),
+
           NavigationDestination(
             icon: Icon(Icons.insights_outlined),
             selectedIcon: Icon(Icons.insights_rounded),
             label: 'Insights',
           ),
+
           NavigationDestination(
             icon: Icon(Icons.person_outline_rounded),
             selectedIcon: Icon(Icons.person_rounded),
@@ -319,10 +336,6 @@ class _HomeFeedState extends State<_HomeFeed> {
               const SizedBox(height: 30),
 
               _buildExerciseSection(context),
-
-              const SizedBox(height: 30),
-
-              _buildStudentFocus(context),
 
               const SizedBox(height: 30),
 
@@ -1615,343 +1628,6 @@ class _HomeFeedState extends State<_HomeFeed> {
       ),
     );
   }
-  // ==========================================================
-  // STUDENT FOCUS
-  // ==========================================================
-  Widget _buildStudentFocus(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        _open(
-          context,
-          const StudentWellbeingScreen(),
-        );
-      },
-      child: Container(
-        width: double.infinity,
-        height: 205,
-        decoration: BoxDecoration(
-          color: AppColors.navy,
-          borderRadius: BorderRadius.circular(30),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.navy.withValues(alpha: 0.20),
-              blurRadius: 28,
-              offset: const Offset(0, 13),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(30),
-          child: Stack(
-            children: [
-              // ----------------------------------------------------------
-              // BACKGROUND DECORATION
-              // ----------------------------------------------------------
-
-              Positioned(
-                right: -55,
-                top: -70,
-                child: Container(
-                  width: 190,
-                  height: 190,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.mint.withValues(alpha: 0.12),
-                      width: 24,
-                    ),
-                  ),
-                ),
-              ),
-
-              Positioned(
-                right: 18,
-                top: 24,
-                child: Container(
-                  width: 78,
-                  height: 78,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.mint.withValues(alpha: 0.055),
-                  ),
-                ),
-              ),
-
-              Positioned(
-                left: -45,
-                bottom: -70,
-                child: Container(
-                  width: 145,
-                  height: 145,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.mint.withValues(alpha: 0.045),
-                  ),
-                ),
-              ),
-
-              // Large decorative number
-              Positioned(
-                right: -3,
-                bottom: -22,
-                child: Text(
-                  '01',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.035),
-                    fontSize: 105,
-                    fontWeight: FontWeight.w900,
-                    height: 0.8,
-                  ),
-                ),
-              ),
-
-              // ----------------------------------------------------------
-              // MAIN CONTENT
-              // ----------------------------------------------------------
-
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  20,
-                  19,
-                  18,
-                  18,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Top row
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 9,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.mint.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(9),
-                            border: Border.all(
-                              color: AppColors.mint.withValues(alpha: 0.20),
-                            ),
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.school_rounded,
-                                color: AppColors.mint,
-                                size: 12,
-                              ),
-                              SizedBox(width: 5),
-                              Text(
-                                'STUDENT MODE',
-                                style: TextStyle(
-                                  color: AppColors.mint,
-                                  fontSize: 7,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.9,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(width: 7),
-
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            'FOR YOU',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.65),
-                              fontSize: 6.5,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.7,
-                            ),
-                          ),
-                        ),
-
-                        const Spacer(),
-
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.075),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.08),
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.school_rounded,
-                            color: AppColors.mint,
-                            size: 21,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    // Headline
-                    const Text(
-                      'Your student life, supported.',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 19,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.35,
-                        height: 1.1,
-                      ),
-                    ),
-
-                    const SizedBox(height: 5),
-
-                    Text(
-                      'Tools designed for the pressure, pace and\n'
-                          'balance of student life.',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.62),
-                        fontSize: 9.5,
-                        height: 1.4,
-                      ),
-                    ),
-
-                    const Spacer(),
-
-                    // Feature chips + button
-                    Row(
-                      children: [
-                        _studentFeatureChip(
-                          Icons.center_focus_strong_rounded,
-                          'Focus',
-                        ),
-                        const SizedBox(width: 6),
-                        _studentFeatureChip(
-                          Icons.psychology_alt_rounded,
-                          'Stress',
-                        ),
-                        const SizedBox(width: 6),
-                        _studentFeatureChip(
-                          Icons.balance_rounded,
-                          'Balance',
-                        ),
-
-                        const Spacer(),
-
-                        Container(
-                          height: 37,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 13,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.mint,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.mint.withValues(alpha: 0.22),
-                                blurRadius: 12,
-                                offset: const Offset(0, 5),
-                              ),
-                            ],
-                          ),
-                          child: const Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'Explore',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              SizedBox(width: 6),
-                              Icon(
-                                Icons.arrow_forward_rounded,
-                                color: Colors.white,
-                                size: 15,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              // ----------------------------------------------------------
-              // SMALL MINT ACCENT
-              // ----------------------------------------------------------
-
-              Positioned(
-                left: 20,
-                top: 0,
-                child: Container(
-                  width: 42,
-                  height: 3,
-                  decoration: BoxDecoration(
-                    color: AppColors.mint,
-                    borderRadius: const BorderRadius.vertical(
-                      bottom: Radius.circular(4),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _studentFeatureChip(
-      IconData icon,
-      String label,
-      ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 8,
-        vertical: 6,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.065),
-        borderRadius: BorderRadius.circular(9),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.07),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            color: AppColors.mint,
-            size: 11,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.72),
-              fontSize: 7.5,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
 
 
   double _checkInScore(CheckIn checkIn) {
