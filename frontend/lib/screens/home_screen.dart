@@ -20,6 +20,7 @@ import 'safety_support_screen.dart';
 import 'voice_screen.dart';
 import 'student_wellbeing_screen.dart';
 import 'weekly_wellbeing_screen.dart';
+import 'text_emotion_screen.dart';
 import 'exercise/body_scan_screen.dart';
 import 'exercise/thought_reset_screen.dart';
 import 'exercise/exam_pressure_reset_screen.dart';
@@ -867,20 +868,13 @@ class _HomeFeedState extends State<_HomeFeed> {
     );
   }
 
-  // ==========================================================
-  // MENTAL TOOLKIT
-  // ==========================================================
+
+// ==========================================================
+// MENTAL TOOLKIT
+// ==========================================================
 
   Widget _buildQuickOrbit(BuildContext context) {
     final tools = [
-      (
-      'AI Chat',
-      'Talk it out',
-      Icons.smart_toy_outlined,
-      AppColors.mint,
-      const Color(0xFFEFF7F3),
-          () => _open(context, const AiChatScreen()),
-      ),
       (
       'Mood',
       'Record a feeling',
@@ -921,11 +915,20 @@ class _HomeFeedState extends State<_HomeFeed> {
       const Color(0xFFEDF5F8),
           () => _open(context, const ProgressScreen()),
       ),
+      (
+      'Text Emotion',
+      'Analyze your words',
+      Icons.text_fields_rounded,
+      AppColors.navy,
+      const Color(0xFFEFF7F3),
+          () => _open(context, const TextEmotionScreen()),
+      ),
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // SECTION HEADING
         const Text(
           'Your mental toolkit',
           style: TextStyle(
@@ -941,13 +944,128 @@ class _HomeFeedState extends State<_HomeFeed> {
         Text(
           'Choose the kind of support you need right now.',
           style: TextStyle(
-            color: AppColors.navy.withValues(alpha: 0.52),
+            color: AppColors.navy.withValues(alpha: 0.55),
             fontSize: 11,
           ),
         ),
 
         const SizedBox(height: 14),
 
+        // COMPACT FEATURED AI CHAT CARD
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _open(context, const AiChatScreen()),
+            borderRadius: BorderRadius.circular(20),
+            child: Ink(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 15,
+                vertical: 11,
+              ),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFF7F3),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: AppColors.borderMint,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.navy.withValues(alpha: 0.035),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  // SUPPORT-AGENT ICON
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(
+                        color: AppColors.borderMint,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.support_agent_rounded,
+                      color: AppColors.navy,
+                      size: 28,
+                    ),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  // AI CHAT TEXT
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'AI COMPANION',
+                          style: TextStyle(
+                            color: AppColors.mint,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.1,
+                          ),
+                        ),
+
+                        const SizedBox(height: 3),
+
+                        const Text(
+                          'AI Chat',
+                          style: TextStyle(
+                            color: AppColors.navy,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+
+                        const SizedBox(height: 3),
+
+                        Text(
+                          'Talk it out, one moment at a time.',
+                          style: TextStyle(
+                            color: AppColors.navy.withValues(
+                              alpha: 0.65,
+                            ),
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  // SUBTLE ARROW
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 15,
+                      color: AppColors.navy,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        // TWO ROWS OF THREE TOOL CARDS
         GridView.builder(
           itemCount: tools.length,
           shrinkWrap: true,
@@ -975,6 +1093,7 @@ class _HomeFeedState extends State<_HomeFeed> {
       ],
     );
   }
+
 
   Widget _toolTile({
     required IconData icon,
