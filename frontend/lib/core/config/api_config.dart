@@ -19,7 +19,9 @@ class ApiConfig {
   static String get moodTrackerUrl =>
       '$baseUrl/api/mood-tracker';
 
+
   // Text Emotion Analysis
   static String get textEmotionUrl =>
-      '$baseUrl/api/text-emotion';
+      '$baseUrl/api/emotion/text';
+
 }

@@ -11,6 +11,8 @@ import studentWellbeingRoutes from './routes/student_wellbeing_routes.js';
 import moodRoutes from './routes/mood_routes.js';
 import createChatRouter from './routes/chat_routes.js';
 import createMoodAnalysisRouter from './routes/mood_analysis_routes.js';
+import createEmotionRouter from './routes/emotion_routes.js';
+
 
 dotenv.config();
 
@@ -47,6 +49,7 @@ app.use(studentWellbeingRoutes);
 app.use(moodRoutes);
 app.use(createChatRouter(ai));
 app.use(createMoodAnalysisRouter(ai));
+app.use(createEmotionRouter());
 
 app.get('/', (req, res) => {
   res.json({ message: 'MindMate backend is running.' });
