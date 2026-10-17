@@ -1,28 +1,29 @@
-import 'package:flutter/services.dart';
+
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
 import '../core/config/api_config.dart';
 import '../core/constants/app_colors.dart';
+import 'text_emotion_result_screen.dart';
 
 class TextEmotionScreen extends StatefulWidget {
   const TextEmotionScreen({super.key});
 
   @override
-  State<TextEmotionScreen> createState() => _TextEmotionScreenState();
+  State<TextEmotionScreen> createState() =>
+      _TextEmotionScreenState();
 }
 
 class _TextEmotionScreenState extends State<TextEmotionScreen> {
-  final TextEditingController _textController = TextEditingController();
+  final TextEditingController _textController =
+  TextEditingController();
 
   static const int _maxCharacters = 2000;
 
   bool _isAnalyzing = false;
-
-  String? _detectedEmotion;
-  double? _confidence;
   String? _errorMessage;
 
   final List<String> _suggestions = [
@@ -43,9 +44,8 @@ class _TextEmotionScreenState extends State<TextEmotionScreen> {
 
     if (text.isEmpty) {
       setState(() {
-        _errorMessage = 'Please write something before analyzing.';
-        _detectedEmotion = null;
-        _confidence = null;
+        _errorMessage =
+        'Please write something before analyzing.';
       });
       return;
     }
@@ -55,8 +55,6 @@ class _TextEmotionScreenState extends State<TextEmotionScreen> {
     setState(() {
       _isAnalyzing = true;
       _errorMessage = null;
-      _detectedEmotion = null;
-      _confidence = null;
     });
 
     try {
@@ -87,7 +85,8 @@ class _TextEmotionScreenState extends State<TextEmotionScreen> {
         }
 
         final dynamic rawEmotion =
-            decoded['predicted_emotion'] ?? decoded['emotion'];
+            decoded['predicted_emotion'] ??
+                decoded['emotion'];
 
         if (rawEmotion == null ||
             rawEmotion.toString().trim().isEmpty) {
@@ -102,8 +101,7 @@ class _TextEmotionScreenState extends State<TextEmotionScreen> {
         if (rawConfidence is num) {
           confidence = rawConfidence.toDouble();
 
-          // Supports confidence values returned as either
-          // 0.85 or 85.
+          // Supports confidence values such as 0.85 or 85.
           if (confidence >= 0 && confidence <= 1) {
             confidence *= 100;
           }
@@ -111,12 +109,35 @@ class _TextEmotionScreenState extends State<TextEmotionScreen> {
           confidence = confidence.clamp(0, 100).toDouble();
         }
 
+        final emotion = rawEmotion.toString().trim();
+
+        // Stop the loading indicator before navigating.
         setState(() {
-          _detectedEmotion = rawEmotion.toString().trim();
-          _confidence = confidence;
+          _isAnalyzing = false;
         });
+
+        // Show the result on a completely separate screen.
+        final bool? analyzeAnother =
+        await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(
+            builder: (_) => TextEmotionResultScreen(
+              emotion: emotion,
+              confidence: confidence,
+            ),
+          ),
+        );
+
+        if (!mounted) return;
+
+        // Clear the input only when the user chooses
+        // "Analyze Another Text".
+        if (analyzeAnother == true) {
+          _clearText();
+        }
       } else {
-        var message = 'Unable to analyze your text. Please try again.';
+        var message =
+            'Unable to analyze your text. Please try again.';
 
         try {
           final dynamic decoded = jsonDecode(response.body);
@@ -164,9 +185,6 @@ class _TextEmotionScreenState extends State<TextEmotionScreen> {
       _textController.selection = TextSelection.collapsed(
         offset: suggestion.length,
       );
-
-      _detectedEmotion = null;
-      _confidence = null;
       _errorMessage = null;
     });
   }
@@ -174,126 +192,8 @@ class _TextEmotionScreenState extends State<TextEmotionScreen> {
   void _clearText() {
     setState(() {
       _textController.clear();
-      _detectedEmotion = null;
-      _confidence = null;
       _errorMessage = null;
     });
-  }
-
-  Color _emotionColor(String emotion) {
-    final value = emotion.toLowerCase();
-
-    if (value.contains('happy') ||
-        value.contains('joy') ||
-        value.contains('love') ||
-        value.contains('excit')) {
-      return const Color(0xFF438B68);
-    }
-
-    if (value.contains('sad') ||
-        value.contains('fear') ||
-        value.contains('anxious') ||
-        value.contains('worry')) {
-      return const Color(0xFF687DD0);
-    }
-
-    if (value.contains('anger') ||
-        value.contains('angry') ||
-        value.contains('disgust')) {
-      return const Color(0xFFD16E59);
-    }
-
-    if (value.contains('neutral') ||
-        value.contains('calm')) {
-      return const Color(0xFF578A9A);
-    }
-
-    return AppColors.navy;
-  }
-
-  IconData _emotionIcon(String emotion) {
-    final value = emotion.toLowerCase();
-
-    if (value.contains('happy') ||
-        value.contains('joy') ||
-        value.contains('love') ||
-        value.contains('excit')) {
-      return Icons.sentiment_very_satisfied_rounded;
-    }
-
-    if (value.contains('sad')) {
-      return Icons.sentiment_dissatisfied_rounded;
-    }
-
-    if (value.contains('anger') || value.contains('angry')) {
-      return Icons.mood_bad_rounded;
-    }
-
-    if (value.contains('fear') ||
-        value.contains('anxious') ||
-        value.contains('worry')) {
-      return Icons.sentiment_dissatisfied_rounded;
-    }
-
-    if (value.contains('neutral')) {
-      return Icons.sentiment_neutral_rounded;
-    }
-
-    if (value.contains('calm')) {
-      return Icons.spa_rounded;
-    }
-
-    return Icons.psychology_alt_rounded;
-  }
-
-  String _supportiveMessage(String emotion) {
-    final value = emotion.toLowerCase();
-
-    if (value.contains('happy') ||
-        value.contains('joy') ||
-        value.contains('love') ||
-        value.contains('excit')) {
-      return 'Take a moment to appreciate what is going well. '
-          'Notice what contributed to this feeling and how you '
-          'might make room for more positive moments.';
-    }
-
-    if (value.contains('sad')) {
-      return 'It is okay to have difficult days. Be gentle with '
-          'yourself, allow space for your feelings, and consider '
-          'connecting with someone you trust.';
-    }
-
-    if (value.contains('anger') || value.contains('angry')) {
-      return 'When emotions feel intense, give yourself a pause. '
-          'A few slow breaths and some space may help you decide '
-          'what you need next.';
-    }
-
-    if (value.contains('fear') ||
-        value.contains('anxious') ||
-        value.contains('worry')) {
-      return 'Try focusing on one manageable step at a time. '
-          'You do not need to solve everything at once. A short '
-          'break or grounding exercise may help.';
-    }
-
-    if (value.contains('stress') ||
-        value.contains('overwhelm')) {
-      return 'Consider what feels most demanding right now. '
-          'Breaking a task into smaller steps and taking a brief '
-          'rest may make things feel more manageable.';
-    }
-
-    if (value.contains('neutral') || value.contains('calm')) {
-      return 'Use this moment to check in with yourself. Notice '
-          'what you need today, whether that is rest, connection, '
-          'movement, or simply some quiet time.';
-    }
-
-    return 'Use this prediction as a starting point for reflection. '
-        'Your words provide only part of the picture, and you are '
-        'the best person to interpret what you are experiencing.';
   }
 
   @override
@@ -366,10 +266,6 @@ class _TextEmotionScreenState extends State<TextEmotionScreen> {
               if (_errorMessage != null) ...[
                 const SizedBox(height: 15),
                 _buildError(),
-              ],
-              if (_detectedEmotion != null) ...[
-                const SizedBox(height: 27),
-                _buildResult(),
               ],
               const SizedBox(height: 24),
               _buildPrivacyNote(),
@@ -471,9 +367,15 @@ class _TextEmotionScreenState extends State<TextEmotionScreen> {
             children: [
               _headerFeature(Icons.edit_note_rounded, 'Write'),
               const SizedBox(width: 18),
-              _headerFeature(Icons.psychology_alt_rounded, 'Explore'),
+              _headerFeature(
+                Icons.psychology_alt_rounded,
+                'Explore',
+              ),
               const SizedBox(width: 18),
-              _headerFeature(Icons.favorite_border_rounded, 'Reflect'),
+              _headerFeature(
+                Icons.favorite_border_rounded,
+                'Reflect',
+              ),
             ],
           ),
         ],
@@ -485,11 +387,7 @@ class _TextEmotionScreenState extends State<TextEmotionScreen> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          icon,
-          color: AppColors.navy,
-          size: 16,
-        ),
+        Icon(icon, color: AppColors.navy, size: 16),
         const SizedBox(width: 5),
         Text(
           label,
@@ -503,7 +401,10 @@ class _TextEmotionScreenState extends State<TextEmotionScreen> {
     );
   }
 
-  Widget _buildSectionHeading(String title, String subtitle) {
+  Widget _buildSectionHeading(
+      String title,
+      String subtitle,
+      ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -576,7 +477,8 @@ class _TextEmotionScreenState extends State<TextEmotionScreen> {
                         vertical: 4,
                       ),
                       minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      tapTargetSize:
+                      MaterialTapTargetSize.shrinkWrap,
                     ),
                     child: const Text(
                       'Clear',
@@ -594,7 +496,8 @@ class _TextEmotionScreenState extends State<TextEmotionScreen> {
             minLines: 5,
             maxLines: 7,
             maxLength: _maxCharacters,
-            maxLengthEnforcement: MaxLengthEnforcement.enforced,
+            maxLengthEnforcement:
+            MaxLengthEnforcement.enforced,
             textCapitalization: TextCapitalization.sentences,
             textDirection: TextDirection.ltr,
             textAlign: TextAlign.left,
@@ -614,18 +517,13 @@ class _TextEmotionScreenState extends State<TextEmotionScreen> {
                 height: 1.7,
               ),
               contentPadding: const EdgeInsets.fromLTRB(
-                16,
-                14,
-                16,
-                12,
+                16, 14, 16, 12,
               ),
               border: InputBorder.none,
               counterText: '',
             ),
             onChanged: (_) {
               setState(() {
-                _detectedEmotion = null;
-                _confidence = null;
                 _errorMessage = null;
               });
             },
@@ -637,7 +535,9 @@ class _TextEmotionScreenState extends State<TextEmotionScreen> {
             ),
             decoration: const BoxDecoration(
               border: Border(
-                top: BorderSide(color: Color(0xFFF0F4F2)),
+                top: BorderSide(
+                  color: Color(0xFFF0F4F2),
+                ),
               ),
             ),
             child: Row(
@@ -678,15 +578,15 @@ class _TextEmotionScreenState extends State<TextEmotionScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        const Row(
           children: [
-            const Icon(
+            Icon(
               Icons.lightbulb_outline_rounded,
               color: AppColors.mint,
               size: 18,
             ),
-            const SizedBox(width: 7),
-            const Text(
+            SizedBox(width: 7),
+            Text(
               'Not sure where to start?',
               style: TextStyle(
                 color: AppColors.navy,
@@ -704,7 +604,9 @@ class _TextEmotionScreenState extends State<TextEmotionScreen> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(13),
               child: InkWell(
-                onTap: () => _useSuggestion(suggestion),
+                onTap: _isAnalyzing
+                    ? null
+                    : () => _useSuggestion(suggestion),
                 borderRadius: BorderRadius.circular(13),
                 child: Container(
                   width: double.infinity,
@@ -760,7 +662,8 @@ class _TextEmotionScreenState extends State<TextEmotionScreen> {
         onPressed: _isAnalyzing ? null : _analyzeEmotion,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.navy,
-          disabledBackgroundColor: AppColors.navy.withOpacity(0.55),
+          disabledBackgroundColor:
+          AppColors.navy.withOpacity(0.55),
           foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
@@ -792,7 +695,10 @@ class _TextEmotionScreenState extends State<TextEmotionScreen> {
             : const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.auto_awesome_rounded, size: 19),
+            Icon(
+              Icons.auto_awesome_rounded,
+              size: 19,
+            ),
             SizedBox(width: 9),
             Text(
               'Analyze My Emotions',
@@ -802,7 +708,10 @@ class _TextEmotionScreenState extends State<TextEmotionScreen> {
               ),
             ),
             SizedBox(width: 8),
-            Icon(Icons.arrow_forward_rounded, size: 18),
+            Icon(
+              Icons.arrow_forward_rounded,
+              size: 18,
+            ),
           ],
         ),
       ),
@@ -816,7 +725,9 @@ class _TextEmotionScreenState extends State<TextEmotionScreen> {
       decoration: BoxDecoration(
         color: const Color(0xFFFFF2EF),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFF0D2CC)),
+        border: Border.all(
+          color: const Color(0xFFF0D2CC),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -839,248 +750,6 @@ class _TextEmotionScreenState extends State<TextEmotionScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildResult() {
-    final emotion = _detectedEmotion!;
-    final color = _emotionColor(emotion);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              width: 37,
-              height: 37,
-              decoration: BoxDecoration(
-                color: AppColors.lightMint,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.auto_awesome_rounded,
-                color: AppColors.navy,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 11),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Your Emotion Insight',
-                    style: TextStyle(
-                      color: AppColors.navy,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  SizedBox(height: 3),
-                  Text(
-                    'A reflection based on your written text',
-                    style: TextStyle(
-                      color: Color(0xFF77847F),
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: AppColors.borderMint),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.navy.withOpacity(0.04),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.09),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: color.withOpacity(0.18),
-                  ),
-                ),
-                child: Icon(
-                  _emotionIcon(emotion),
-                  color: color,
-                  size: 39,
-                ),
-              ),
-              const SizedBox(height: 15),
-              Text(
-                emotion,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 25,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 7),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  'Detected emotion',
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              if (_confidence != null) ...[
-                const SizedBox(height: 23),
-                Row(
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        'Model confidence',
-                        style: TextStyle(
-                          color: AppColors.navy,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      '${_confidence!.toStringAsFixed(1)}%',
-                      style: TextStyle(
-                        color: color,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: LinearProgressIndicator(
-                    value: _confidence! / 100,
-                    minHeight: 8,
-                    backgroundColor: AppColors.lightMint,
-                    valueColor: AlwaysStoppedAnimation<Color>(color),
-                  ),
-                ),
-                const SizedBox(height: 9),
-                Text(
-                  'This percentage represents the model output, '
-                      'not a measurement of your emotional wellbeing.',
-                  style: TextStyle(
-                    color: AppColors.navy.withOpacity(0.55),
-                    fontSize: 10,
-                    height: 1.5,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 22),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(15),
-                decoration: BoxDecoration(
-                  color: AppColors.lightMint,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(
-                          Icons.favorite_outline_rounded,
-                          color: AppColors.navy,
-                          size: 19,
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          'A moment for yourself',
-                          style: TextStyle(
-                            color: AppColors.navy,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      _supportiveMessage(emotion),
-                      style: TextStyle(
-                        color: AppColors.navy.withOpacity(0.78),
-                        fontSize: 12,
-                        height: 1.7,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 18),
-              SizedBox(
-                width: double.infinity,
-                height: 46,
-                child: OutlinedButton.icon(
-                  onPressed: _clearText,
-                  icon: const Icon(
-                    Icons.refresh_rounded,
-                    size: 18,
-                  ),
-                  label: const Text(
-                    'Analyze Another Text',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.navy,
-                    side: const BorderSide(
-                      color: AppColors.borderMint,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(13),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'This insight is an AI-generated estimate, not a '
-              'diagnosis. Your own understanding of your feelings matters.',
-          style: TextStyle(
-            color: AppColors.navy.withOpacity(0.55),
-            fontSize: 10,
-            height: 1.6,
-          ),
-        ),
-      ],
     );
   }
 
