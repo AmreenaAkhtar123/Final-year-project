@@ -1,3 +1,4 @@
+
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiConfig {
@@ -19,9 +20,11 @@ class ApiConfig {
   static String get moodTrackerUrl =>
       '$baseUrl/api/mood-tracker';
 
-
   // Text Emotion Analysis
   static String get textEmotionUrl =>
       '$baseUrl/api/emotion/text';
 
+  // Voice Emotion Analysis (English and Urdu)
+  static String get voiceEmotionUrl =>
+      '$baseUrl/api/emotion/voice';
 }

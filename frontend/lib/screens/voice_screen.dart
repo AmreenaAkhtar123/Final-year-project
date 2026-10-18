@@ -1,10 +1,15 @@
+
+import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 
+import '../core/config/api_config.dart';
 import '../core/constants/app_colors.dart';
 
 class VoiceScreen extends StatefulWidget {
@@ -19,40 +24,21 @@ class _VoiceScreenState extends State<VoiceScreen>
   final AudioRecorder _recorder = AudioRecorder();
   final AudioPlayer _audioPlayer = AudioPlayer();
 
+  StreamSubscription<void>? _playerCompleteSubscription;
+
   bool _isRecording = false;
   bool _isPlaying = false;
   bool _isAnalyzing = false;
 
-  String _getMoodEmoji() {
-    switch (_detectedMood) {
-      case 'Happy':
-        return '😊';
-      case 'Calm':
-        return '😌';
-      case 'Sad':
-        return '😔';
-      case 'Angry':
-        return '😠';
-      case 'Anxious':
-        return '😟';
-      case 'Excited':
-        return '🤩';
-      case 'Neutral':
-        return '😐';
-      default:
-        return '😌';
-    }
-  }
-
   String? _recordedPath;
   String? _errorMessage;
+  String _selectedLanguage = 'english';
 
   String? _detectedMood;
   int? _confidence;
   String? _moodDescription;
-  IconData? _moodIcon;
 
-  late AnimationController _pulseController;
+  late final AnimationController _pulseController;
 
   @override
   void initState() {
@@ -62,14 +48,118 @@ class _VoiceScreenState extends State<VoiceScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1400),
     )..repeat(reverse: true);
+
+    // Subscribe once instead of adding a new listener on every playback.
+    _playerCompleteSubscription =
+        _audioPlayer.onPlayerComplete.listen((_) {
+          if (mounted) {
+            setState(() => _isPlaying = false);
+          }
+        });
   }
 
   @override
   void dispose() {
     _pulseController.dispose();
+    _playerCompleteSubscription?.cancel();
     _recorder.dispose();
     _audioPlayer.dispose();
     super.dispose();
+  }
+
+  // ============================================================
+  // EMOTION HELPERS
+  // ============================================================
+
+  String _getMoodEmoji() {
+    switch (_detectedMood?.toLowerCase()) {
+      case 'happy':
+      case 'joy':
+      case 'love':
+        return '😊';
+      case 'calm':
+        return '😌';
+      case 'sad':
+      case 'sadness':
+        return '😔';
+      case 'angry':
+      case 'anger':
+        return '😠';
+      case 'fearful':
+      case 'fear':
+      case 'anxious':
+        return '😟';
+      case 'disgust':
+        return '😖';
+      case 'surprised':
+      case 'surprise':
+        return '😮';
+      case 'neutral':
+        return '😐';
+      default:
+        return '🎙️';
+    }
+  }
+
+  String _describeEmotion(String emotion) {
+    switch (emotion.toLowerCase()) {
+      case 'happy':
+      case 'joy':
+        return 'The voice model detected a happy emotional pattern. '
+            'Consider what may be contributing to how you feel.';
+
+      case 'calm':
+        return 'The voice model detected a calm emotional pattern. '
+            'Take a moment to reflect on your current wellbeing.';
+
+      case 'sad':
+      case 'sadness':
+        return 'The voice model detected a sadness-related emotional '
+            'pattern. If you are feeling low, consider taking a gentle '
+            'moment for yourself.';
+
+      case 'angry':
+      case 'anger':
+        return 'The voice model detected an anger-related emotional '
+            'pattern. A pause and a few comfortable breaths may help '
+            'you reflect.';
+
+      case 'fearful':
+      case 'fear':
+        return 'The voice model detected a fear-related emotional '
+            'pattern. Take your time and notice what would help you '
+            'feel supported.';
+
+      case 'disgust':
+        return 'The voice model detected a disgust-related emotional '
+            'pattern. Reflect on your experience and what may be behind it.';
+
+      case 'surprised':
+      case 'surprise':
+        return 'The voice model detected a surprise-related emotional '
+            'pattern. Consider what may have prompted this response.';
+
+      case 'neutral':
+        return 'The voice model detected a neutral emotional pattern. '
+            'You can use this moment to check in with yourself.';
+
+      default:
+        return 'The voice model detected a $emotion emotional pattern. '
+            'Use this result as a starting point for personal reflection.';
+    }
+  }
+
+  String _normalizeEmotion(String emotion) {
+    return emotion
+        .trim()
+        .toLowerCase()
+        .split(RegExp(r'[\s_-]+'))
+        .where((word) => word.isNotEmpty)
+        .map(
+          (word) =>
+      '${word[0].toUpperCase()}${word.substring(1)}',
+    )
+        .join(' ');
   }
 
   // ============================================================
@@ -77,18 +167,21 @@ class _VoiceScreenState extends State<VoiceScreen>
   // ============================================================
 
   Future<void> _startRecording() async {
+    if (_isRecording || _isAnalyzing) return;
+
     try {
       setState(() {
         _errorMessage = null;
         _detectedMood = null;
         _confidence = null;
         _moodDescription = null;
-        _moodIcon = null;
       });
 
       final hasPermission = await _recorder.hasPermission();
 
       if (!hasPermission) {
+        if (!mounted) return;
+
         setState(() {
           _errorMessage =
           'Microphone permission is required to record your voice.';
@@ -99,42 +192,81 @@ class _VoiceScreenState extends State<VoiceScreen>
       final directory = await getTemporaryDirectory();
 
       final path =
-          '${directory.path}/mindmate_voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
+          '${directory.path}/mindmate_voice_'
+          '${DateTime.now().millisecondsSinceEpoch}.wav';
 
+      // WAV PCM audio at 16 kHz mono is suitable for Wav2Vec2.
       const config = RecordConfig(
-        encoder: AudioEncoder.aacLc,
-        sampleRate: 44100,
-        bitRate: 128000,
+        encoder: AudioEncoder.wav,
+        sampleRate: 16000,
+        numChannels: 1,
       );
 
-      await _recorder.start(
-        config,
-        path: path,
-      );
+      await _recorder.start(config, path: path);
+
+      if (!mounted) {
+        await _recorder.stop();
+        return;
+      }
 
       setState(() {
         _isRecording = true;
         _recordedPath = null;
+        _isPlaying = false;
       });
     } catch (e) {
+      if (!mounted) return;
+
       setState(() {
-        _errorMessage = 'Unable to start recording.';
+        _isRecording = false;
+        _errorMessage =
+        'Unable to start recording. Please check microphone '
+            'permission and try again. Details: $e';
       });
     }
   }
 
   Future<void> _stopRecording() async {
+    if (!_isRecording) return;
+
     try {
       final path = await _recorder.stop();
+
+      if (!mounted) return;
+
+      if (path == null || path.isEmpty) {
+        setState(() {
+          _isRecording = false;
+          _recordedPath = null;
+          _errorMessage =
+          'The recording could not be saved. Please record again.';
+        });
+        return;
+      }
+
+      final file = File(path);
+
+      if (!await file.exists() || await file.length() == 0) {
+        setState(() {
+          _isRecording = false;
+          _recordedPath = null;
+          _errorMessage =
+          'The recording is empty. Please try recording again.';
+        });
+        return;
+      }
 
       setState(() {
         _isRecording = false;
         _recordedPath = path;
+        _errorMessage = null;
       });
     } catch (e) {
+      if (!mounted) return;
+
       setState(() {
         _isRecording = false;
-        _errorMessage = 'Unable to stop recording.';
+        _errorMessage = 'Unable to stop recording: $e';
       });
     }
   }
@@ -146,120 +278,241 @@ class _VoiceScreenState extends State<VoiceScreen>
   Future<void> _togglePlayback() async {
     final path = _recordedPath;
 
-    if (path == null) return;
+    if (path == null || _isAnalyzing || _isRecording) return;
 
     try {
       if (_isPlaying) {
         await _audioPlayer.stop();
 
-        setState(() {
-          _isPlaying = false;
-        });
+        if (mounted) {
+          setState(() => _isPlaying = false);
+        }
       } else {
-        await _audioPlayer.play(
-          DeviceFileSource(path),
-        );
+        await _audioPlayer.play(DeviceFileSource(path));
 
-        setState(() {
-          _isPlaying = true;
-        });
-
-        _audioPlayer.onPlayerComplete.listen((_) {
-          if (mounted) {
-            setState(() {
-              _isPlaying = false;
-            });
-          }
-        });
+        if (mounted) {
+          setState(() => _isPlaying = true);
+        }
       }
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = 'Unable to play the recording.';
-        });
-      }
+      if (!mounted) return;
+
+      setState(() {
+        _isPlaying = false;
+        _errorMessage = 'Unable to play the recording: $e';
+      });
     }
   }
 
   // ============================================================
-  // DELETE
+  // DELETE RECORDING
   // ============================================================
 
   Future<void> _deleteRecording() async {
-    final path = _recordedPath;
+    if (_isAnalyzing || _isRecording) return;
 
-    if (path != null) {
-      final file = File(path);
+    try {
+      final path = _recordedPath;
 
-      if (await file.exists()) {
-        await file.delete();
+      if (_isPlaying) {
+        await _audioPlayer.stop();
       }
-    }
 
-    if (_isPlaying) {
-      await _audioPlayer.stop();
-    }
+      if (path != null) {
+        final file = File(path);
 
-    setState(() {
-      _recordedPath = null;
-      _isPlaying = false;
-      _isAnalyzing = false;
-      _detectedMood = null;
-      _confidence = null;
-      _moodDescription = null;
-      _moodIcon = null;
-      _errorMessage = null;
-    });
+        if (await file.exists()) {
+          await file.delete();
+        }
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        _recordedPath = null;
+        _isPlaying = false;
+        _detectedMood = null;
+        _confidence = null;
+        _moodDescription = null;
+        _errorMessage = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage = 'Unable to delete the recording: $e';
+      });
+    }
   }
 
   // ============================================================
-  // DEMO ANALYSIS
+  // VOICE EMOTION ANALYSIS
   // ============================================================
 
   Future<void> _analyzeVoice() async {
-    if (_recordedPath == null) {
+    if (_isAnalyzing || _isRecording) return;
+
+    final path = _recordedPath;
+
+    if (path == null) {
       setState(() {
         _errorMessage = 'Please record your voice first.';
       });
       return;
     }
 
-    try {
-      setState(() {
-        _errorMessage = null;
-        _isAnalyzing = true;
-        _detectedMood = null;
-        _confidence = null;
-        _moodDescription = null;
-        _moodIcon = null;
-      });
+    final audioFile = File(path);
 
-      await Future.delayed(
-        const Duration(seconds: 2),
+    try {
+      if (!await audioFile.exists() || await audioFile.length() == 0) {
+        if (!mounted) return;
+
+        setState(() {
+          _errorMessage =
+          'The recording is empty or no longer exists. '
+              'Please record again.';
+        });
+        return;
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage = 'Unable to read the recording: $e';
+      });
+      return;
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _errorMessage = null;
+      _isAnalyzing = true;
+      _detectedMood = null;
+      _confidence = null;
+      _moodDescription = null;
+    });
+
+    try {
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse(ApiConfig.voiceEmotionUrl),
       );
+
+      request.fields['language'] = _selectedLanguage;
+
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'file',
+          path,
+          filename: 'voice_recording.wav',
+        ),
+      );
+
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 130),
+      );
+
+      final response = await http.Response.fromStream(
+        streamedResponse,
+      );
+
+      Map<String, dynamic> result;
+
+      try {
+        final decoded = jsonDecode(response.body);
+
+        if (decoded is! Map) {
+          throw const FormatException('Unexpected response format.');
+        }
+
+        result = Map<String, dynamic>.from(decoded);
+      } on FormatException {
+        throw Exception(
+          'The server returned an invalid response. '
+              'Please check the backend logs.',
+        );
+      }
+
+      if (response.statusCode < 200 ||
+          response.statusCode >= 300 ||
+          result['success'] != true) {
+        final serverMessage =
+            result['message'] ?? result['detail'];
+
+        throw Exception(
+          serverMessage?.toString() ??
+              'Voice analysis failed with HTTP ${response.statusCode}.',
+        );
+      }
+
+      final emotionValue =
+          result['predicted_emotion'] ?? result['emotion'];
+
+      final confidenceValue = result['confidence'];
+
+      if (emotionValue is! String || confidenceValue is! num) {
+        throw Exception(
+          'The server response is missing the emotion or confidence.',
+        );
+      }
+
+      final rawEmotion = emotionValue.trim();
+
+      if (rawEmotion.isEmpty) {
+        throw Exception('The model returned an empty emotion label.');
+      }
+
+      final rawConfidence = confidenceValue.toDouble();
+
+      if (!rawConfidence.isFinite ||
+          rawConfidence < 0 ||
+          rawConfidence > 100) {
+        throw Exception(
+          'The server returned an invalid confidence value.',
+        );
+      }
+
+      // Model APIs usually return 0–1; also accept 0–100.
+      final confidencePercent = rawConfidence <= 1
+          ? (rawConfidence * 100).round()
+          : rawConfidence.round();
+
+      final boundedConfidence =
+      confidencePercent.clamp(0, 100).toInt();
+
+      final normalizedEmotion = _normalizeEmotion(rawEmotion);
+      final description = _describeEmotion(rawEmotion);
 
       if (!mounted) return;
 
-      // ----------------------------------------------------------
-      // DEMO RESULT
-      // Replace this with your backend response later.
-      // ----------------------------------------------------------
+      setState(() {
+        _isAnalyzing = false;
+        _detectedMood = normalizedEmotion;
+        _confidence = boundedConfidence;
+        _moodDescription = description;
+        _errorMessage = null;
+      });
+    } on TimeoutException {
+      if (!mounted) return;
 
       setState(() {
         _isAnalyzing = false;
-        _detectedMood = 'Calm';
-        _confidence = 89;
-        _moodIcon = Icons.spa_rounded;
-        _moodDescription =
-        'Your voice sounds calm and steady. '
-            'Take a moment to acknowledge how you are feeling today.';
+        _errorMessage =
+        'Voice analysis timed out. Please check that both '
+            'backend services are running and try again.';
       });
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isAnalyzing = false;
-          _errorMessage = 'Unable to analyze your voice.';
-        });
+      if (!mounted) return;
+
+      setState(() {
+        _isAnalyzing = false;
+        _errorMessage =
+            e.toString().replaceFirst('Exception: ', '');
+      });
+    } finally {
+      if (mounted && _isAnalyzing) {
+        setState(() => _isAnalyzing = false);
       }
     }
   }
@@ -269,15 +522,18 @@ class _VoiceScreenState extends State<VoiceScreen>
       _detectedMood = null;
       _confidence = null;
       _moodDescription = null;
-      _moodIcon = null;
       _errorMessage = null;
     });
   }
 
+  // ============================================================
+  // ABOUT DETECTION
+  // ============================================================
+
   void _showDetectionInfo() {
-    showDialog(
+    showDialog<void>(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: AppColors.background,
           shape: RoundedRectangleBorder(
@@ -291,10 +547,11 @@ class _VoiceScreenState extends State<VoiceScreen>
             ),
           ),
           content: const Text(
-            'The future MindMate model will analyze characteristics '
-                'of your voice to estimate an emotional state.\n\n'
-                'This current result is a demo and does not represent '
-                'a real machine-learning prediction.',
+            'MindMate uses a trained voice emotion model to estimate '
+                'emotional patterns in your recording.\n\n'
+                'The prediction may be incorrect and does not diagnose '
+                'a mental health condition. Your own understanding of '
+                'your feelings matters more than a model prediction.',
             style: TextStyle(
               color: AppColors.textDark,
               height: 1.6,
@@ -303,7 +560,7 @@ class _VoiceScreenState extends State<VoiceScreen>
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(dialogContext),
               child: const Text(
                 'Close',
                 style: TextStyle(
@@ -319,6 +576,126 @@ class _VoiceScreenState extends State<VoiceScreen>
   }
 
   // ============================================================
+  // LANGUAGE SELECTOR
+  // ============================================================
+
+
+  Widget _buildLanguageSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Choose voice language',
+          style: TextStyle(
+            color: AppColors.navy,
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: AppColors.lightMint,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.borderMint,
+            ),
+          ),
+          child: Row(
+            children: [
+              _buildLanguageOption(
+                label: 'English',
+                value: 'english',
+                icon: Icons.language_rounded,
+              ),
+              const SizedBox(width: 6),
+              _buildLanguageOption(
+                label: 'اردو (Urdu)',
+                value: 'urdu',
+                icon: Icons.translate_rounded,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLanguageOption({
+    required String label,
+    required String value,
+    required IconData icon,
+  }) {
+    final bool isSelected = _selectedLanguage == value;
+
+    return Expanded(
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            _selectedLanguage = value;
+          });
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(
+            vertical: 13,
+            horizontal: 8,
+          ),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? Colors.white
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected
+                  ? AppColors.mint
+                  : Colors.transparent,
+            ),
+            boxShadow: isSelected
+                ? [
+              BoxShadow(
+                color: AppColors.navy.withValues(
+                  alpha: 0.05,
+                ),
+                blurRadius: 5,
+                offset: const Offset(0, 2),
+              ),
+            ]
+                : [],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: AppColors.navy,
+              ),
+              const SizedBox(width: 7),
+              Flexible(
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: AppColors.navy,
+                    fontSize: 13,
+                    fontWeight: isSelected
+                        ? FontWeight.w700
+                        : FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+
+  // ============================================================
   // BUILD
   // ============================================================
 
@@ -330,53 +707,38 @@ class _VoiceScreenState extends State<VoiceScreen>
         child: Stack(
           children: [
             _buildDecorations(),
-
             SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(
-                22,
-                0,
-                22,
-                28,
-              ),
+              padding: const EdgeInsets.fromLTRB(22, 0, 22, 28),
               child: Column(
                 children: [
                   _buildAppBar(),
-
                   _buildHeader(),
-
-                  const SizedBox(height: 26),
-
+                  const SizedBox(height: 22),
+                  _buildLanguageSelector(),
+                  const SizedBox(height: 20),
                   _buildVoiceHero(),
-
                   const SizedBox(height: 24),
-
                   if (_recordedPath == null && !_isRecording)
                     _buildInstructionCard(),
-
                   if (_recordedPath != null) ...[
                     _buildRecordingCard(),
                     const SizedBox(height: 18),
                     _buildAnalyzeButton(),
                   ],
-
                   if (_isAnalyzing) ...[
                     const SizedBox(height: 20),
                     _buildAnalyzingCard(),
                   ],
-
                   if (_detectedMood != null) ...[
                     const SizedBox(height: 22),
                     _buildAnalysisResult(),
                   ],
-
                   if (_errorMessage != null) ...[
                     const SizedBox(height: 15),
                     _buildError(),
                   ],
-
                   const SizedBox(height: 24),
-
                   _buildPrivacyCard(),
                 ],
               ),
@@ -411,9 +773,7 @@ class _VoiceScreenState extends State<VoiceScreen>
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(9),
-                  border: Border.all(
-                    color: AppColors.borderMint,
-                  ),
+                  border: Border.all(color: AppColors.borderMint),
                 ),
                 child: const Center(
                   child: Icon(
@@ -425,26 +785,19 @@ class _VoiceScreenState extends State<VoiceScreen>
               ),
             ),
           ),
-
-          Expanded(
+          const Expanded(
             child: Center(
-              child: Transform.translate(
-                offset: const Offset(-1, 0),
-                child: const Text(
-                  'Voice Support',
-                  style: TextStyle(
-                    color: AppColors.navy,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
+              child: Text(
+                'Voice Support',
+                style: TextStyle(
+                  color: AppColors.navy,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ),
           ),
-
-          const SizedBox(
-            width: 32,
-          ),
+          const SizedBox(width: 40),
         ],
       ),
     );
@@ -469,7 +822,7 @@ class _VoiceScreenState extends State<VoiceScreen>
                 gradient: RadialGradient(
                   colors: [
                     AppColors.lightMint.withValues(alpha: 0.9),
-                    AppColors.lightMint.withValues(alpha: 0.0),
+                    AppColors.lightMint.withValues(alpha: 0),
                   ],
                 ),
               ),
@@ -486,7 +839,7 @@ class _VoiceScreenState extends State<VoiceScreen>
                 gradient: RadialGradient(
                   colors: [
                     AppColors.lightMint.withValues(alpha: 0.65),
-                    AppColors.lightMint.withValues(alpha: 0.0),
+                    AppColors.lightMint.withValues(alpha: 0),
                   ],
                 ),
               ),
@@ -510,9 +863,7 @@ class _VoiceScreenState extends State<VoiceScreen>
           decoration: BoxDecoration(
             color: AppColors.lightMint,
             shape: BoxShape.circle,
-            border: Border.all(
-              color: AppColors.borderMint,
-            ),
+            border: Border.all(color: AppColors.borderMint),
           ),
           child: const Icon(
             Icons.graphic_eq_rounded,
@@ -520,9 +871,7 @@ class _VoiceScreenState extends State<VoiceScreen>
             size: 30,
           ),
         ),
-
         const SizedBox(height: 16),
-
         const Text(
           'Your voice tells a story',
           textAlign: TextAlign.center,
@@ -533,9 +882,7 @@ class _VoiceScreenState extends State<VoiceScreen>
             letterSpacing: -0.4,
           ),
         ),
-
         const SizedBox(height: 8),
-
         const Text(
           'Take a moment to speak naturally.\n'
               'MindMate will help you check in with yourself.',
@@ -572,7 +919,7 @@ class _VoiceScreenState extends State<VoiceScreen>
             ),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(30),
-              gradient: LinearGradient(
+              gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
@@ -580,9 +927,7 @@ class _VoiceScreenState extends State<VoiceScreen>
                   AppColors.background,
                 ],
               ),
-              border: Border.all(
-                color: AppColors.borderMint,
-              ),
+              border: Border.all(color: AppColors.borderMint),
               boxShadow: [
                 BoxShadow(
                   color: AppColors.navy.withValues(alpha: 0.06),
@@ -597,21 +942,17 @@ class _VoiceScreenState extends State<VoiceScreen>
                   alignment: Alignment.center,
                   children: [
                     if (_isRecording)
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
+                      Container(
                         width: 178,
                         height: 178,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: AppColors.mint.withValues(
-                              alpha: 0.20,
-                            ),
+                            color: AppColors.mint.withValues(alpha: 0.2),
                             width: 18,
                           ),
                         ),
                       ),
-
                     Container(
                       width: 140,
                       height: 140,
@@ -631,16 +972,12 @@ class _VoiceScreenState extends State<VoiceScreen>
                           ],
                         ),
                         border: Border.all(
-                          color: AppColors.mint.withValues(
-                            alpha: 0.5,
-                          ),
+                          color: AppColors.mint.withValues(alpha: 0.5),
                           width: 2,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.mint.withValues(
-                              alpha: 0.20,
-                            ),
+                            color: AppColors.mint.withValues(alpha: 0.2),
                             blurRadius: 25,
                             spreadRadius: 2,
                           ),
@@ -658,24 +995,20 @@ class _VoiceScreenState extends State<VoiceScreen>
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 22),
-
                 Text(
                   _isRecording
                       ? 'Listening to you...'
                       : _isAnalyzing
                       ? 'Understanding your voice...'
                       : 'Tap below to start',
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppColors.navy,
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-
                 const SizedBox(height: 6),
-
                 Text(
                   _isRecording
                       ? 'Speak freely. There is no right or wrong way.'
@@ -687,15 +1020,12 @@ class _VoiceScreenState extends State<VoiceScreen>
                     height: 1.4,
                   ),
                 ),
-
                 const SizedBox(height: 20),
-
                 SizedBox(
                   width: double.infinity,
                   height: 52,
                   child: ElevatedButton(
-                    onPressed:
-                    _isAnalyzing
+                    onPressed: _isAnalyzing
                         ? null
                         : (_isRecording
                         ? _stopRecording
@@ -740,18 +1070,12 @@ class _VoiceScreenState extends State<VoiceScreen>
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: AppColors.borderMint,
-        ),
+        border: Border.all(color: AppColors.borderMint),
       ),
       child: Row(
         children: [
-          _smallFeatureIcon(
-            Icons.record_voice_over_outlined,
-          ),
-
+          _smallFeatureIcon(Icons.record_voice_over_outlined),
           const SizedBox(width: 13),
-
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -792,9 +1116,7 @@ class _VoiceScreenState extends State<VoiceScreen>
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.borderMint,
-        ),
+        border: Border.all(color: AppColors.borderMint),
         boxShadow: [
           BoxShadow(
             color: AppColors.navy.withValues(alpha: 0.04),
@@ -820,9 +1142,7 @@ class _VoiceScreenState extends State<VoiceScreen>
                   size: 24,
                 ),
               ),
-
               const SizedBox(width: 12),
-
               const Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -837,7 +1157,7 @@ class _VoiceScreenState extends State<VoiceScreen>
                     ),
                     SizedBox(height: 4),
                     Text(
-                      'Your recording is ready to analyze',
+                      'WAV audio ready to analyze',
                       style: TextStyle(
                         color: AppColors.textDark,
                         fontSize: 11.5,
@@ -846,10 +1166,8 @@ class _VoiceScreenState extends State<VoiceScreen>
                   ],
                 ),
               ),
-
               IconButton(
-                onPressed:
-                _isAnalyzing ? null : _togglePlayback,
+                onPressed: _isAnalyzing ? null : _togglePlayback,
                 style: IconButton.styleFrom(
                   backgroundColor: AppColors.lightMint,
                 ),
@@ -860,12 +1178,9 @@ class _VoiceScreenState extends State<VoiceScreen>
                   color: AppColors.navy,
                 ),
               ),
-
               const SizedBox(width: 4),
-
               IconButton(
-                onPressed:
-                _isAnalyzing ? null : _deleteRecording,
+                onPressed: _isAnalyzing ? null : _deleteRecording,
                 icon: const Icon(
                   Icons.delete_outline_rounded,
                   color: AppColors.navy,
@@ -873,9 +1188,7 @@ class _VoiceScreenState extends State<VoiceScreen>
               ),
             ],
           ),
-
           const SizedBox(height: 15),
-
           _buildWaveform(),
         ],
       ),
@@ -883,31 +1196,9 @@ class _VoiceScreenState extends State<VoiceScreen>
   }
 
   Widget _buildWaveform() {
-    final heights = [
-      12.0,
-      20.0,
-      15.0,
-      28.0,
-      18.0,
-      34.0,
-      22.0,
-      16.0,
-      30.0,
-      20.0,
-      38.0,
-      25.0,
-      16.0,
-      27.0,
-      18.0,
-      32.0,
-      21.0,
-      14.0,
-      26.0,
-      18.0,
-      30.0,
-      20.0,
-      13.0,
-      24.0,
+    const heights = <double>[
+      12, 20, 15, 28, 18, 34, 22, 16, 30, 20, 38, 25,
+      16, 27, 18, 32, 21, 14, 26, 18, 30, 20, 13, 24,
     ];
 
     return Row(
@@ -947,15 +1238,12 @@ class _VoiceScreenState extends State<VoiceScreen>
             borderRadius: BorderRadius.circular(17),
           ),
         ),
-        child: Row(
+        child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.auto_awesome_rounded,
-              size: 21,
-            ),
-            const SizedBox(width: 9),
-            const Text(
+            Icon(Icons.auto_awesome_rounded, size: 21),
+            SizedBox(width: 9),
+            Text(
               'Analyze My Voice',
               style: TextStyle(
                 fontSize: 15,
@@ -969,7 +1257,7 @@ class _VoiceScreenState extends State<VoiceScreen>
   }
 
   // ============================================================
-  // ANALYZING
+  // ANALYZING CARD
   // ============================================================
 
   Widget _buildAnalyzingCard() {
@@ -979,13 +1267,11 @@ class _VoiceScreenState extends State<VoiceScreen>
       decoration: BoxDecoration(
         color: AppColors.lightMint,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.borderMint,
-        ),
+        border: Border.all(color: AppColors.borderMint),
       ),
-      child: Column(
+      child: const Column(
         children: [
-          const SizedBox(
+          SizedBox(
             width: 34,
             height: 34,
             child: CircularProgressIndicator(
@@ -995,10 +1281,8 @@ class _VoiceScreenState extends State<VoiceScreen>
               ),
             ),
           ),
-
-          const SizedBox(height: 15),
-
-          const Text(
+          SizedBox(height: 15),
+          Text(
             'Analyzing your voice',
             style: TextStyle(
               color: AppColors.navy,
@@ -1006,10 +1290,8 @@ class _VoiceScreenState extends State<VoiceScreen>
               fontWeight: FontWeight.w700,
             ),
           ),
-
-          const SizedBox(height: 6),
-
-          const Text(
+          SizedBox(height: 6),
+          Text(
             'MindMate is preparing your mood insight...',
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -1045,10 +1327,6 @@ class _VoiceScreenState extends State<VoiceScreen>
       ),
       child: Column(
         children: [
-          // --------------------------------------------------------
-          // TOP LABEL
-          // --------------------------------------------------------
-
           Row(
             children: [
               Container(
@@ -1059,9 +1337,7 @@ class _VoiceScreenState extends State<VoiceScreen>
                   shape: BoxShape.circle,
                 ),
               ),
-
               const SizedBox(width: 8),
-
               const Text(
                 'VOICE MOOD',
                 style: TextStyle(
@@ -1071,9 +1347,7 @@ class _VoiceScreenState extends State<VoiceScreen>
                   letterSpacing: 1.3,
                 ),
               ),
-
               const Spacer(),
-
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 9,
@@ -1084,7 +1358,7 @@ class _VoiceScreenState extends State<VoiceScreen>
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Text(
-                  'DEMO',
+                  'MODEL RESULT',
                   style: TextStyle(
                     color: AppColors.navy,
                     fontSize: 9,
@@ -1095,17 +1369,10 @@ class _VoiceScreenState extends State<VoiceScreen>
               ),
             ],
           ),
-
           const SizedBox(height: 25),
-
-          // --------------------------------------------------------
-          // MOOD VISUAL
-          // --------------------------------------------------------
-
           Stack(
             alignment: Alignment.center,
             children: [
-              // Outer soft circle
               Container(
                 width: 142,
                 height: 142,
@@ -1114,8 +1381,6 @@ class _VoiceScreenState extends State<VoiceScreen>
                   color: AppColors.lightMint.withValues(alpha: 0.55),
                 ),
               ),
-
-              // Inner circle
               Container(
                 width: 112,
                 height: 112,
@@ -1141,24 +1406,20 @@ class _VoiceScreenState extends State<VoiceScreen>
                     ),
                   ],
                 ),
-
-                // IMPORTANT: Center the whole emoji
                 child: Center(
                   child: Text(
                     _getMoodEmoji(),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 42,
-                      height: 1.0,
+                      height: 1,
                     ),
                   ),
                 ),
               ),
             ],
           ),
-
           const SizedBox(height: 18),
-
           const Text(
             'Detected mood',
             style: TextStyle(
@@ -1166,11 +1427,10 @@ class _VoiceScreenState extends State<VoiceScreen>
               fontSize: 12,
             ),
           ),
-
           const SizedBox(height: 4),
-
           Text(
             _detectedMood ?? '',
+            textAlign: TextAlign.center,
             style: const TextStyle(
               color: AppColors.navy,
               fontSize: 30,
@@ -1178,13 +1438,7 @@ class _VoiceScreenState extends State<VoiceScreen>
               letterSpacing: -0.5,
             ),
           ),
-
           const SizedBox(height: 24),
-
-          // --------------------------------------------------------
-          // CONFIDENCE
-          // --------------------------------------------------------
-
           Row(
             children: [
               const Text(
@@ -1195,9 +1449,7 @@ class _VoiceScreenState extends State<VoiceScreen>
                   fontWeight: FontWeight.w600,
                 ),
               ),
-
               const Spacer(),
-
               Text(
                 '$confidence%',
                 style: const TextStyle(
@@ -1208,28 +1460,19 @@ class _VoiceScreenState extends State<VoiceScreen>
               ),
             ],
           ),
-
           const SizedBox(height: 9),
-
           ClipRRect(
             borderRadius: BorderRadius.circular(20),
             child: LinearProgressIndicator(
               value: confidence / 100,
               minHeight: 7,
               backgroundColor: AppColors.lightMint,
-              valueColor:
-              const AlwaysStoppedAnimation<Color>(
+              valueColor: const AlwaysStoppedAnimation<Color>(
                 AppColors.mint,
               ),
             ),
           ),
-
           const SizedBox(height: 24),
-
-          // --------------------------------------------------------
-          // WELLBEING INSIGHT
-          // --------------------------------------------------------
-
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
@@ -1253,9 +1496,7 @@ class _VoiceScreenState extends State<VoiceScreen>
                     size: 18,
                   ),
                 ),
-
                 const SizedBox(width: 11),
-
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1268,9 +1509,7 @@ class _VoiceScreenState extends State<VoiceScreen>
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-
                       const SizedBox(height: 5),
-
                       Text(
                         _moodDescription ?? '',
                         style: const TextStyle(
@@ -1285,13 +1524,7 @@ class _VoiceScreenState extends State<VoiceScreen>
               ],
             ),
           ),
-
           const SizedBox(height: 16),
-
-          // --------------------------------------------------------
-          // ABOUT INSIGHT
-          // --------------------------------------------------------
-
           Material(
             color: Colors.transparent,
             child: InkWell(
@@ -1304,22 +1537,18 @@ class _VoiceScreenState extends State<VoiceScreen>
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  border: Border.all(
-                    color: AppColors.borderMint,
-                  ),
+                  border: Border.all(color: AppColors.borderMint),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Row(
+                child: const Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.info_outline_rounded,
                       color: AppColors.navy,
                       size: 18,
                     ),
-
-                    const SizedBox(width: 9),
-
-                    const Expanded(
+                    SizedBox(width: 9),
+                    Expanded(
                       child: Text(
                         'About this insight',
                         style: TextStyle(
@@ -1329,8 +1558,7 @@ class _VoiceScreenState extends State<VoiceScreen>
                         ),
                       ),
                     ),
-
-                    const Icon(
+                    Icon(
                       Icons.chevron_right_rounded,
                       color: AppColors.navy,
                       size: 20,
@@ -1340,22 +1568,11 @@ class _VoiceScreenState extends State<VoiceScreen>
               ),
             ),
           ),
-
           const SizedBox(height: 16),
-
-          // --------------------------------------------------------
-          // ANALYZE AGAIN
-          // --------------------------------------------------------
-
           TextButton.icon(
             onPressed: _tryAgain,
-            icon: const Icon(
-              Icons.refresh_rounded,
-              size: 18,
-            ),
-            label: const Text(
-              'Analyze another recording',
-            ),
+            icon: const Icon(Icons.refresh_rounded, size: 18),
+            label: const Text('Analyze another recording'),
             style: TextButton.styleFrom(
               foregroundColor: AppColors.navy,
               padding: const EdgeInsets.symmetric(
@@ -1370,53 +1587,6 @@ class _VoiceScreenState extends State<VoiceScreen>
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildConfidence() {
-    final confidence = _confidence ?? 0;
-
-    return Column(
-      children: [
-        Row(
-          children: [
-            const Expanded(
-              child: Text(
-                'Analysis confidence',
-                style: TextStyle(
-                  color: AppColors.textDark,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-
-            Text(
-              '$confidence%',
-              style: const TextStyle(
-                color: AppColors.navy,
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 9),
-
-        ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: LinearProgressIndicator(
-            value: confidence / 100,
-            minHeight: 8,
-            backgroundColor: AppColors.lightMint,
-            valueColor:
-            const AlwaysStoppedAnimation<Color>(
-              AppColors.mint,
-            ),
-          ),
-        ),
-      ],
     );
   }
 
@@ -1436,6 +1606,7 @@ class _VoiceScreenState extends State<VoiceScreen>
         ),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Icon(
             Icons.error_outline_rounded,
@@ -1445,10 +1616,11 @@ class _VoiceScreenState extends State<VoiceScreen>
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              _errorMessage!,
+              _errorMessage ?? '',
               style: const TextStyle(
                 color: Colors.red,
                 fontSize: 12,
+                height: 1.4,
               ),
             ),
           ),
@@ -1458,7 +1630,7 @@ class _VoiceScreenState extends State<VoiceScreen>
   }
 
   // ============================================================
-  // PRIVACY
+  // PRIVACY INFORMATION
   // ============================================================
 
   Widget _buildPrivacyCard() {
@@ -1468,9 +1640,7 @@ class _VoiceScreenState extends State<VoiceScreen>
       decoration: BoxDecoration(
         color: AppColors.lightMint.withValues(alpha: 0.55),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.borderMint,
-        ),
+        border: Border.all(color: AppColors.borderMint),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1488,14 +1658,12 @@ class _VoiceScreenState extends State<VoiceScreen>
               size: 17,
             ),
           ),
-
           const SizedBox(width: 10),
-
           const Expanded(
             child: Text(
-              'Your recording stays on your device for now. '
-                  'The final MindMate version will securely process '
-                  'voice data through the backend.',
+              'Your recording is sent to the MindMate backend for '
+                  'emotion analysis. Avoid including sensitive personal '
+                  'information in your recording.',
               style: TextStyle(
                 color: AppColors.textDark,
                 fontSize: 11.5,
