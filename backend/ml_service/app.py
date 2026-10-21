@@ -14,34 +14,56 @@ from services.voice_emotion import (
     predict_voice_emotion,
 )
 
+from services.facial_emotion import (
+    load_facial_model,
+    predict_facial_emotion,
+)
+
+
+# --------------------------------------------------
+# Configuration
+# --------------------------------------------------
+
 BASE_DIR = Path(__file__).resolve().parent
 MODEL_DIR = BASE_DIR / "models" / "text_emotion"
 
 app = FastAPI(
     title="MindMate ML Service",
-    version="1.1.0",
+    version="1.2.0",
 )
 
 # Use CPU for the initial integration.
 device = torch.device("cpu")
 
+# Text emotion model state.
 tokenizer = None
 model = None
 id2label = {}
 
+# Voice and facial model states.
 voice_models_loaded = False
+facial_model_loaded = False
 
 MAX_AUDIO_SIZE = 25 * 1024 * 1024  # 25 MB
+MAX_IMAGE_SIZE = 10 * 1024 * 1024  # 10 MB
 
+
+# --------------------------------------------------
+# Startup: load the models independently
+# --------------------------------------------------
 
 @app.on_event("startup")
 def load_model():
-    """Load Text Emotion first, then attempt to load both voice models."""
-    global tokenizer, model, id2label, voice_models_loaded
+    global tokenizer, model, id2label
+    global voice_models_loaded, facial_model_loaded
 
-    # Preserve the existing Text Emotion initialization.
+    # ----------------------------------------------
+    # Text Emotion: preserve existing initialization
+    # ----------------------------------------------
     if not MODEL_DIR.is_dir():
-        raise RuntimeError(f"Model folder not found: {MODEL_DIR}")
+        raise RuntimeError(
+            f"Text emotion model folder not found: {MODEL_DIR}"
+        )
 
     tokenizer = AutoTokenizer.from_pretrained(
         str(MODEL_DIR),
@@ -65,21 +87,44 @@ def load_model():
     print("MindMate text emotion model loaded.")
     print("Text emotion labels:", id2label)
 
-    # Voice loading is separate. A voice-model loading failure
-    # should not prevent the existing text model from starting.
+    # ----------------------------------------------
+    # Voice Emotion: independent loading
+    # ----------------------------------------------
     try:
         load_voice_models()
         voice_models_loaded = True
         print("MindMate voice emotion models loaded.")
+
     except Exception as exc:
         voice_models_loaded = False
         print("Voice emotion models failed to load:", repr(exc))
         print("Text Emotion remains available.")
 
+    # ----------------------------------------------
+    # Facial Emotion: independent loading
+    # ----------------------------------------------
+    try:
+        load_facial_model()
+        facial_model_loaded = True
+        print("MindMate facial emotion model loaded.")
+
+    except Exception as exc:
+        facial_model_loaded = False
+        print("Facial emotion model failed to load:", repr(exc))
+        print("Text and voice services remain available.")
+
+
+# --------------------------------------------------
+# Request models
+# --------------------------------------------------
 
 class PredictionRequest(BaseModel):
     text: str = Field(min_length=1, max_length=10000)
 
+
+# --------------------------------------------------
+# Health endpoint
+# --------------------------------------------------
 
 @app.get("/health")
 def health():
@@ -88,16 +133,21 @@ def health():
         "model_loaded": model is not None,
         "model_type": "DistilBERT",
         "voice_models_loaded": voice_models_loaded,
+        "facial_model_loaded": facial_model_loaded,
     }
 
 
+# --------------------------------------------------
+# Text Emotion endpoint
+# POST /predict/text-emotion
+# --------------------------------------------------
+
 @app.post("/predict/text-emotion")
 def predict_text_emotion(request: PredictionRequest):
-    # Existing Text Emotion endpoint preserved.
     if model is None or tokenizer is None:
         raise HTTPException(
             status_code=503,
-            detail="Emotion model is not loaded.",
+            detail="Text emotion model is not loaded.",
         )
 
     text = request.text.strip()
@@ -155,6 +205,11 @@ def predict_text_emotion(request: PredictionRequest):
         ) from exc
 
 
+# --------------------------------------------------
+# Voice Emotion endpoint
+# POST /predict/voice-emotion
+# --------------------------------------------------
+
 @app.post("/predict/voice-emotion")
 async def predict_voice_emotion_endpoint(
         file: UploadFile = File(...),
@@ -200,16 +255,89 @@ async def predict_voice_emotion_endpoint(
 
     except HTTPException:
         raise
+
     except ValueError as exc:
         raise HTTPException(
             status_code=400,
             detail=str(exc),
         ) from exc
+
     except Exception as exc:
         print("Voice emotion prediction failed:", repr(exc))
         raise HTTPException(
             status_code=500,
-            detail="Unable to analyze the audio. Please try another recording.",
+            detail=(
+                "Unable to analyze the audio. "
+                "Please try another recording."
+            ),
         ) from exc
+
+    finally:
+        await file.close()
+
+
+# --------------------------------------------------
+# Facial Emotion endpoint
+# POST /predict/facial-emotion
+# --------------------------------------------------
+
+@app.post("/predict/facial-emotion")
+async def predict_facial_emotion_endpoint(
+        file: UploadFile = File(...),
+):
+    """Predict facial expression from an uploaded image."""
+
+    if not facial_model_loaded:
+        raise HTTPException(
+            status_code=503,
+            detail="Facial emotion model is not loaded.",
+        )
+
+    try:
+        content_type = (file.content_type or "").lower()
+
+        if content_type not in (
+                "image/jpeg",
+                "image/png",
+                "image/webp",
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail="Upload a JPEG, PNG, or WebP image.",
+            )
+
+        image_bytes = await file.read(MAX_IMAGE_SIZE + 1)
+
+        if not image_bytes:
+            raise HTTPException(
+                status_code=400,
+                detail="The uploaded image is empty.",
+            )
+
+        if len(image_bytes) > MAX_IMAGE_SIZE:
+            raise HTTPException(
+                status_code=413,
+                detail="Image must not exceed 10 MB.",
+            )
+
+        result = predict_facial_emotion(image_bytes)
+        return result
+
+    except HTTPException:
+        raise
+
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
+
+    except Exception as exc:
+        print("Facial emotion prediction failed:", repr(exc))
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to analyze the image.",
+        ) from exc
+
     finally:
         await file.close()

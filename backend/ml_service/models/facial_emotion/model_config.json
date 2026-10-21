@@ -1,0 +1,15 @@
+{
+    "model_name": "MobileNetV2_FERPlus_7Class_Final",
+    "framework": "TensorFlow / Keras",
+    "num_classes": 7,
+    "class_names": [
+        "angry",
+        "disgust",
+        "fear",
+        "happy",
+        "neutral",
+        "sad",
+        "surprise"
+    ],
+    "validation_accuracy": "81.41%"
+}

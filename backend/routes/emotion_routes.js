@@ -8,16 +8,35 @@ const mlServiceUrl = (
   process.env.ML_SERVICE_URL || 'http://127.0.0.1:8000'
 ).replace(/\/+$/, '');
 
-const upload = multer({
+const MAX_AUDIO_SIZE = 25 * 1024 * 1024; // 25 MB
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10 MB
+
+// Separate upload limits for audio and images.
+const voiceUpload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 25 * 1024 * 1024,
+    fileSize: MAX_AUDIO_SIZE,
     files: 1,
   },
 });
 
+const facialUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: MAX_IMAGE_SIZE,
+    files: 1,
+  },
+});
+
+const ALLOWED_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+];
+
 // --------------------------------------------------
 // TEXT EMOTION — EXISTING ROUTE PRESERVED
+// POST /api/emotion/text
 // --------------------------------------------------
 
 router.post('/api/emotion/text', async (req, res) => {
@@ -56,7 +75,9 @@ router.post('/api/emotion/text', async (req, res) => {
           'Content-Type': 'application/json',
           Accept: 'application/json',
         },
-        body: JSON.stringify({ text: text.trim() }),
+        body: JSON.stringify({
+          text: text.trim(),
+        }),
         signal: AbortSignal.timeout(60000),
       },
     );
@@ -64,9 +85,9 @@ router.post('/api/emotion/text', async (req, res) => {
     const result = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      console.error('ML service error:', response.status, result);
+      console.error('Text ML service error:', response.status, result);
 
-      return res.status(502).json({
+      return res.status(response.status === 503 ? 503 : 502).json({
         success: false,
         message:
           'The emotion analysis service could not process your text.',
@@ -77,7 +98,7 @@ router.post('/api/emotion/text', async (req, res) => {
       typeof result.emotion !== 'string' ||
       typeof result.confidence !== 'number'
     ) {
-      console.error('Invalid ML response:', result);
+      console.error('Invalid text ML response:', result);
 
       return res.status(502).json({
         success: false,
@@ -109,11 +130,12 @@ router.post('/api/emotion/text', async (req, res) => {
 
 // --------------------------------------------------
 // VOICE EMOTION — ENGLISH AND URDU
+// POST /api/emotion/voice
 // --------------------------------------------------
 
 router.post(
   '/api/emotion/voice',
-  upload.single('file'),
+  voiceUpload.single('file'),
   async (req, res) => {
     const language = (
       typeof req.body?.language === 'string'
@@ -214,6 +236,118 @@ router.post(
         message: timedOut
           ? 'Voice emotion analysis timed out. Please try again.'
           : 'The voice emotion service is unavailable. Please try again.',
+      });
+    }
+  },
+);
+
+// --------------------------------------------------
+// FACIAL EMOTION
+// POST /api/emotion/facial
+// Multipart field: file
+// --------------------------------------------------
+
+router.post(
+  '/api/emotion/facial',
+  facialUpload.single('file'),
+  async (req, res) => {
+    if (!req.file || !req.file.buffer?.length) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please upload a facial image.',
+      });
+    }
+
+    const imageType = (req.file.mimetype || '').toLowerCase();
+
+    if (!ALLOWED_IMAGE_TYPES.includes(imageType)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Upload a JPEG, PNG, or WebP image.',
+      });
+    }
+
+    try {
+      const formData = new FormData();
+
+      formData.append(
+        'file',
+        new Blob([req.file.buffer], {
+          type: imageType,
+        }),
+        req.file.originalname || 'facial_image.jpg',
+      );
+
+      const response = await fetch(
+        `${mlServiceUrl}/predict/facial-emotion`,
+        {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+          },
+          body: formData,
+          signal: AbortSignal.timeout(120000),
+        },
+      );
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        console.error(
+          'Facial ML service error:',
+          response.status,
+          result,
+        );
+
+        const statusCode =
+          response.status === 503
+            ? 503
+            : response.status === 413
+              ? 413
+              : 502;
+
+        return res.status(statusCode).json({
+          success: false,
+          message:
+            result.detail ||
+            'The facial emotion service could not process your image.',
+        });
+      }
+
+      if (
+        typeof result.emotion !== 'string' ||
+        typeof result.confidence !== 'number'
+      ) {
+        console.error('Invalid facial ML response:', result);
+
+        return res.status(502).json({
+          success: false,
+          message:
+            'The facial emotion service returned an invalid result.',
+        });
+      }
+
+      return res.json({
+        success: true,
+        model: result.model,
+        predicted_emotion: result.emotion,
+        emotion: result.emotion,
+        confidence: result.confidence,
+        scores: result.scores,
+      });
+    } catch (error) {
+      console.error(
+        'Facial emotion request failed:',
+        error.message,
+      );
+
+      const timedOut = error.name === 'TimeoutError';
+
+      return res.status(timedOut ? 504 : 503).json({
+        success: false,
+        message: timedOut
+          ? 'Facial emotion analysis timed out. Please try again.'
+          : 'The facial emotion service is unavailable. Please try again.',
       });
     }
   },

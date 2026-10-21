@@ -27,4 +27,8 @@ class ApiConfig {
   // Voice Emotion Analysis (English and Urdu)
   static String get voiceEmotionUrl =>
       '$baseUrl/api/emotion/voice';
+
+  // Facial Emotion Analysis
+  static String get facialEmotionUrl =>
+      '$baseUrl/api/emotion/facial';
 }

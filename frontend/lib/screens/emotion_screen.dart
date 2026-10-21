@@ -1,10 +1,14 @@
+
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-
-import 'dart:typed_data';
+import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
-
+import 'package:http_parser/http_parser.dart';
+import '../core/config/api_config.dart';
 import '../core/constants/app_colors.dart';
 import 'emotion_result_screen.dart';
 
@@ -17,16 +21,17 @@ class EmotionScreen extends StatefulWidget {
 
 class _EmotionScreenState extends State<EmotionScreen> {
   CameraController? _cameraController;
-
   List<CameraDescription> _cameras = [];
 
   bool _isCameraInitialized = false;
   bool _isLoadingCamera = true;
   bool _cameraError = false;
   bool _isDetecting = false;
-  XFile? _capturedImage;
   bool _isCapturing = false;
 
+  XFile? _capturedImage;
+
+  // Demo history. These entries are not yet saved model predictions.
   final List<Map<String, dynamic>> _emotionHistory = [
     {
       'emotion': 'Happy',
@@ -35,14 +40,14 @@ class _EmotionScreenState extends State<EmotionScreen> {
       'time': 'Today, 4:20 PM',
     },
     {
-      'emotion': 'Calm',
-      'emoji': '😌',
+      'emotion': 'Neutral',
+      'emoji': '😐',
       'confidence': 0.87,
       'time': 'Yesterday, 8:15 PM',
     },
     {
-      'emotion': 'Anxious',
-      'emoji': '😟',
+      'emotion': 'Sad',
+      'emoji': '😔',
       'confidence': 0.81,
       'time': 'Sep 15, 6:40 PM',
     },
@@ -53,32 +58,17 @@ class _EmotionScreenState extends State<EmotionScreen> {
     super.initState();
     _initializeCamera();
   }
-  Future<XFile> _fixFrontCameraMirror(XFile original) async {
-    final isFrontCamera = _cameraController?.description.lensDirection ==
-        CameraLensDirection.front;
 
-    if (!isFrontCamera) return original;
-
-    final bytes = await original.readAsBytes();
-    final decoded = img.decodeImage(bytes);
-
-    if (decoded == null) return original;
-
-    final flipped = img.flipHorizontal(decoded);
-    final flippedBytes = Uint8List.fromList(img.encodeJpg(flipped, quality: 92));
-
-    final newPath = original.path.replaceFirst('.jpg', '_flipped.jpg');
-    final file = await File(newPath).writeAsBytes(flippedBytes);
-
-    return XFile(file.path);
-  }
+  // ------------------------------------------------------------
+  // CAMERA INITIALIZATION
+  // ------------------------------------------------------------
 
   Future<void> _initializeCamera() async {
     try {
       _cameras = await availableCameras();
 
       if (_cameras.isEmpty) {
-        throw Exception('No camera available.');
+        throw Exception('No camera is available on this device.');
       }
 
       CameraDescription selectedCamera = _cameras.first;
@@ -115,12 +105,16 @@ class _EmotionScreenState extends State<EmotionScreen> {
       setState(() {
         _cameraError = true;
         _isLoadingCamera = false;
+        _isCameraInitialized = false;
       });
     }
   }
 
   Future<void> _switchCamera() async {
-    if (_cameras.length < 2 || _cameraController == null) {
+    if (_cameras.length < 2 ||
+        _cameraController == null ||
+        _isCapturing ||
+        _isDetecting) {
       return;
     }
 
@@ -138,6 +132,7 @@ class _EmotionScreenState extends State<EmotionScreen> {
     });
 
     await _cameraController?.dispose();
+    _cameraController = null;
 
     try {
       final controller = CameraController(
@@ -165,14 +160,53 @@ class _EmotionScreenState extends State<EmotionScreen> {
       setState(() {
         _cameraError = true;
         _isLoadingCamera = false;
+        _isCameraInitialized = false;
       });
     }
   }
 
+  // ------------------------------------------------------------
+  // FRONT CAMERA MIRROR CORRECTION
+  // ------------------------------------------------------------
+
+  Future<XFile> _fixFrontCameraMirror(XFile original) async {
+    final isFrontCamera =
+        _cameraController?.description.lensDirection ==
+            CameraLensDirection.front;
+
+    if (!isFrontCamera) return original;
+
+    final bytes = await original.readAsBytes();
+    final decoded = img.decodeImage(bytes);
+
+    if (decoded == null) return original;
+
+    final flipped = img.flipHorizontal(decoded);
+    final flippedBytes = Uint8List.fromList(
+      img.encodeJpg(flipped, quality: 92),
+    );
+
+    final originalFile = File(original.path);
+    final newPath =
+        '${originalFile.parent.path}${Platform.pathSeparator}'
+        '${DateTime.now().microsecondsSinceEpoch}_flipped.jpg';
+
+    final file = await File(newPath).writeAsBytes(flippedBytes);
+
+    return XFile(file.path);
+  }
+
+  // ------------------------------------------------------------
+  // CAPTURE PHOTO
+  // ------------------------------------------------------------
+
   Future<void> _captureFace() async {
+    final controller = _cameraController;
+
     if (!_isCameraInitialized ||
-        _cameraController == null ||
-        _isCapturing) {
+        controller == null ||
+        _isCapturing ||
+        _isDetecting) {
       return;
     }
 
@@ -181,7 +215,7 @@ class _EmotionScreenState extends State<EmotionScreen> {
         _isCapturing = true;
       });
 
-      final rawImage = await _cameraController!.takePicture();
+      final rawImage = await controller.takePicture();
       final fixedImage = await _fixFrontCameraMirror(rawImage);
 
       if (!mounted) return;
@@ -199,455 +233,314 @@ class _EmotionScreenState extends State<EmotionScreen> {
         _isCapturing = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not capture the image. Please try again.'),
-          behavior: SnackBarBehavior.floating,
-        ),
+      _showMessage(
+        'Could not capture the image. Please try again.',
       );
     }
   }
 
-  void _showDemoResult() {
-    showModalBottomSheet(
+  // ------------------------------------------------------------
+  // REAL FACIAL EMOTION MODEL API
+  // ------------------------------------------------------------
+
+
+  Future<void> _continueFromCapture() async {
+    if (_capturedImage == null || _isDetecting) return;
+
+    setState(() {
+      _isDetecting = true;
+    });
+
+    try {
+      // 1. Read the captured image.
+      final originalBytes = await _capturedImage!.readAsBytes();
+
+      // 2. Decode the image.
+      final decodedImage = img.decodeImage(originalBytes);
+
+      if (decodedImage == null) {
+        throw Exception(
+          'Could not read the captured image. Please retake the photo.',
+        );
+      }
+
+      // 3. Convert it to a standard JPEG.
+      final jpegBytes = Uint8List.fromList(
+        img.encodeJpg(decodedImage, quality: 90),
+      );
+
+      if (jpegBytes.isEmpty) {
+        throw Exception('The JPEG image could not be created.');
+      }
+
+      debugPrint('Original image size: ${originalBytes.length} bytes');
+      debugPrint('JPEG image size: ${jpegBytes.length} bytes');
+      debugPrint('Uploading image as image/jpeg');
+
+      // 4. Create the multipart request.
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse(ApiConfig.facialEmotionUrl),
+      );
+
+      // IMPORTANT: The backend expects the field name "file".
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'file',
+          jpegBytes,
+          filename: 'face.jpg',
+          contentType: MediaType('image', 'jpeg'),
+        ),
+      );
+
+      // 5. Send the image to the facial emotion API.
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 90),
+      );
+
+      final response = await http.Response.fromStream(streamedResponse);
+
+      debugPrint('Facial API status: ${response.statusCode}');
+      debugPrint('Facial API response: ${response.body}');
+
+      // 6. Decode the API response.
+      dynamic decoded;
+
+      try {
+        decoded = jsonDecode(response.body);
+      } catch (_) {
+        throw Exception(
+          'The server returned an invalid response: ${response.body}',
+        );
+      }
+
+      // 7. Handle server errors without hiding the actual message.
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        final message = decoded is Map
+            ? decoded['detail'] ??
+            decoded['error'] ??
+            decoded['message']
+            : null;
+
+        throw Exception(
+          message?.toString() ??
+              'Facial analysis failed (${response.statusCode}).',
+        );
+      }
+
+      if (decoded is! Map || decoded['success'] != true) {
+        throw Exception(
+          'The server did not return a successful prediction.',
+        );
+      }
+
+      // 8. Read the predicted emotion.
+      final rawEmotion =
+      (decoded['predicted_emotion'] ?? decoded['emotion'])
+          ?.toString()
+          .trim()
+          .toLowerCase();
+
+      if (rawEmotion == null || rawEmotion.isEmpty) {
+        throw Exception('The server did not return a predicted emotion.');
+      }
+
+      // 9. Read and validate the confidence score.
+      final confidenceValue = decoded['confidence'];
+
+      if (confidenceValue is! num) {
+        throw Exception('The server did not return a valid confidence score.');
+      }
+
+      final confidence = confidenceValue.toDouble();
+
+      if (!confidence.isFinite || confidence < 0 || confidence > 1) {
+        throw Exception(
+          'The confidence score must be between 0 and 1.',
+        );
+      }
+
+      // 10. Convert model labels into display labels.
+      final emotion = switch (rawEmotion) {
+        'happy' => 'Happy',
+        'sad' => 'Sad',
+        'angry' => 'Angry',
+        'fear' => 'Fear',
+        'disgust' => 'Disgust',
+        'surprise' => 'Surprise',
+        'neutral' => 'Neutral',
+        _ => throw Exception(
+          'Unknown emotion returned by the model: $rawEmotion',
+        ),
+      };
+
+      if (!mounted) return;
+
+      // 11. Add the real prediction to the screen's history.
+      final now = DateTime.now();
+      final hour = now.hour % 12 == 0 ? 12 : now.hour % 12;
+      final minute = now.minute.toString().padLeft(2, '0');
+      final period = now.hour >= 12 ? 'PM' : 'AM';
+
+      setState(() {
+        _emotionHistory.insert(0, {
+          'emotion': emotion,
+          'emoji': _emojiFor(emotion),
+          'confidence': confidence,
+          'time': 'Today, $hour:$minute $period',
+        });
+
+        if (_emotionHistory.length > 10) {
+          _emotionHistory.removeLast();
+        }
+      });
+
+      // 12. Navigate to the existing result screen.
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => EmotionResultScreen(
+            emotion: emotion,
+            confidence: confidence,
+          ),
+        ),
+      );
+    } catch (e, stackTrace) {
+      debugPrint('Facial emotion analysis error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+
+      if (!mounted) return;
+
+      _showMessage(
+        'Could not analyze the face. '
+            '${e.toString().replaceFirst('Exception: ', '')}',
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isDetecting = false;
+        });
+      }
+    }
+  }
+
+
+  String _emojiFor(String emotion) {
+    switch (emotion) {
+      case 'Happy':
+        return '😊';
+      case 'Sad':
+        return '😔';
+      case 'Angry':
+        return '😠';
+      case 'Fear':
+        return '😨';
+      case 'Disgust':
+        return '🤢';
+      case 'Surprise':
+        return '😮';
+      case 'Neutral':
+        return '😐';
+      default:
+        return '😐';
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+
+  Future<void> _clearEmotionHistory() async {
+    if (_emotionHistory.isEmpty) return;
+
+    final shouldClear = await showDialog<bool>(
       context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) {
-        return Container(
-          width: double.infinity,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(32),
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: AppColors.background,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+          ),
+          title: const Text(
+            'Clear emotion history?',
+            style: TextStyle(
+              color: AppColors.navy,
+              fontSize: 19,
+              fontWeight: FontWeight.w800,
             ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // ======================================================
-              // PREMIUM RESULT HEADER
-              // ======================================================
-
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(
-                  24,
-                  12,
-                  24,
-                  28,
-                ),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      AppColors.navy,
-                      AppColors.navy.withValues(alpha: 0.92),
-                      AppColors.mint.withValues(alpha: 0.78),
-                    ],
-                  ),
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(32),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    // Drag handle
-                    Container(
-                      width: 42,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.35),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-
-                    const SizedBox(height: 22),
-
-                    // Header label
-                    Row(
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: AppColors.mint,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-
-                        const SizedBox(width: 8),
-
-                        const Text(
-                          'MOOD SNAPSHOT',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.4,
-                          ),
-                        ),
-
-                        const Spacer(),
-
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 9,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.18),
-                            ),
-                          ),
-                          child: const Text(
-                            'DEMO',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 8.5,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // =================================================
-                    // EMOTION EMOJI
-                    // =================================================
-
-                    Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Container(
-                          width: 126,
-                          height: 126,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withValues(alpha: 0.08),
-                            border: Border.all(
-                              color: AppColors.mint.withValues(alpha: 0.28),
-                              width: 1.5,
-                            ),
-                          ),
-                        ),
-
-                        Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.12),
-                                blurRadius: 25,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          child: const Center(
-                            child: Text(
-                              '😊',
-                              style: TextStyle(
-                                fontSize: 48,
-                                height: 1,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 18),
-
-                    const Text(
-                      'Emotion detected',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 11.5,
-                      ),
-                    ),
-
-                    const SizedBox(height: 4),
-
-                    const Text(
-                      'Happy',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 30,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-
-                    const SizedBox(height: 5),
-
-                    Text(
-                      'A positive expression was detected',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.72),
-                        fontSize: 11.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // ======================================================
-              // RESULT DETAILS
-              // ======================================================
-
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  22,
-                  22,
-                  22,
-                  26,
-                ),
-                child: Column(
-                  children: [
-                    // ==================================================
-                    // CONFIDENCE SECTION
-                    // ==================================================
-
-                    Row(
-                      children: [
-                        // Circular confidence
-                        SizedBox(
-                          width: 72,
-                          height: 72,
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              SizedBox(
-                                width: 72,
-                                height: 72,
-                                child: CircularProgressIndicator(
-                                  value: 0.92,
-                                  strokeWidth: 6,
-                                  backgroundColor:
-                                  AppColors.lightMint,
-                                  valueColor:
-                                  const AlwaysStoppedAnimation<Color>(
-                                    AppColors.mint,
-                                  ),
-                                ),
-                              ),
-
-                              const Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    '92%',
-                                    style: TextStyle(
-                                      color: AppColors.navy,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                  Text(
-                                    'confidence',
-                                    style: TextStyle(
-                                      color: AppColors.textDark,
-                                      fontSize: 7.5,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(width: 16),
-
-                        const Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Detection confidence',
-                                style: TextStyle(
-                                  color: AppColors.navy,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-
-                              SizedBox(height: 5),
-
-                              Text(
-                                'The expression pattern was '
-                                    'recognized with high confidence.',
-                                style: TextStyle(
-                                  color: AppColors.textDark,
-                                  fontSize: 11.5,
-                                  height: 1.45,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // ==================================================
-                    // WELLBEING INSIGHT
-                    // ==================================================
-
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.lightMint.withValues(
-                          alpha: 0.62,
-                        ),
-                        borderRadius: BorderRadius.circular(19),
-                        border: Border.all(
-                          color: AppColors.borderMint,
-                        ),
-                      ),
-                      child: Row(
-                        crossAxisAlignment:
-                        CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 38,
-                            height: 38,
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.auto_awesome_rounded,
-                              color: AppColors.mint,
-                              size: 19,
-                            ),
-                          ),
-
-                          const SizedBox(width: 11),
-
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment:
-                              CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Your wellbeing insight',
-                                  style: TextStyle(
-                                    color: AppColors.navy,
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-
-                                SizedBox(height: 5),
-
-                                Text(
-                                  'Your facial expression appears '
-                                      'positive right now.',
-                                  style: TextStyle(
-                                    color: AppColors.textDark,
-                                    fontSize: 11.5,
-                                    height: 1.5,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // ==================================================
-                    // MINDFUL NOTE
-                    // ==================================================
-
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 15,
-                        vertical: 13,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: AppColors.borderMint,
-                        ),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(
-                            Icons.spa_outlined,
-                            color: AppColors.mint,
-                            size: 19,
-                          ),
-
-                          SizedBox(width: 10),
-
-                          Expanded(
-                            child: Text(
-                              'A smile can be a small moment '
-                                  'worth noticing.',
-                              style: TextStyle(
-                                color: AppColors.navy,
-                                fontSize: 11.5,
-                                height: 1.4,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // ==================================================
-                    // DONE BUTTON
-                    // ==================================================
-
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.navy,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: const Text(
-                          'Continue',
-                          style: TextStyle(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          content: const Text(
+            'This will remove all emotion entries currently shown '
+                'in your history. This action cannot be undone.',
+            style: TextStyle(
+              color: AppColors.textDark,
+              fontSize: 13,
+              height: 1.5,
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(
+                  color: AppColors.navy,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFB54747),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(11),
+                ),
+              ),
+              child: const Text('Clear all'),
+            ),
+          ],
         );
       },
     );
+
+    if (shouldClear == true && mounted) {
+      setState(() {
+        _emotionHistory.clear();
+      });
+
+      _showMessage('Emotion history cleared.');
+    }
+  }
+
+  void _deleteEmotionHistoryItem(Map<String, dynamic> item) {
+    if (!_emotionHistory.contains(item)) return;
+
+    setState(() {
+      _emotionHistory.remove(item);
+    });
+
+    _showMessage('${item['emotion']} entry deleted.');
+  }
+
+
+
+
+
+  Future<void> _retakePhoto() async {
+    if (_isDetecting || _isCapturing || !mounted) return;
+
+    setState(() {
+      _capturedImage = null;
+    });
   }
 
   @override
@@ -656,304 +549,11 @@ class _EmotionScreenState extends State<EmotionScreen> {
     super.dispose();
   }
 
+  // ------------------------------------------------------------
+  // MAIN SCREEN
+  // ------------------------------------------------------------
 
-  Widget _buildEmotionHistory() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.borderMint,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(
-                Icons.history_rounded,
-                color: AppColors.mint,
-                size: 21,
-              ),
-              SizedBox(width: 9),
-              Text(
-                'Recent Emotion History',
-                style: TextStyle(
-                  color: AppColors.navy,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 15),
-          ..._emotionHistory.map(
-                (item) => _buildHistoryItem(item),
-          ),
-        ],
-      ),
-    );
-  }
-  void _showEmotionHistoryDetails(
-      Map<String, dynamic> item,
-      ) {
-    final confidence =
-    ((item['confidence'] as double) * 100).round();
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.fromLTRB(22, 12, 22, 28),
-          decoration: const BoxDecoration(
-            color: AppColors.background,
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(28),
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 42,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.borderMint,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-
-              const SizedBox(height: 22),
-
-              Container(
-                width: 78,
-                height: 78,
-                decoration: const BoxDecoration(
-                  color: AppColors.lightMint,
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(
-                    item['emoji'],
-                    style: const TextStyle(
-                      fontSize: 40,
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 14),
-
-              Text(
-                item['emotion'],
-                style: const TextStyle(
-                  color: AppColors.navy,
-                  fontSize: 23,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-
-              const SizedBox(height: 4),
-
-              Text(
-                item['time'],
-                style: TextStyle(
-                  color: AppColors.navy.withValues(alpha: 0.55),
-                  fontSize: 11.5,
-                ),
-              ),
-
-              const SizedBox(height: 22),
-
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(17),
-                  border: Border.all(
-                    color: AppColors.borderMint,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.analytics_outlined,
-                      color: AppColors.mint,
-                      size: 22,
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        'Detection confidence',
-                        style: TextStyle(
-                          color: AppColors.navy,
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      '$confidence%',
-                      style: const TextStyle(
-                        color: AppColors.mint,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppColors.lightMint.withValues(
-                    alpha: 0.55,
-                  ),
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(
-                      Icons.lock_outline_rounded,
-                      color: AppColors.mint,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 9),
-                    Expanded(
-                      child: Text(
-                        'Emotion results are private and should be treated as an estimate, not a diagnosis.',
-                        style: TextStyle(
-                          color: AppColors.navy.withValues(
-                            alpha: 0.68,
-                          ),
-                          fontSize: 10.5,
-                          height: 1.45,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.mint,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: const Text(
-                    'Close',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildHistoryItem(Map<String, dynamic> item) {
-    final confidence =
-    ((item['confidence'] as double) * 100).round();
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: () => _showEmotionHistoryDetails(item),
-          child: Padding(
-            padding: const EdgeInsets.all(6),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: const BoxDecoration(
-                    color: AppColors.lightMint,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      item['emoji'],
-                      style: const TextStyle(
-                        fontSize: 22,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item['emotion'],
-                        style: const TextStyle(
-                          color: AppColors.navy,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        item['time'],
-                        style: TextStyle(
-                          color: AppColors.navy.withValues(alpha: 0.52),
-                          fontSize: 10.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Text(
-                  '$confidence%',
-                  style: const TextStyle(
-                    color: AppColors.mint,
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: AppColors.navy.withValues(alpha: 0.35),
-                  size: 20,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -961,15 +561,9 @@ class _EmotionScreenState extends State<EmotionScreen> {
         child: Column(
           children: [
             _buildHeader(),
-
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(
-                  20,
-                  8,
-                  20,
-                  24,
-                ),
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
                 child: Column(
                   children: [
                     _buildIntro(),
@@ -977,10 +571,8 @@ class _EmotionScreenState extends State<EmotionScreen> {
                     _buildCameraCard(),
                     const SizedBox(height: 18),
                     _buildDetectButton(),
-
                     const SizedBox(height: 20),
                     _buildEmotionHistory(),
-
                     const SizedBox(height: 16),
                     _buildPrivacyCard(),
                     const SizedBox(height: 10),
@@ -995,231 +587,13 @@ class _EmotionScreenState extends State<EmotionScreen> {
     );
   }
 
-  // ==============================================================
+  // ------------------------------------------------------------
   // HEADER
-  // ==============================================================
-  Widget _buildCapturedImagePreview() {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // ==========================================================
-        // CAPTURED IMAGE
-        // ==========================================================
-
-        Image.file(
-          File(_capturedImage!.path),
-          fit: BoxFit.cover,
-        ),
-
-        // ==========================================================
-        // SOFT OVERLAY
-        // ==========================================================
-
-        Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.black.withValues(alpha: 0.35),
-                Colors.transparent,
-                Colors.black.withValues(alpha: 0.68),
-              ],
-              stops: const [
-                0.0,
-                0.48,
-                1.0,
-              ],
-            ),
-          ),
-        ),
-
-        // ==========================================================
-        // TOP LABEL
-        // ==========================================================
-
-        Positioned(
-          top: 16,
-          left: 16,
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 8,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.35),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.check_circle_rounded,
-                  color: AppColors.mint,
-                  size: 15,
-                ),
-                SizedBox(width: 7),
-                Text(
-                  'Face captured',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // ==========================================================
-        // BOTTOM CONTENT
-        // ==========================================================
-
-        Positioned(
-          left: 20,
-          right: 20,
-          bottom: 18,
-          child: Column(
-            children: [
-              const Text(
-                'Does this look good?',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-
-              const SizedBox(height: 5),
-
-              Text(
-                'Your face is ready for emotion analysis.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.78),
-                  fontSize: 11.5,
-                ),
-              ),
-
-              const SizedBox(height: 15),
-
-              Row(
-                children: [
-                  // ------------------------------------------------
-                  // RETAKE
-                  // ------------------------------------------------
-
-                  Expanded(
-                    child: SizedBox(
-                      height: 46,
-                      child: OutlinedButton.icon(
-                        onPressed: _isCapturing
-                            ? null
-                            : _retakePhoto,
-                        icon: const Icon(
-                          Icons.refresh_rounded,
-                          size: 18,
-                        ),
-                        label: const Text(
-                          'Retake',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          side: BorderSide(
-                            color: Colors.white.withValues(
-                              alpha: 0.65,
-                            ),
-                          ),
-                          backgroundColor:
-                          Colors.black.withValues(alpha: 0.22),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(width: 10),
-
-                  // ------------------------------------------------
-                  // CONTINUE
-                  // ------------------------------------------------
-
-                  Expanded(
-                    child: SizedBox(
-                      height: 46,
-                      child: ElevatedButton.icon(
-                        onPressed: _continueFromCapture,
-                        icon: const Icon(
-                          Icons.arrow_forward_rounded,
-                          size: 18,
-                        ),
-                        label: const Text(
-                          'Continue',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.mint,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _retakePhoto() async {
-    if (!mounted) return;
-
-    setState(() {
-      _capturedImage = null;
-    });
-  }
-
-  void _continueFromCapture() {
-    if (_capturedImage == null) return;
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const EmotionResultScreen(
-          emotion: 'Happy',
-          confidence: 0.92,
-        ),
-      ),
-    );
-  }
-
-
+  // ------------------------------------------------------------
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        18,
-        12,
-        18,
-        8,
-      ),
+      padding: const EdgeInsets.fromLTRB(18, 12, 18, 8),
       child: Row(
         children: [
           Material(
@@ -1244,14 +618,12 @@ class _EmotionScreenState extends State<EmotionScreen> {
                 child: const Icon(
                   Icons.arrow_back_ios_new_rounded,
                   color: AppColors.navy,
-                  size: 17,
+                  size: 18,
                 ),
               ),
             ),
           ),
-
           const SizedBox(width: 13),
-
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1280,9 +652,9 @@ class _EmotionScreenState extends State<EmotionScreen> {
     );
   }
 
-  // ==============================================================
+  // ------------------------------------------------------------
   // INTRO
-  // ==============================================================
+  // ------------------------------------------------------------
 
   Widget _buildIntro() {
     return Column(
@@ -1300,9 +672,7 @@ class _EmotionScreenState extends State<EmotionScreen> {
             ),
           ),
         ),
-
         const SizedBox(height: 6),
-
         Text(
           'Look at the camera naturally. MindMate will '
               'analyze your facial expression.',
@@ -1316,9 +686,9 @@ class _EmotionScreenState extends State<EmotionScreen> {
     );
   }
 
-  // ==============================================================
+  // ------------------------------------------------------------
   // CAMERA CARD
-  // ==============================================================
+  // ------------------------------------------------------------
 
   Widget _buildCameraCard() {
     return Container(
@@ -1381,16 +751,7 @@ class _EmotionScreenState extends State<EmotionScreen> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // ----------------------------------------------------------
-        // CAMERA PREVIEW
-        // ----------------------------------------------------------
-
         _buildCameraPreview(),
-
-        // ----------------------------------------------------------
-        // SOFT OVERLAY
-        // ----------------------------------------------------------
-
         Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -1401,19 +762,10 @@ class _EmotionScreenState extends State<EmotionScreen> {
                 Colors.transparent,
                 Colors.black.withValues(alpha: 0.38),
               ],
-              stops: const [
-                0.0,
-                0.48,
-                1.0,
-              ],
+              stops: const [0.0, 0.48, 1.0],
             ),
           ),
         ),
-
-        // ----------------------------------------------------------
-        // TOP STATUS
-        // ----------------------------------------------------------
-
         Positioned(
           top: 16,
           left: 16,
@@ -1449,9 +801,7 @@ class _EmotionScreenState extends State<EmotionScreen> {
                   ],
                 ),
               ),
-
               const Spacer(),
-
               Material(
                 color: Colors.black.withValues(alpha: 0.30),
                 shape: const CircleBorder(),
@@ -1472,11 +822,6 @@ class _EmotionScreenState extends State<EmotionScreen> {
             ],
           ),
         ),
-
-        // ----------------------------------------------------------
-        // FACE GUIDE
-        // ----------------------------------------------------------
-
         Positioned(
           left: 42,
           right: 42,
@@ -1486,11 +831,6 @@ class _EmotionScreenState extends State<EmotionScreen> {
             painter: _FaceGuidePainter(),
           ),
         ),
-
-        // ----------------------------------------------------------
-        // FACE INSTRUCTION
-        // ----------------------------------------------------------
-
         Positioned(
           left: 0,
           right: 0,
@@ -1527,14 +867,169 @@ class _EmotionScreenState extends State<EmotionScreen> {
             ),
           ),
         ),
+      ],
+    );
+  }
 
-        // ----------------------------------------------------------
-        // ANALYZING OVERLAY
-        // ----------------------------------------------------------
+  // ------------------------------------------------------------
+  // CAPTURED PHOTO PREVIEW
+  // ------------------------------------------------------------
 
+  Widget _buildCapturedImagePreview() {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Image.file(
+          File(_capturedImage!.path),
+          fit: BoxFit.cover,
+        ),
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.black.withValues(alpha: 0.35),
+                Colors.transparent,
+                Colors.black.withValues(alpha: 0.72),
+              ],
+              stops: const [0.0, 0.40, 1.0],
+            ),
+          ),
+        ),
+        Positioned(
+          top: 16,
+          left: 16,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 8,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.38),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.check_circle_rounded,
+                  color: AppColors.mint,
+                  size: 15,
+                ),
+                SizedBox(width: 7),
+                Text(
+                  'Face captured',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        Positioned(
+          left: 18,
+          right: 18,
+          bottom: 18,
+          child: Column(
+            children: [
+              const Text(
+                'Ready to analyze?',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                'Your photo will be sent to the AI model.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.8),
+                  fontSize: 11.5,
+                ),
+              ),
+              const SizedBox(height: 15),
+              Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 46,
+                      child: OutlinedButton.icon(
+                        onPressed: _isDetecting || _isCapturing
+                            ? null
+                            : _retakePhoto,
+                        icon: const Icon(
+                          Icons.refresh_rounded,
+                          size: 18,
+                        ),
+                        label: const Text(
+                          'Retake',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          disabledForegroundColor: Colors.white54,
+                          side: BorderSide(
+                            color: Colors.white.withValues(alpha: 0.65),
+                          ),
+                          backgroundColor:
+                          Colors.black.withValues(alpha: 0.22),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: SizedBox(
+                      height: 46,
+                      child: ElevatedButton.icon(
+                        onPressed: _isDetecting
+                            ? null
+                            : _continueFromCapture,
+                        icon: const Icon(
+                          Icons.auto_awesome_rounded,
+                          size: 18,
+                        ),
+                        label: const Text(
+                          'Analyze',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.mint,
+                          foregroundColor: Colors.white,
+                          disabledBackgroundColor:
+                          AppColors.mint.withValues(alpha: 0.5),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
         if (_isDetecting)
           Container(
-            color: AppColors.navy.withValues(alpha: 0.58),
+            color: AppColors.navy.withValues(alpha: 0.68),
             child: Center(
               child: Container(
                 padding: const EdgeInsets.symmetric(
@@ -1542,7 +1037,7 @@ class _EmotionScreenState extends State<EmotionScreen> {
                   vertical: 18,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.95),
+                  color: Colors.white.withValues(alpha: 0.96),
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: const Row(
@@ -1557,12 +1052,14 @@ class _EmotionScreenState extends State<EmotionScreen> {
                       ),
                     ),
                     SizedBox(width: 12),
-                    Text(
-                      'Reading expression...',
-                      style: TextStyle(
-                        color: AppColors.navy,
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
+                    Flexible(
+                      child: Text(
+                        'Analyzing your expression...',
+                        style: TextStyle(
+                          color: AppColors.navy,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ],
@@ -1574,26 +1071,35 @@ class _EmotionScreenState extends State<EmotionScreen> {
     );
   }
 
-  // ==============================================================
+  // ------------------------------------------------------------
   // CAMERA PREVIEW
-  // ==============================================================
+  // ------------------------------------------------------------
 
   Widget _buildCameraPreview() {
     final controller = _cameraController!;
+    final previewSize = controller.value.previewSize;
+
+    if (previewSize == null) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: AppColors.mint,
+        ),
+      );
+    }
 
     return FittedBox(
       fit: BoxFit.cover,
       child: SizedBox(
-        width: controller.value.previewSize!.height,
-        height: controller.value.previewSize!.width,
+        width: previewSize.height,
+        height: previewSize.width,
         child: CameraPreview(controller),
       ),
     );
   }
 
-  // ==============================================================
+  // ------------------------------------------------------------
   // CAMERA ERROR
-  // ==============================================================
+  // ------------------------------------------------------------
 
   Widget _buildCameraError() {
     return Center(
@@ -1615,9 +1121,7 @@ class _EmotionScreenState extends State<EmotionScreen> {
                 size: 32,
               ),
             ),
-
             const SizedBox(height: 17),
-
             const Text(
               'Camera unavailable',
               style: TextStyle(
@@ -1626,12 +1130,9 @@ class _EmotionScreenState extends State<EmotionScreen> {
                 fontWeight: FontWeight.w700,
               ),
             ),
-
             const SizedBox(height: 7),
-
             Text(
-              'Please allow camera permission and '
-                  'try again.',
+              'Please allow camera permission and try again.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.65),
@@ -1639,16 +1140,13 @@ class _EmotionScreenState extends State<EmotionScreen> {
                 height: 1.45,
               ),
             ),
-
             const SizedBox(height: 20),
-
             OutlinedButton(
               onPressed: () {
                 setState(() {
                   _cameraError = false;
                   _isLoadingCamera = true;
                 });
-
                 _initializeCamera();
               },
               style: OutlinedButton.styleFrom(
@@ -1660,9 +1158,7 @@ class _EmotionScreenState extends State<EmotionScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
-                'Try Again',
-              ),
+              child: const Text('Try Again'),
             ),
           ],
         ),
@@ -1670,9 +1166,9 @@ class _EmotionScreenState extends State<EmotionScreen> {
     );
   }
 
-  // ==============================================================
-  // DETECT BUTTON
-  // ==============================================================
+  // ------------------------------------------------------------
+  // CAPTURE BUTTON
+  // ------------------------------------------------------------
 
   Widget _buildDetectButton() {
     return Container(
@@ -1689,15 +1185,17 @@ class _EmotionScreenState extends State<EmotionScreen> {
         ],
       ),
       child: ElevatedButton(
-        onPressed:
-        _isCameraInitialized && !_isCapturing
+        onPressed: _isCameraInitialized &&
+            !_isCapturing &&
+            !_isDetecting &&
+            _capturedImage == null
             ? _captureFace
             : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.mint,
           foregroundColor: Colors.white,
           disabledBackgroundColor:
-          AppColors.mint.withValues(alpha: 0.45),
+          AppColors.mint.withValues(alpha: 0.35),
           disabledForegroundColor:
           Colors.white.withValues(alpha: 0.75),
           elevation: 0,
@@ -1753,9 +1251,388 @@ class _EmotionScreenState extends State<EmotionScreen> {
     );
   }
 
-  // ==============================================================
-  // PRIVACY
-  // ==============================================================
+  // ------------------------------------------------------------
+  // EMOTION HISTORY
+  // ------------------------------------------------------------
+
+
+  Widget _buildEmotionHistory() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColors.borderMint,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.history_rounded,
+                color: AppColors.mint,
+                size: 21,
+              ),
+              const SizedBox(width: 9),
+              const Expanded(
+                child: Text(
+                  'Recent Emotion History',
+                  style: TextStyle(
+                    color: AppColors.navy,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              if (_emotionHistory.isNotEmpty)
+                TextButton(
+                  onPressed: _clearEmotionHistory,
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFFB54747),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 6,
+                    ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.delete_sweep_outlined,
+                        size: 17,
+                      ),
+                      SizedBox(width: 4),
+                      Text(
+                        'Clear all',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 15),
+
+          if (_emotionHistory.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                vertical: 24,
+                horizontal: 8,
+              ),
+              child: Center(
+                child: Column(
+                  children: [
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: const BoxDecoration(
+                        color: AppColors.lightMint,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.history_toggle_off_rounded,
+                        color: AppColors.mint,
+                        size: 31,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'No emotion history yet',
+                      style: TextStyle(
+                        color: AppColors.navy,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      'Capture your face and analyze your expression '
+                          'to see your results here.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: AppColors.textDark.withValues(alpha: 0.65),
+                        fontSize: 11.5,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            ..._emotionHistory.map(_buildHistoryItem),
+        ],
+      ),
+    );
+  }
+
+
+  Widget _buildHistoryItem(Map<String, dynamic> item) {
+    final confidence =
+    ((item['confidence'] as num) * 100).round();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => _showEmotionHistoryDetails(item),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 4,
+              vertical: 6,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: const BoxDecoration(
+                    color: AppColors.lightMint,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      item['emoji'].toString(),
+                      style: const TextStyle(fontSize: 22),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item['emotion'].toString(),
+                        style: const TextStyle(
+                          color: AppColors.navy,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        item['time'].toString(),
+                        style: TextStyle(
+                          color: AppColors.navy.withValues(alpha: 0.52),
+                          fontSize: 10.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                Text(
+                  '$confidence%',
+                  style: const TextStyle(
+                    color: AppColors.mint,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+
+                const SizedBox(width: 2),
+
+                IconButton(
+                  tooltip: 'Delete this entry',
+                  onPressed: () => _deleteEmotionHistoryItem(item),
+                  visualDensity: VisualDensity.compact,
+                  constraints: const BoxConstraints(
+                    minWidth: 36,
+                    minHeight: 36,
+                  ),
+                  padding: EdgeInsets.zero,
+                  icon: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: Color(0xFFB54747),
+                    size: 20,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+
+  void _showEmotionHistoryDetails(Map<String, dynamic> item) {
+    final confidence = ((item['confidence'] as num) * 100).round();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return Container(
+          padding: const EdgeInsets.fromLTRB(22, 12, 22, 28),
+          decoration: const BoxDecoration(
+            color: AppColors.background,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(28),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 42,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.borderMint,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              const SizedBox(height: 22),
+              Container(
+                width: 78,
+                height: 78,
+                decoration: const BoxDecoration(
+                  color: AppColors.lightMint,
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    item['emoji'].toString(),
+                    style: const TextStyle(fontSize: 40),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                item['emotion'].toString(),
+                style: const TextStyle(
+                  color: AppColors.navy,
+                  fontSize: 23,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                item['time'].toString(),
+                style: TextStyle(
+                  color: AppColors.navy.withValues(alpha: 0.55),
+                  fontSize: 11.5,
+                ),
+              ),
+              const SizedBox(height: 22),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(17),
+                  border: Border.all(
+                    color: AppColors.borderMint,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.analytics_outlined,
+                      color: AppColors.mint,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Detection confidence',
+                        style: TextStyle(
+                          color: AppColors.navy,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '$confidence%',
+                      style: const TextStyle(
+                        color: AppColors.mint,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.lightMint.withValues(alpha: 0.55),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.info_outline_rounded,
+                      color: AppColors.mint,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 9),
+                    Expanded(
+                      child: Text(
+                        'This is an AI estimate of a facial expression, '
+                            'not a diagnosis or a reliable measure of '
+                            'someone’s actual feelings.',
+                        style: TextStyle(
+                          color: AppColors.navy.withValues(alpha: 0.68),
+                          fontSize: 10.5,
+                          height: 1.45,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(sheetContext),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.mint,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: const Text(
+                    'Close',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // ------------------------------------------------------------
+  // PRIVACY CARD
+  // ------------------------------------------------------------
 
   Widget _buildPrivacyCard() {
     return Container(
@@ -1784,9 +1661,7 @@ class _EmotionScreenState extends State<EmotionScreen> {
               size: 18,
             ),
           ),
-
           const SizedBox(width: 11),
-
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1801,8 +1676,9 @@ class _EmotionScreenState extends State<EmotionScreen> {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  'Your facial data is not stored or uploaded '
-                      'during this demo.',
+                  'The captured photo is sent to your configured '
+                      'backend for analysis. Avoid using this feature '
+                      'with sensitive images.',
                   style: TextStyle(
                     color: AppColors.textDark,
                     fontSize: 11,
@@ -1817,16 +1693,16 @@ class _EmotionScreenState extends State<EmotionScreen> {
     );
   }
 
-  // ==============================================================
+  // ------------------------------------------------------------
   // DISCLAIMER
-  // ==============================================================
+  // ------------------------------------------------------------
 
   Widget _buildDisclaimer() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10),
       child: Text(
-        'Facial emotion detection is an AI-assisted '
-            'feature and may not always be accurate.',
+        'Facial emotion detection is an AI-assisted estimate '
+            'and may not accurately reflect how someone feels.',
         textAlign: TextAlign.center,
         style: TextStyle(
           color: AppColors.textDark.withValues(alpha: 0.58),
@@ -1838,9 +1714,9 @@ class _EmotionScreenState extends State<EmotionScreen> {
   }
 }
 
-// ================================================================
-// FACE GUIDE
-// ================================================================
+// --------------------------------------------------------------
+// FACE GUIDE PAINTER
+// --------------------------------------------------------------
 
 class _FaceGuidePainter extends CustomPainter {
   @override
@@ -1860,33 +1736,15 @@ class _FaceGuidePainter extends CustomPainter {
       ..strokeWidth = 1;
 
     final ovalRect = Rect.fromCenter(
-      center: Offset(
-        size.width / 2,
-        size.height / 2,
-      ),
+      center: Offset(size.width / 2, size.height / 2),
       width: size.width * 0.72,
       height: size.height * 0.78,
     );
 
-    // Soft glow
-    canvas.drawOval(
-      ovalRect.inflate(12),
-      glowPaint,
-    );
+    canvas.drawOval(ovalRect.inflate(12), glowPaint);
+    canvas.drawOval(ovalRect, borderPaint);
+    canvas.drawOval(ovalRect.deflate(7), innerPaint);
 
-    // Main face guide
-    canvas.drawOval(
-      ovalRect,
-      borderPaint,
-    );
-
-    // Inner subtle guide
-    canvas.drawOval(
-      ovalRect.deflate(7),
-      innerPaint,
-    );
-
-    // Small center marker
     final center = Offset(
       size.width / 2,
       size.height / 2,
@@ -1910,9 +1768,5 @@ class _FaceGuidePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(
-      covariant CustomPainter oldDelegate,
-      ) {
-    return false;
-  }
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
