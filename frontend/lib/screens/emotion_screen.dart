@@ -280,7 +280,7 @@ class _EmotionScreenState extends State<EmotionScreen> {
       // 4. Create the multipart request.
       final request = http.MultipartRequest(
         'POST',
-        Uri.parse(ApiConfig.facialEmotionUrl),
+        Uri.parse(ApiConfig.facialEmotionVitUrl),
       );
 
       // IMPORTANT: The backend expects the field name "file".
@@ -365,12 +365,9 @@ class _EmotionScreenState extends State<EmotionScreen> {
         'happy' => 'Happy',
         'sad' => 'Sad',
         'angry' => 'Angry',
-        'fear' => 'Fear',
-        'disgust' => 'Disgust',
-        'surprise' => 'Surprise',
         'neutral' => 'Neutral',
         _ => throw Exception(
-          'Unknown emotion returned by the model: $rawEmotion',
+          'Unknown ViT emotion returned by the model: $rawEmotion',
         ),
       };
 

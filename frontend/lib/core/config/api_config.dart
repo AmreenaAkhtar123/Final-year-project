@@ -28,7 +28,8 @@ class ApiConfig {
   static String get voiceEmotionUrl =>
       '$baseUrl/api/emotion/voice';
 
-  // Facial Emotion Analysis
-  static String get facialEmotionUrl =>
-      '$baseUrl/api/emotion/facial';
+
+  // New Facial Emotion Analysis (ViT - 4 Classes)
+  static String get facialEmotionVitUrl =>
+      '$baseUrl/api/emotion/facial-vit';
 }

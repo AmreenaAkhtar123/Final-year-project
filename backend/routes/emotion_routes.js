@@ -241,14 +241,16 @@ router.post(
   },
 );
 
-// --------------------------------------------------
-// FACIAL EMOTION
-// POST /api/emotion/facial
-// Multipart field: file
-// --------------------------------------------------
+
+
+/* --------------------------------------------------
+   FACIAL EMOTION — NEW ViT 4-CLASS MODEL
+   POST /api/emotion/facial-vit
+   Multipart field: file
+-------------------------------------------------- */
 
 router.post(
-  '/api/emotion/facial',
+  '/api/emotion/facial-vit',
   facialUpload.single('file'),
   async (req, res) => {
     if (!req.file || !req.file.buffer?.length) {
@@ -279,7 +281,7 @@ router.post(
       );
 
       const response = await fetch(
-        `${mlServiceUrl}/predict/facial-emotion`,
+        `${mlServiceUrl}/predict/facial-emotion-vit`,
         {
           method: 'POST',
           headers: {
@@ -294,7 +296,7 @@ router.post(
 
       if (!response.ok) {
         console.error(
-          'Facial ML service error:',
+          'ViT facial ML service error:',
           response.status,
           result,
         );
@@ -304,26 +306,29 @@ router.post(
             ? 503
             : response.status === 413
               ? 413
-              : 502;
+              : response.status === 400
+                ? 400
+                : 502;
 
         return res.status(statusCode).json({
           success: false,
           message:
             result.detail ||
-            'The facial emotion service could not process your image.',
+            'The ViT facial emotion service could not process your image.',
         });
       }
 
       if (
         typeof result.emotion !== 'string' ||
-        typeof result.confidence !== 'number'
+        typeof result.confidence !== 'number' ||
+        !result.scores
       ) {
-        console.error('Invalid facial ML response:', result);
+        console.error('Invalid ViT facial ML response:', result);
 
         return res.status(502).json({
           success: false,
           message:
-            'The facial emotion service returned an invalid result.',
+            'The ViT facial emotion service returned an invalid result.',
         });
       }
 
@@ -337,7 +342,7 @@ router.post(
       });
     } catch (error) {
       console.error(
-        'Facial emotion request failed:',
+        'ViT facial emotion request failed:',
         error.message,
       );
 
@@ -346,8 +351,8 @@ router.post(
       return res.status(timedOut ? 504 : 503).json({
         success: false,
         message: timedOut
-          ? 'Facial emotion analysis timed out. Please try again.'
-          : 'The facial emotion service is unavailable. Please try again.',
+          ? 'ViT facial emotion analysis timed out. Please try again.'
+          : 'The ViT facial emotion service is unavailable. Please try again.',
       });
     }
   },
