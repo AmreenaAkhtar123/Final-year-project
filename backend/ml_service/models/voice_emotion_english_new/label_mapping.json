@@ -1,0 +1,21 @@
+{
+    "output_index_to_original_model_class_id": {
+        "0": 0,
+        "1": 4,
+        "2": 5,
+        "3": 6
+    },
+    "original_model_class_id_to_emotion": {
+        "0": "Angry",
+        "4": "Happy",
+        "5": "Neutral",
+        "6": "Sad"
+    },
+    "emotion_to_original_model_class_id": {
+        "Angry": 0,
+        "Happy": 4,
+        "Neutral": 5,
+        "Sad": 6
+    },
+    "number_of_classes": 4
+}

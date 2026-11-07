@@ -10,12 +10,15 @@ __pycache__/
 .venv/
 venv/
 
+# Model weights (ignore by default)
 *.safetensors
 *.pt
 *.pth
 *.onnx
 *.h5
 *.keras
+
+
 
 datasets/
 data/raw/

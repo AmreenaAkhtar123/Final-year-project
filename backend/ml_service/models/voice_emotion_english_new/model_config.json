@@ -1,0 +1,29 @@
+{
+    "project": "English Speech Emotion Recognition",
+    "model_name": "Wav2Vec2 XLSR",
+    "pretrained_model": "ehcalabres/wav2vec2-lg-xlsr-en-speech-emotion-recognition",
+    "architecture": "Wav2Vec2 XLSR with custom classification head",
+    "framework": "PyTorch",
+    "dataset": "AbstractTTS/TESS",
+    "fine_tuned": true,
+    "number_of_classes": 4,
+    "emotion_classes": [
+        "Angry",
+        "Happy",
+        "Neutral",
+        "Sad"
+    ],
+    "original_model_class_ids": [
+        0,
+        4,
+        5,
+        6
+    ],
+    "sampling_rate": 16000,
+    "training_samples": 640,
+    "validation_samples": 160,
+    "testing_samples": 800,
+    "validation_speaker": "OAF",
+    "testing_speaker": "YAF",
+    "created_at": "2026-11-06T19:35:01.540877"
+}
