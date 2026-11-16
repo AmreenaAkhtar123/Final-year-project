@@ -1,3 +1,4 @@
+import jwt from 'jsonwebtoken';
 import express from 'express';
 import bcrypt from 'bcrypt';
 import User from '../models/User.js';
@@ -113,9 +114,30 @@ router.post('/api/auth/login', async (req, res) => {
       });
     }
 
+    // Ensure JWT secret is configured.
+    if (!process.env.JWT_SECRET) {
+      console.error('JWT_SECRET is not configured.');
+
+      return res.status(500).json({
+        message: 'Authentication service is not configured.',
+      });
+    }
+
+    // Generate authentication token.
+    const token = jwt.sign(
+      {
+        userId: user._id.toString(),
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+      },
+    );
+
     // Successful login
     return res.status(200).json({
       message: 'Login successful.',
+      token,
       user: {
         id: user._id,
         fullName: user.fullName,

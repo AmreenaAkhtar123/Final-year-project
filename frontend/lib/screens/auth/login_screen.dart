@@ -212,12 +212,43 @@ class _LoginScreenState extends State<LoginScreen> {
       final responseData = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
+        final token = responseData['token'];
+
+        // Make sure the backend returned an authentication token.
+        if (token == null || token is! String || token.isEmpty) {
+          setState(() {
+            _isLoading = false;
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Authentication token was not received. Please try again.',
+              ),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+
+          return;
+        }
+
         final prefs = await SharedPreferences.getInstance();
 
+        // Store the JWT for authenticated API requests.
+        await prefs.setString(
+          'auth_token',
+          token,
+        );
+
+
+        // Preserve existing email storage.
         await prefs.setString(
           'logged_in_email',
           enteredEmail,
         );
+
+
+        if (!mounted) return;
 
         setState(() {
           _isLoading = false;

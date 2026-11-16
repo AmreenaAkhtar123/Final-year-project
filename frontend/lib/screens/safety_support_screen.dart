@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/constants/app_colors.dart';
+import 'emergency_contacts_screen.dart';
 
 class SafetySupportScreen extends StatefulWidget {
   const SafetySupportScreen({super.key});
@@ -636,61 +637,85 @@ class _SafetySupportScreenState extends State<SafetySupportScreen> {
   // TRUSTED PERSON
   // ---------------------------------------------------------------------------
 
+
   Widget _buildTrustedPersonCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(19),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(22),
+      child: InkWell(
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: AppColors.borderMint,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const EmergencyContactsScreen(),
+            ),
+          );
+        },
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(19),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: AppColors.borderMint,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 49,
+                height: 49,
+                decoration: BoxDecoration(
+                  color: AppColors.lightMint,
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: const Icon(
+                  Icons.favorite_outline_rounded,
+                  color: AppColors.mint,
+                  size: 25,
+                ),
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Reach someone you trust',
+                      style: TextStyle(
+                        color: AppColors.navy,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    SizedBox(height: 5),
+                    Text(
+                      'Manage your emergency contacts and choose '
+                          'trusted people who may support you during '
+                          'a difficult moment.',
+                      style: TextStyle(
+                        color: AppColors.navy,
+                        fontSize: 10.5,
+                        height: 1.45,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: AppColors.mint,
+                size: 16,
+              ),
+            ],
+          ),
         ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 49,
-            height: 49,
-            decoration: BoxDecoration(
-              color: AppColors.lightMint,
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: const Icon(
-              Icons.favorite_outline_rounded,
-              color: AppColors.mint,
-              size: 25,
-            ),
-          ),
-          const SizedBox(width: 14),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Reach someone you trust',
-                  style: TextStyle(
-                    color: AppColors.navy,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                SizedBox(height: 5),
-                Text(
-                  'A trusted friend, family member, teacher, counselor, or another supportive person can help you through a difficult moment.',
-                  style: TextStyle(
-                    color: AppColors.navy,
-                    fontSize: 10.5,
-                    height: 1.45,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
+
 
   // ---------------------------------------------------------------------------
   // RECOMMENDED NEXT STEP

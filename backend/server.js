@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import { GoogleGenAI } from '@google/genai';
+import emergencyContactRoutes from './routes/emergency_contact_routes.js';
 
 import authRoutes from './routes/auth_routes.js';
 import checkinRoutes from './routes/checkin_routes.js';
@@ -50,6 +51,7 @@ app.use(moodRoutes);
 app.use(createChatRouter(ai));
 app.use(createMoodAnalysisRouter(ai));
 app.use(createEmotionRouter());
+app.use(emergencyContactRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'MindMate backend is running.' });
