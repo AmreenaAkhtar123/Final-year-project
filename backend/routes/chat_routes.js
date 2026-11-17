@@ -1,4 +1,5 @@
 import express from 'express';
+import { detectCrisis } from '../services/crisis_detection_service.js';
 
 export default function createChatRouter(ai) {
   const router = express.Router();
@@ -25,8 +26,18 @@ router.post('/api/chat', async (req, res) => {
       });
     }
 
-    console.log('========================================');
-    console.log('User message:', message);
+    const crisisResult = detectCrisis(message);
+
+        if (crisisResult.detected) {
+          console.log('Potential crisis indicator detected:', {
+            riskLevel: crisisResult.riskLevel,
+            subject: crisisResult.subject,
+            reason: crisisResult.reason,
+          });
+        }
+
+//    console.log('========================================');
+//    console.log('User message:', message);
 
     if (previousInteractionId) {
       console.log(
@@ -292,12 +303,70 @@ router.post('/api/chat', async (req, res) => {
     guided toward practical and appropriate help.
     `;
 
+let crisisInstructions = '';
+
+if (crisisResult.detected && crisisResult.subject === 'self') {
+  if (crisisResult.riskLevel === 'high') {
+    crisisInstructions = `
+IMPORTANT SAFETY ALERT — POSSIBLE HIGH-RISK SELF-HARM STATEMENT
+
+The user's latest message contains a possible high-risk statement about themselves.
+
+- Prioritize the user's immediate safety.
+- Respond with warmth, empathy, and without judgment.
+- Ask whether they are in immediate danger or have already harmed themselves.
+- Encourage them to contact emergency services or visit the nearest emergency department if they may act on these thoughts or are in immediate danger.
+- Encourage them to contact a trusted person nearby and avoid being alone.
+- Encourage them to move away from anything they could use to hurt themselves.
+- Do not provide harmful methods or instructions.
+- Do not diagnose the user or assume that the detector is always correct.
+- Do not claim that emergency services or anyone else has been contacted.
+`;
+  } else if (crisisResult.riskLevel === 'medium') {
+    crisisInstructions = `
+IMPORTANT SAFETY ALERT — POSSIBLE EMOTIONAL CRISIS
+
+The user's latest message contains possible signs of serious emotional distress.
+
+- Respond calmly, compassionately, and without judgment.
+- Acknowledge their feelings.
+- Ask a gentle, direct question about whether they are thinking about hurting themselves or ending their life.
+- Encourage them to speak with a trusted person and consider professional support.
+- If they indicate immediate danger, prioritize emergency assistance.
+- Do not diagnose the user or assume that the detector is always correct.
+`;
+  }
+} else if (
+  crisisResult.detected &&
+  crisisResult.subject === 'someone_else'
+) {
+  crisisInstructions = `
+IMPORTANT SAFETY ALERT — POSSIBLE RISK TO ANOTHER PERSON
+
+The user's message may describe another person experiencing a serious crisis.
+
+- Respond with empathy and take the concern seriously.
+- Encourage the user to check whether that person is in immediate danger, when safe and appropriate.
+- Encourage them to contact emergency services if the person may act on suicidal thoughts or is in immediate danger.
+- Encourage them to involve a trusted person or qualified professional who can help.
+- Do not place responsibility for the other person's safety entirely on the user.
+- Do not provide harmful methods or instructions.
+- Do not assume the detector is always correct.
+`;
+}
+
+
+
+
     const geminiStart = Date.now();
 
     const interactionOptions = {
       model: 'gemini-3.5-flash-lite',
 
-      system_instruction: mindMateInstructions,
+      system_instruction: [
+        mindMateInstructions,
+        crisisInstructions,
+      ].filter(Boolean).join('\n\n'),
 
       input: message,
 
@@ -316,6 +385,8 @@ router.post('/api/chat', async (req, res) => {
         previousInteractionId;
     }
 
+
+
     console.log('Sending request to Gemini...');
 
     const stream = await ai.interactions.create(
@@ -325,8 +396,7 @@ router.post('/api/chat', async (req, res) => {
     let interactionId = null;
 
     for await (const event of stream) {
-      console.log('GEMINI EVENT:');
-      console.log(JSON.stringify(event, null, 2));
+
 
       // The first event contains the interaction ID.
       //
@@ -356,10 +426,7 @@ router.post('/api/chat', async (req, res) => {
         event.delta?.type === 'text' &&
         event.delta.text
       ) {
-        console.log(
-          'TEXT CHUNK:',
-          event.delta.text,
-        );
+
 
         res.write(
           JSON.stringify({

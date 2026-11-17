@@ -10,6 +10,7 @@ import '../../core/config/api_config.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/mood_analysis.dart';
 import 'home_screen.dart';
+import 'safety_support_screen.dart';
 
 class CheckInScreen extends StatefulWidget {
   final VoidCallback onBackToHome;
@@ -122,6 +123,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
     return completed / 6;
   }
 
+
   Future<void> _submitCheckIn() async {
     setState(() {
       _moodError = null;
@@ -170,61 +172,25 @@ class _CheckInScreenState extends State<CheckInScreen> {
       _isSubmitting = true;
     });
 
+    bool checkInSaved = false;
+
     try {
-      // --------------------------------------------------
-      // 1. Get logged-in user's email
-      // --------------------------------------------------
-
+      // 1. Get logged-in user's email.
       final prefs = await SharedPreferences.getInstance();
-
       final email = prefs.getString('logged_in_email');
 
       if (email == null || email.isEmpty) {
-        if (!mounted) return;
-
-        setState(() {
-          _isSubmitting = false;
-          _aiError = 'No logged-in account found.';
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_aiError!),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-
-        return;
+        throw Exception('No logged-in account found.');
       }
 
-      // --------------------------------------------------
-      // 2. Get backend URL
-      // --------------------------------------------------
-
+      // 2. Get backend URL.
       final baseUrl = dotenv.env['API_BASE_URL'];
 
       if (baseUrl == null || baseUrl.isEmpty) {
-        if (!mounted) return;
-
-        setState(() {
-          _isSubmitting = false;
-          _aiError = 'API base URL is not configured.';
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_aiError!),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-
-        return;
+        throw Exception('API base URL is not configured.');
       }
 
-      // --------------------------------------------------
-      // 3. Prepare check-in data
-      // --------------------------------------------------
-
+      // 3. Prepare check-in data.
       final checkInData = {
         'email': email,
         'mood': _moods[_selectedMood]['label'],
@@ -236,10 +202,53 @@ class _CheckInScreenState extends State<CheckInScreen> {
         'reflection': _reflectionController.text.trim(),
       };
 
-      // --------------------------------------------------
-      // 4. Run existing Gemini mood analysis
-      // --------------------------------------------------
+      // 4. Save check-in and run backend crisis detection FIRST.
+      final saveResponse = await http.post(
+        Uri.parse('$baseUrl/api/check-ins'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(checkInData),
+      );
 
+      if (!mounted) return;
+
+      if (saveResponse.statusCode != 201) {
+        debugPrint('CHECK-IN SAVE ERROR: ${saveResponse.body}');
+        throw Exception('Unable to save your check-in. Please try again.');
+      }
+
+      checkInSaved = true;
+
+      // 5. Read the crisis detection result.
+      final saveData = jsonDecode(saveResponse.body)
+      as Map<String, dynamic>;
+
+      final crisisData = saveData['crisisDetection']
+      as Map<String, dynamic>?;
+
+      final crisisDetected = crisisData?['detected'] == true;
+
+      debugPrint('CHECK-IN SAVED SUCCESSFULLY');
+      debugPrint('CRISIS DETECTED: $crisisDetected');
+
+      // 6. If a potential crisis is detected, open Safety Support.
+      // Do not wait for Gemini mood analysis.
+      if (crisisDetected) {
+        setState(() {
+          _isSubmitting = false;
+        });
+
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => const SafetySupportScreen(),
+          ),
+        );
+
+        return;
+      }
+
+      // 7. No crisis detected: run the existing Gemini mood analysis.
       final aiResponse = await http.post(
         Uri.parse(ApiConfig.moodAnalysisUrl),
         headers: {
@@ -259,13 +268,12 @@ class _CheckInScreenState extends State<CheckInScreen> {
       if (!mounted) return;
 
       if (aiResponse.statusCode != 200) {
-        print('MOOD AI STATUS CODE: ${aiResponse.statusCode}');
-        print('MOOD AI RESPONSE: ${aiResponse.body}');
+        debugPrint('MOOD AI ERROR: ${aiResponse.body}');
 
         setState(() {
           _isSubmitting = false;
           _aiError =
-          'Mood AI error: ${aiResponse.statusCode}\n${aiResponse.body}';
+          'Your check-in was saved, but your mood insight is unavailable right now.';
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -279,68 +287,29 @@ class _CheckInScreenState extends State<CheckInScreen> {
         return;
       }
 
-      // --------------------------------------------------
-      // 5. Parse Gemini analysis
-      // --------------------------------------------------
-
+      // 8. Parse Gemini analysis.
       final aiData = jsonDecode(aiResponse.body);
-
       final analysis = MoodAnalysis.fromJson(aiData);
-
-      // --------------------------------------------------
-      // 6. Save check-in to MongoDB
-      // --------------------------------------------------
-
-      final saveResponse = await http.post(
-        Uri.parse('$baseUrl/api/check-ins'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode(checkInData),
-      );
 
       if (!mounted) return;
 
-      if (saveResponse.statusCode != 201) {
-        print('CHECK-IN SAVE STATUS CODE: ${saveResponse.statusCode}');
-        print('CHECK-IN SAVE RESPONSE: ${saveResponse.body}');
-
-        setState(() {
-          _isSubmitting = false;
-          _aiError =
-          'Unable to save your check-in. Please try again.';
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_aiError!),
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 5),
-          ),
-        );
-
-        return;
-      }
-
-      // --------------------------------------------------
-      // 7. Everything succeeded
-      // --------------------------------------------------
-
+      // 9. Show the existing MindMate Insight dialog.
       setState(() {
         _moodAnalysis = analysis;
         _isSubmitting = false;
       });
 
-      // Keep your existing MindMate Insight dialog.
       _showMoodAnalysisDialog();
     } catch (error) {
       if (!mounted) return;
 
-      print('CHECK-IN ERROR: $error');
+      debugPrint('CHECK-IN ERROR: $error');
 
       setState(() {
         _isSubmitting = false;
-        _aiError = 'Connection error: $error';
+        _aiError = checkInSaved
+            ? 'Your check-in was saved, but an additional service is unavailable.'
+            : error.toString().replaceFirst('Exception: ', '');
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -352,6 +321,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
       );
     }
   }
+
 
   void _showMoodAnalysisDialog() {
     final analysis = _moodAnalysis;
@@ -1313,7 +1283,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
         onPressed: _isSubmitting ? null : _submitCheckIn,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.mint,
-          disabledBackgroundColor: AppColors.mint.withOpacity(0.6),
+          disabledBackgroundColor: AppColors.mint.withValues(alpha: 0.6),
           foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
@@ -1355,7 +1325,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
         Text(
           'Your check-in is private and personal.',
           style: TextStyle(
-            color: Colors.black.withOpacity(0.42),
+            color: Colors.black.withValues(alpha: 0.42),
             fontSize: 11,
           ),
         ),

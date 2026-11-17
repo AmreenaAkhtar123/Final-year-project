@@ -1,6 +1,8 @@
+
 import express from 'express';
 import User from '../models/User.js';
 import CheckIn from '../models/CheckIn.js';
+import { detectCrisis } from '../services/crisis_detection_service.js';
 
 const router = express.Router();
 
@@ -57,6 +59,11 @@ router.post('/api/check-ins', async (req, res) => {
       });
     }
 
+    // Detect potential crisis indicators in the user's reflection.
+    const crisisResult = detectCrisis(
+      typeof reflection === 'string' ? reflection : '',
+    );
+
     const checkIn = await CheckIn.create({
       email: user.email,
       mood,
@@ -68,9 +75,21 @@ router.post('/api/check-ins', async (req, res) => {
       reflection: reflection ?? '',
     });
 
+    if (crisisResult.detected) {
+      console.log('Potential crisis indicator detected in check-in:', {
+        riskLevel: crisisResult.riskLevel,
+        subject: crisisResult.subject,
+      });
+    }
+
     res.status(201).json({
       message: 'Check-in saved successfully.',
       checkIn,
+      crisisDetection: {
+        detected: crisisResult.detected,
+        riskLevel: crisisResult.riskLevel,
+        subject: crisisResult.subject,
+      },
     });
   } catch (error) {
     console.error('Save check-in error:', error);
