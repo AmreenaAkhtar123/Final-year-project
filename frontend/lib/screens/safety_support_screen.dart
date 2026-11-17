@@ -1,3 +1,10 @@
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../core/config/api_config.dart';
 
 import 'package:flutter/material.dart';
 
@@ -21,6 +28,11 @@ class _SafetySupportScreenState extends State<SafetySupportScreen> {
   static const Color _urgentColor = Color(0xFFD96B5F);
   static const Color _urgentBackground = Color(0xFFFFF5F2);
 
+  // ---------------------------------------------------------------------------
+// SOS STATE
+// ---------------------------------------------------------------------------
+
+  bool _isLoadingSosContacts = false;
   // ---------------------------------------------------------------------------
   // BUILD
   // ---------------------------------------------------------------------------
@@ -333,6 +345,57 @@ class _SafetySupportScreenState extends State<SafetySupportScreen> {
             ),
           ),
 
+
+          const SizedBox(height: 12),
+
+          SizedBox(
+            width: double.infinity,
+            height: 49,
+            child: OutlinedButton(
+              onPressed: _isLoadingSosContacts ? null : _startSosFlow,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white,
+                side: const BorderSide(
+                  color: Colors.white54,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (_isLoadingSosContacts)
+                    const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  else
+                    const Icon(
+                      Icons.sos_rounded,
+                      size: 21,
+                      color: Colors.white,
+                    ),
+                  const SizedBox(width: 9),
+                  Text(
+                    _isLoadingSosContacts
+                        ? 'Loading Contacts...'
+                        : 'SOS — Get Help Now',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+
           const SizedBox(height: 11),
 
           Center(
@@ -359,6 +422,502 @@ class _SafetySupportScreenState extends State<SafetySupportScreen> {
       ),
     );
   }
+
+
+  Future<List<Map<String, dynamic>>?> _loadSosContacts() async {
+    if (_isLoadingSosContacts) return null;
+
+    setState(() {
+      _isLoadingSosContacts = true;
+    });
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+
+      if (token == null || token.isEmpty) {
+        throw Exception('Please log in again to access your emergency contacts.');
+      }
+
+      final response = await http.get(
+        Uri.parse(ApiConfig.emergencyContactsUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception(
+          'Unable to retrieve emergency contacts. Please try again.',
+        );
+      }
+
+      final decoded = jsonDecode(response.body);
+
+      if (decoded is! Map<String, dynamic> ||
+          decoded['contacts'] is! List) {
+        throw Exception('The server returned an unexpected response.');
+      }
+
+      final contacts = (decoded['contacts'] as List)
+          .whereType<Map>()
+          .map((contact) => Map<String, dynamic>.from(contact))
+          .where((contact) => contact['consentGiven'] == true)
+          .toList();
+
+      return contacts;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e.toString().replaceFirst('Exception: ', ''),
+            ),
+            backgroundColor: _urgentColor,
+          ),
+        );
+      }
+
+      return null;
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingSosContacts = false;
+        });
+      }
+    }
+  }
+
+
+  Future<void> _startSosFlow() async {
+    final contacts = await _loadSosContacts();
+
+    if (!mounted || contacts == null) return;
+
+    if (contacts.isEmpty) {
+      _showNoSosContactsDialog();
+      return;
+    }
+
+    final selectedContact = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+          ),
+          title: const Text(
+            'Choose someone to contact',
+            style: TextStyle(
+              color: AppColors.navy,
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.separated(
+              shrinkWrap: true,
+              itemCount: contacts.length,
+              separatorBuilder: (context, index) => const Divider(
+                color: AppColors.borderMint,
+              ),
+              itemBuilder: (context, index) {
+                final contact = contacts[index];
+
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const CircleAvatar(
+                    backgroundColor: AppColors.lightMint,
+                    child: Icon(
+                      Icons.person_outline_rounded,
+                      color: AppColors.mint,
+                    ),
+                  ),
+                  title: Text(
+                    contact['name']?.toString() ?? 'Emergency contact',
+                    style: const TextStyle(
+                      color: AppColors.navy,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                  subtitle: Text(
+                    '${contact['relationship'] ?? 'Trusted person'}\n'
+                        '${contact['phoneNumber'] ?? ''}',
+                    style: const TextStyle(
+                      color: _mutedText,
+                      fontSize: 11,
+                      height: 1.5,
+                    ),
+                  ),
+                  isThreeLine: true,
+                  trailing: const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    color: AppColors.mint,
+                    size: 15,
+                  ),
+                  onTap: () {
+                    Navigator.pop(dialogContext, contact);
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(
+                  color: AppColors.mint,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted || selectedContact == null) return;
+
+    await _showSosActionDialog(selectedContact);
+  }
+
+
+  void _showNoSosContactsDialog() {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+          ),
+          title: const Row(
+            children: [
+              Icon(
+                Icons.person_off_outlined,
+                color: _urgentColor,
+                size: 25,
+              ),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'No available contacts',
+                  style: TextStyle(
+                    color: AppColors.navy,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            'You do not currently have any emergency contacts with '
+                'confirmed consent.\n\n'
+                'You can add a trusted person in Emergency Contacts, '
+                'or seek assistance from an appropriate emergency service '
+                'if you are in immediate danger.',
+            style: TextStyle(
+              color: AppColors.navy,
+              fontSize: 12,
+              height: 1.6,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                _openEmergencyContacts();
+              },
+              child: const Text(
+                'Manage Contacts',
+                style: TextStyle(
+                  color: AppColors.mint,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                _showImmediateHelpDialog();
+              },
+              child: const Text(
+                'Safety Guidance',
+                style: TextStyle(
+                  color: _urgentColor,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
+  Future<void> _showSosActionDialog(
+      Map<String, dynamic> contact,
+      ) async {
+    final name = contact['name']?.toString() ?? 'Emergency contact';
+    final phone = contact['phoneNumber']?.toString() ?? '';
+
+    if (phone.trim().isEmpty) {
+      _showSosErrorDialog(
+        'This contact does not have a valid phone number. '
+            'Please update the contact details and try again.',
+      );
+      return;
+    }
+
+    final action = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+          ),
+          title: const Text(
+            'Contact your trusted person',
+            style: TextStyle(
+              color: AppColors.navy,
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.lightMint,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        color: AppColors.navy,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      phone,
+                      style: const TextStyle(
+                        color: _mutedText,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 15),
+              const Text(
+                'Choose how you would like to contact this person. '
+                    'You can cancel without taking any action.',
+                style: TextStyle(
+                  color: AppColors.navy,
+                  fontSize: 12,
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(
+                  color: _mutedText,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.pop(dialogContext, 'sms'),
+              icon: const Icon(Icons.sms_outlined, size: 17),
+              label: const Text('SMS'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.mint,
+                side: const BorderSide(color: AppColors.borderMint),
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.pop(dialogContext, 'call'),
+              icon: const Icon(Icons.call_outlined, size: 17),
+              label: const Text('Call'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.mint,
+                foregroundColor: AppColors.navy,
+                elevation: 0,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted || action == null) return;
+
+    await _launchSosAction(
+      phone: phone,
+      name: name,
+      action: action,
+    );
+  }
+
+
+  void _showSosErrorDialog(String message) {
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+          ),
+          title: const Row(
+            children: [
+              Icon(
+                Icons.warning_amber_rounded,
+                color: _urgentColor,
+                size: 25,
+              ),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Unable to open support',
+                  style: TextStyle(
+                    color: AppColors.navy,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            '$message\n\n'
+                'You can try again, contact another trusted person, '
+                'or seek help from an appropriate emergency service '
+                'if you are in immediate danger.',
+            style: const TextStyle(
+              color: AppColors.navy,
+              fontSize: 12,
+              height: 1.6,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                _showImmediateHelpDialog();
+              },
+              child: const Text(
+                'Safety Guidance',
+                style: TextStyle(
+                  color: _urgentColor,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text(
+                'Close',
+                style: TextStyle(
+                  color: AppColors.mint,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
+  Future<void> _launchSosAction({
+    required String phone,
+    required String name,
+    required String action,
+  }) async {
+    try {
+      late final Uri uri;
+
+      if (action == 'call') {
+        uri = Uri(
+          scheme: 'tel',
+          path: phone.trim(),
+        );
+      } else {
+        uri = Uri(
+          scheme: 'smsto',
+          path: phone.trim(),
+          queryParameters: {
+            'body':
+            'I need your support right now. Please contact me '
+                'as soon as you can.',
+          },
+        );
+      }
+
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+
+      if (!mounted) return;
+
+      if (launched) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              action == 'call'
+                  ? 'Phone dialer opened for $name.'
+                  : 'SMS app launch requested for $name.',
+            ),
+            backgroundColor: AppColors.navy,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      } else {
+        _showSosErrorDialog(
+          action == 'call'
+              ? 'The phone dialer could not be opened.'
+              : 'The messaging app could not be opened.',
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      _showSosErrorDialog(
+        'Something went wrong while opening the '
+            '${action == 'call' ? 'phone dialer' : 'messaging app'}.',
+      );
+    }
+  }
+
+
 
   // ---------------------------------------------------------------------------
   // SECTION TITLE
