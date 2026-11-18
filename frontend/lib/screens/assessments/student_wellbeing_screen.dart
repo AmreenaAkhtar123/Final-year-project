@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/services/assessment_service.dart';
 
 class StudentWellbeingScreen extends StatefulWidget {
   const StudentWellbeingScreen({super.key});
@@ -13,6 +14,7 @@ class StudentWellbeingScreen extends StatefulWidget {
 class _StudentWellbeingScreenState
     extends State<StudentWellbeingScreen> {
   int _currentQuestion = 0;
+  bool _isSaving = false;
 
   final List<int?> _answers = List<int?>.filled(20, null);
 
@@ -77,14 +79,11 @@ class _StudentWellbeingScreenState
     });
   }
 
-  void _showResult() {
-    int score = 0;
+  Future<void> _showResult() async {
+    if (_isSaving) return;
 
-    for (final answer in _answers) {
-      if (answer != null) {
-        score += answer!;
-      }
-    }
+    final answers = _answers.map((answer) => answer!).toList();
+    final score = answers.reduce((a, b) => a + b);
 
     String level;
 
@@ -98,95 +97,132 @@ class _StudentWellbeingScreenState
       level = 'Higher';
     }
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          title: const Text(
-            'Assessment Complete',
-            style: TextStyle(
-              color: AppColors.navy,
-              fontSize: 19,
-              fontWeight: FontWeight.w800,
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      await AssessmentService.saveAssessment(
+        assessmentType: 'student_wellbeing',
+        answers: answers,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _isSaving = false;
+      });
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) {
+          return AlertDialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
             ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 75,
-                height: 75,
-                decoration: const BoxDecoration(
-                  color: AppColors.lightMint,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.school_rounded,
-                  color: AppColors.mint,
-                  size: 38,
-                ),
+            title: const Text(
+              'Assessment Complete',
+              style: TextStyle(
+                color: AppColors.navy,
+                fontSize: 19,
+                fontWeight: FontWeight.w800,
               ),
-              const SizedBox(height: 18),
-              const Text(
-                'Your current result',
-                style: TextStyle(
-                  color: AppColors.navy,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 75,
+                  height: 75,
+                  decoration: const BoxDecoration(
+                    color: AppColors.lightMint,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.school_rounded,
+                    color: AppColors.mint,
+                    size: 38,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                level,
-                style: const TextStyle(
-                  color: AppColors.mint,
-                  fontSize: 25,
-                  fontWeight: FontWeight.w800,
+                const SizedBox(height: 18),
+                const Text(
+                  'Your current result',
+                  style: TextStyle(
+                    color: AppColors.navy,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Score: $score / 60',
-                style: TextStyle(
-                  color: AppColors.navy.withValues(alpha: 0.55),
-                  fontSize: 11,
+                const SizedBox(height: 6),
+                Text(
+                  level,
+                  style: const TextStyle(
+                    color: AppColors.mint,
+                    fontSize: 25,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 15),
-              Text(
-                'This result is for wellbeing awareness only and is not a medical diagnosis.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppColors.navy.withValues(alpha: 0.55),
-                  fontSize: 10.5,
-                  height: 1.4,
+                const SizedBox(height: 8),
+                Text(
+                  'Score: $score / 60',
+                  style: TextStyle(
+                    color: AppColors.navy.withValues(alpha: 0.55),
+                    fontSize: 11,
+                  ),
+                ),
+                const SizedBox(height: 15),
+                Text(
+                  'This result is for wellbeing awareness only and is not a medical diagnosis.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.navy.withValues(alpha: 0.55),
+                    fontSize: 10.5,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Your assessment has been saved successfully.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.mint,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  Navigator.pop(context);
+                },
+                child: const Text(
+                  'Done',
+                  style: TextStyle(
+                    color: AppColors.mint,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.pop(context);
-              },
-              child: const Text(
-                'Done',
-                style: TextStyle(
-                  color: AppColors.mint,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
+          );
+        },
+      );
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _isSaving = false;
+      });
+
+      _showMessage(
+        error.toString().replaceFirst('Exception: ', ''),
+      );
+    }
   }
 
   void _showMessage(String message) {
@@ -610,7 +646,9 @@ class _StudentWellbeingScreenState
                     MainAxisAlignment.center,
                     children: [
                       Text(
-                        isLast
+                        _isSaving
+                            ? 'Saving Assessment...'
+                            : isLast
                             ? 'See Result'
                             : 'Next Question',
                         style: const TextStyle(
@@ -620,7 +658,9 @@ class _StudentWellbeingScreenState
                       ),
                       const SizedBox(width: 7),
                       Icon(
-                        isLast
+                        _isSaving
+                            ? Icons.hourglass_top_rounded
+                            : isLast
                             ? Icons.check_rounded
                             : Icons.arrow_forward_rounded,
                         size: 18,

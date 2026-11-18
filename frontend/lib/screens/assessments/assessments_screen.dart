@@ -451,7 +451,7 @@ class AssessmentsScreen extends StatelessWidget {
 
           Expanded(
             child: Text(
-              'Your assessment responses are private and will remain on your device for now.',
+              'Your assessment responses and results are securely saved to your account.',
               style: TextStyle(
                 color: AppColors.navy.withValues(alpha: 0.60),
                 fontSize: 10.5,
