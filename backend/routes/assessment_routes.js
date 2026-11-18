@@ -19,7 +19,7 @@ const assessmentTypes = Object.keys(assessmentRules);
 
 // Calculate the interpretation for each assessment.
 const calculateResultLevel = (assessmentType, score) => {
-  // Existing custom assessments: keep their original thresholds.
+  // Existing custom assessments.
   if (assessmentType === 'general_wellbeing') {
     if (score <= 15) return 'Needs Attention';
     if (score <= 30) return 'Developing';
@@ -67,7 +67,7 @@ const calculateResultLevel = (assessmentType, score) => {
   }
 
   return 'Unknown';
-}
+};
 
 // Save a completed assessment.
 router.post('/api/assessments', authMiddleware, async (req, res) => {
@@ -176,5 +176,217 @@ router.get('/api/assessments', authMiddleware, async (req, res) => {
     });
   }
 });
+
+// FR-14: Analyze assessment scores and historical trends.
+router.get(
+  '/api/assessments/predictive-risk',
+  authMiddleware,
+  async (req, res) => {
+    try {
+      const supportedTypes = ['phq9', 'gad7', 'who5'];
+
+      // Retrieve only this authenticated user's validated assessment records.
+      const history = await AssessmentResult.find({
+        userId: req.user.userId,
+        assessmentType: { $in: supportedTypes },
+      })
+        .sort({ createdAt: -1 })
+        .lean();
+
+      // Keep the latest two records for each assessment type.
+      const groupedHistory = {
+        phq9: [],
+        gad7: [],
+        who5: [],
+      };
+
+      for (const record of history) {
+        const type = record.assessmentType;
+
+        if (
+          supportedTypes.includes(type) &&
+          groupedHistory[type].length < 2
+        ) {
+          groupedHistory[type].push(record);
+        }
+      }
+
+      // Compare the latest result with the previous result.
+      const analyzeTrend = (assessmentType) => {
+        const records = groupedHistory[assessmentType];
+
+        if (records.length === 0) {
+          return {
+            available: false,
+            trend: 'not_available',
+            latestScore: null,
+            previousScore: null,
+          };
+        }
+
+        const latest = records[0];
+        const previous = records[1] || null;
+
+        const latestScore =
+          assessmentType === 'who5'
+            ? latest.totalScore * 4
+            : latest.totalScore;
+
+        const previousScore = previous
+          ? assessmentType === 'who5'
+            ? previous.totalScore * 4
+            : previous.totalScore
+          : null;
+
+        let trend = 'not_available';
+
+        if (previous) {
+          if (assessmentType === 'who5') {
+            if (latestScore < previousScore) {
+              trend = 'worsening';
+            } else if (latestScore > previousScore) {
+              trend = 'improving';
+            } else {
+              trend = 'stable';
+            }
+          } else {
+            if (latestScore > previousScore) {
+              trend = 'worsening';
+            } else if (latestScore < previousScore) {
+              trend = 'improving';
+            } else {
+              trend = 'stable';
+            }
+          }
+        }
+
+        return {
+          available: true,
+          trend,
+          latestScore,
+          previousScore,
+          latestDate: latest.createdAt,
+          previousDate: previous?.createdAt || null,
+        };
+      };
+
+      const phq9 = analyzeTrend('phq9');
+      const gad7 = analyzeTrend('gad7');
+      const who5 = analyzeTrend('who5');
+
+      const missingAssessments = [];
+
+      if (!phq9.available) missingAssessments.push('PHQ-9');
+      if (!gad7.available) missingAssessments.push('GAD-7');
+      if (!who5.available) missingAssessments.push('WHO-5');
+
+      const worseningTrend = [
+        phq9,
+        gad7,
+        who5,
+      ].some((result) => result.trend === 'worsening');
+
+      // A positive PHQ-9 question 9 response is flagged separately.
+      const latestPhq9 = groupedHistory.phq9[0];
+
+      const safetyFollowUpRequired =
+        latestPhq9 &&
+        Array.isArray(latestPhq9.answers) &&
+        latestPhq9.answers[8] > 0;
+
+      let concernLevel;
+      let recommendations = [];
+
+      // High concern has priority over other conditions.
+      if (
+        (phq9.available && phq9.latestScore >= 15) ||
+        (gad7.available && gad7.latestScore >= 15)
+      ) {
+        concernLevel = 'High';
+
+        recommendations = [
+          'Consider seeking support from a qualified mental health professional.',
+          'Discuss your assessment results with a healthcare professional.',
+          'Reach out to someone you trust for emotional support.',
+        ];
+      } else if (
+        missingAssessments.length > 0
+      ) {
+        // Do not classify incomplete assessment data as Low concern.
+        concernLevel = 'insufficient_data';
+
+        recommendations = [
+          'Complete the missing validated assessments to receive a more complete analysis.',
+          'Continue monitoring your wellbeing through MindMate.',
+        ];
+      } else if (
+        (phq9.latestScore >= 10 && phq9.latestScore <= 14) ||
+        (gad7.latestScore >= 10 && gad7.latestScore <= 14) ||
+        who5.latestScore < 50 ||
+        worseningTrend
+      ) {
+        concernLevel = 'Moderate';
+
+        recommendations = [
+          'Consider speaking with a qualified mental health professional or counsellor.',
+          'Continue monitoring changes in your assessment results.',
+          'Maintain supportive daily routines and reach out to trusted people.',
+        ];
+      } else {
+        // Low concern requires all three results and no detected worsening.
+        concernLevel = 'Low';
+
+        recommendations = [
+          'Continue maintaining healthy daily routines.',
+          'Keep monitoring your emotional wellbeing.',
+          'Continue using MindMate wellbeing activities and support tools.',
+        ];
+      }
+
+      if (safetyFollowUpRequired) {
+        recommendations.unshift(
+          'Your PHQ-9 response indicates that additional safety support is important. Please seek support promptly from a qualified professional or trusted person. If you may be in immediate danger, contact local emergency services.',
+        );
+      }
+
+      return res.status(200).json({
+        message: 'Assessment risk analysis completed successfully.',
+
+        analysis: {
+          concernLevel,
+
+          isDiagnosis: false,
+
+          explanation:
+            'This is a rule-based wellbeing analysis using assessment scores and historical trends. It is not a medical diagnosis.',
+
+          assessments: {
+            phq9,
+            gad7,
+            who5,
+          },
+
+          trendAnalysis: {
+            worseningTrend,
+          },
+
+          missingAssessments,
+
+          safetyFollowUpRequired: Boolean(
+            safetyFollowUpRequired,
+          ),
+
+          recommendations,
+        },
+      });
+    } catch (error) {
+      console.error('Predictive risk analysis error:', error);
+
+      return res.status(500).json({
+        message: 'Failed to perform assessment risk analysis.',
+      });
+    }
+  },
+);
 
 export default router;

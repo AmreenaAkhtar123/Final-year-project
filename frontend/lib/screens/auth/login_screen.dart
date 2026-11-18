@@ -241,6 +241,7 @@ class _LoginScreenState extends State<LoginScreen> {
         );
 
 
+
         // Preserve existing email storage.
         await prefs.setString(
           'logged_in_email',

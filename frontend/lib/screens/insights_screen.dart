@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/constants/app_colors.dart';
 import '../core/services/check_in_service.dart';
 import '../models/check_in.dart';
-import 'home_screen.dart';
+import '../core/services/assessment_service.dart';
 
 class InsightsScreen extends StatefulWidget {
   final VoidCallback onBackToHome;
@@ -22,6 +22,14 @@ class _InsightsScreenState extends State<InsightsScreen> {
 
   List<CheckIn> _checkIns = [];
   bool _isLoadingCheckIns = true;
+  Map<String, dynamic>? _predictiveRiskAnalysis;
+  bool _isLoadingPredictiveRisk = true;
+  String? _predictiveRiskError;
+
+  List<Map<String, dynamic>> _allAssessmentResults = [];
+  bool _isLoadingAllAssessmentResults = true;
+  String? _allAssessmentResultsError;
+
   String? _checkInError;
 
   final List<String> _periods = [
@@ -803,6 +811,808 @@ class _InsightsScreenState extends State<InsightsScreen> {
     super.initState();
 
     _loadCheckIns();
+    _loadPredictiveRiskAnalysis();
+    _loadAllAssessmentResults();
+  }
+
+  Future<void> _loadAllAssessmentResults() async {
+    if (!mounted) return;
+
+    setState(() {
+      _isLoadingAllAssessmentResults = true;
+      _allAssessmentResultsError = null;
+    });
+
+    try {
+      final results =
+      await AssessmentService.fetchAllAssessmentResults();
+
+      if (!mounted) return;
+
+      setState(() {
+        _allAssessmentResults = results;
+        _isLoadingAllAssessmentResults = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _allAssessmentResultsError =
+        'Unable to load assessment results. Please try again.';
+        _isLoadingAllAssessmentResults = false;
+      });
+    }
+  }
+
+  Future<void> _loadPredictiveRiskAnalysis() async {
+    if (!mounted) return;
+
+    setState(() {
+      _isLoadingPredictiveRisk = true;
+      _predictiveRiskError = null;
+    });
+
+    try {
+      final result =
+      await AssessmentService.fetchPredictiveRiskAnalysis();
+
+      if (!mounted) return;
+
+      setState(() {
+        _predictiveRiskAnalysis = result;
+        _isLoadingPredictiveRisk = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _predictiveRiskError = e.toString();
+        _isLoadingPredictiveRisk = false;
+      });
+    }
+  }
+
+  Widget _buildPredictiveRiskCard() {
+    if (_isLoadingPredictiveRisk) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: CircularProgressIndicator(
+            color: AppColors.mint,
+          ),
+        ),
+      );
+    }
+
+    if (_predictiveRiskError != null) {
+      return _buildRiskMessage(
+        'Unable to load risk analysis',
+        'Please check your connection and try again.',
+        Icons.info_outline_rounded,
+        onRetry: _loadPredictiveRiskAnalysis,
+      );
+    }
+
+    final analysis = _predictiveRiskAnalysis;
+
+    if (analysis == null) {
+      return const SizedBox.shrink();
+    }
+
+    final concernLevel =
+        analysis['concernLevel']?.toString() ?? 'insufficient_data';
+
+    final explanation =
+        analysis['explanation']?.toString() ?? '';
+
+    final assessments =
+        analysis['assessments'] as Map<String, dynamic>? ?? {};
+
+    final recommendations =
+        analysis['recommendations'] as List<dynamic>? ?? [];
+
+    final safetyFollowUpRequired =
+        analysis['safetyFollowUpRequired'] == true;
+
+    final isInsufficient = concernLevel == 'insufficient_data';
+
+    final Color levelColor;
+    final IconData levelIcon;
+
+    switch (concernLevel.toLowerCase()) {
+      case 'high':
+        levelColor = Colors.red.shade700;
+        levelIcon = Icons.priority_high_rounded;
+        break;
+      case 'moderate':
+        levelColor = Colors.orange.shade700;
+        levelIcon = Icons.warning_amber_rounded;
+        break;
+      case 'low':
+        levelColor = AppColors.mint;
+        levelIcon = Icons.check_circle_outline_rounded;
+        break;
+      default:
+        levelColor = Colors.blueGrey;
+        levelIcon = Icons.info_outline_rounded;
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.borderMint),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: AppColors.lightMint,
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: const Icon(
+                  Icons.insights_rounded,
+                  color: AppColors.navy,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Predictive Risk Analysis',
+                      style: TextStyle(
+                        color: AppColors.navy,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 3),
+                    Text(
+                      'Based on your assessment results',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: _loadPredictiveRiskAnalysis,
+                icon: const Icon(
+                  Icons.refresh_rounded,
+                  color: AppColors.navy,
+                ),
+                tooltip: 'Refresh analysis',
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: levelColor.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: levelColor.withValues(alpha: 0.25),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(levelIcon, color: levelColor, size: 25),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isInsufficient
+                            ? 'More assessments needed'
+                            : '$concernLevel Concern Level',
+                        style: TextStyle(
+                          color: levelColor,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      if (isInsufficient)
+                        const Text(
+                          'Complete PHQ-9, GAD-7 and WHO-5 to receive an analysis.',
+                          style: TextStyle(
+                            color: AppColors.textDark,
+                            fontSize: 12,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Assessment scores',
+            style: TextStyle(
+              color: AppColors.navy,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 10),
+          _buildRiskAssessmentRow('PHQ-9', assessments['phq9']),
+          _buildRiskAssessmentRow('GAD-7', assessments['gad7']),
+          _buildRiskAssessmentRow('WHO-5', assessments['who5']),
+          if (explanation.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              explanation,
+              style: const TextStyle(
+                color: Colors.grey,
+                fontSize: 11,
+                height: 1.4,
+              ),
+            ),
+          ],
+          if (safetyFollowUpRequired) ...[
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.red.withValues(alpha: 0.2),
+                ),
+              ),
+              child: const Text(
+                'Your PHQ-9 responses indicate that additional safety support is important. Please reach out promptly to a trusted person or qualified mental health professional. If you may be in immediate danger, contact local emergency services.',
+                style: TextStyle(
+                  color: AppColors.textDark,
+                  fontSize: 12,
+                  height: 1.5,
+                ),
+              ),
+            ),
+          ],
+          if (recommendations.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Text(
+              'Recommendations',
+              style: TextStyle(
+                color: AppColors.navy,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...recommendations.map(
+                  (recommendation) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.check_circle_outline_rounded,
+                      color: AppColors.mint,
+                      size: 17,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        recommendation.toString(),
+                        style: const TextStyle(
+                          color: AppColors.textDark,
+                          fontSize: 12,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRiskAssessmentRow(
+      String title,
+      dynamic assessment,
+      ) {
+    final data = assessment is Map<String, dynamic> ? assessment : {};
+
+    final available = data['available'] == true;
+    final score = data['latestScore'];
+    final trend = data['trend']?.toString() ?? 'not_available';
+
+    String trendLabel;
+
+    switch (trend) {
+      case 'worsening':
+        trendLabel = 'Worsening';
+        break;
+      case 'improving':
+        trendLabel = 'Improving';
+        break;
+      case 'stable':
+        trendLabel = 'Stable';
+        break;
+      default:
+        trendLabel = 'No previous result';
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 7),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                color: AppColors.textDark,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Text(
+            available ? score.toString() : 'Not completed',
+            style: const TextStyle(
+              color: AppColors.navy,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 112,
+            child: Text(
+              available ? trendLabel : '—',
+              textAlign: TextAlign.end,
+              style: TextStyle(
+                color: trend == 'worsening'
+                    ? Colors.red.shade700
+                    : trend == 'improving'
+                    ? AppColors.mint
+                    : Colors.grey,
+                fontSize: 11,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ============================================================
+// ALL ASSESSMENT RESULTS
+// ============================================================
+
+  Map<String, dynamic>? _getLatestAssessment(String assessmentType) {
+    final matchingResults = _allAssessmentResults.where((result) {
+      return result['assessmentType']?.toString() == assessmentType;
+    }).toList();
+
+    if (matchingResults.isEmpty) {
+      return null;
+    }
+
+    matchingResults.sort((a, b) {
+      final dateA = DateTime.tryParse(
+        a['createdAt']?.toString() ?? '',
+      );
+
+      final dateB = DateTime.tryParse(
+        b['createdAt']?.toString() ?? '',
+      );
+
+      if (dateA == null && dateB == null) return 0;
+      if (dateA == null) return 1;
+      if (dateB == null) return -1;
+
+      return dateB.compareTo(dateA);
+    });
+
+    return matchingResults.first;
+  }
+
+  String _formatAssessmentDate(dynamic dateValue) {
+    if (dateValue == null) {
+      return 'Date unavailable';
+    }
+
+    final date = DateTime.tryParse(dateValue.toString());
+
+    if (date == null) {
+      return 'Date unavailable';
+    }
+
+    final localDate = date.toLocal();
+
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+
+    return '${localDate.day} ${months[localDate.month - 1]} ${localDate.year}';
+  }
+
+  Widget _buildAllAssessmentResultsCard() {
+    if (_isLoadingAllAssessmentResults) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: CircularProgressIndicator(
+            color: AppColors.mint,
+          ),
+        ),
+      );
+    }
+
+    if (_allAssessmentResultsError != null) {
+      return _buildRiskMessage(
+        'Unable to load assessment results',
+        _allAssessmentResultsError!,
+        Icons.info_outline_rounded,
+        onRetry: _loadAllAssessmentResults,
+      );
+    }
+
+    const assessmentTypes = [
+      {
+        'type': 'anxiety_stress',
+        'title': 'Anxiety & Stress',
+        'subtitle': '20-question assessment',
+        'icon': Icons.psychology_outlined,
+      },
+      {
+        'type': 'depression_mood',
+        'title': 'Depression & Mood',
+        'subtitle': '20-question assessment',
+        'icon': Icons.mood_bad_outlined,
+      },
+      {
+        'type': 'student_wellbeing',
+        'title': 'Student Wellbeing',
+        'subtitle': '20-question assessment',
+        'icon': Icons.school_outlined,
+      },
+      {
+        'type': 'general_wellbeing',
+        'title': 'General Wellbeing',
+        'subtitle': '20-question assessment',
+        'icon': Icons.favorite_outline_rounded,
+      },
+      {
+        'type': 'phq9',
+        'title': 'PHQ-9',
+        'subtitle': 'Depression screening',
+        'icon': Icons.assignment_outlined,
+      },
+      {
+        'type': 'gad7',
+        'title': 'GAD-7',
+        'subtitle': 'Anxiety screening',
+        'icon': Icons.air_outlined,
+      },
+      {
+        'type': 'who5',
+        'title': 'WHO-5',
+        'subtitle': 'Wellbeing screening',
+        'icon': Icons.health_and_safety_outlined,
+      },
+    ];
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: AppColors.borderMint,
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: AppColors.lightMint,
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: const Icon(
+                  Icons.assignment_turned_in_outlined,
+                  color: AppColors.navy,
+                  size: 21,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Assessment History',
+                      style: TextStyle(
+                        color: AppColors.navy,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    SizedBox(height: 3),
+                    Text(
+                      'Your latest results from all assessments',
+                      style: TextStyle(
+                        color: Colors.black45,
+                        fontSize: 10.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: _loadAllAssessmentResults,
+                tooltip: 'Refresh results',
+                icon: const Icon(
+                  Icons.refresh_rounded,
+                  color: AppColors.navy,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          ...assessmentTypes.map((assessment) {
+            final type = assessment['type'] as String;
+            final title = assessment['title'] as String;
+            final subtitle = assessment['subtitle'] as String;
+            final icon = assessment['icon'] as IconData;
+
+            final result = _getLatestAssessment(type);
+
+            return _buildAssessmentResultRow(
+              title: title,
+              subtitle: subtitle,
+              icon: icon,
+              result: result,
+              assessmentType: type,
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAssessmentResultRow({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Map<String, dynamic>? result,
+    required String assessmentType,
+  }) {
+    final completed = result != null;
+
+    final score = result?['totalScore'];
+    final resultLevel = result?['resultLevel']?.toString();
+
+    final scoreText = score == null
+        ? ''
+        : score.toString();
+
+    final dateText = result == null
+        ? ''
+        : _formatAssessmentDate(result['createdAt']);
+
+    String? percentageText;
+
+    if (result != null && assessmentType == 'who5') {
+      final percentage = result['percentageScore'];
+
+      if (percentage != null) {
+        percentageText = '${percentage.toString()}%';
+      } else if (score is num) {
+        percentageText = '${(score * 4).round()}%';
+      }
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: completed
+            ? AppColors.lightMint.withValues(alpha: 0.55)
+            : const Color(0xFFF8FAF9),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: AppColors.borderMint,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Icon(
+              icon,
+              color: AppColors.mint,
+              size: 19,
+            ),
+          ),
+
+          const SizedBox(width: 11),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: AppColors.navy,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+
+                const SizedBox(height: 3),
+
+                Text(
+                  completed
+                      ? dateText
+                      : subtitle,
+                  style: const TextStyle(
+                    color: Colors.black45,
+                    fontSize: 10,
+                  ),
+                ),
+
+                if (completed && resultLevel != null) ...[
+                  const SizedBox(height: 5),
+                  Text(
+                    resultLevel,
+                    style: const TextStyle(
+                      color: AppColors.navy,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+
+                if (percentageText != null) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    'Wellbeing: $percentageText',
+                    style: const TextStyle(
+                      color: AppColors.mint,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+          const SizedBox(width: 8),
+
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                completed ? 'Score: $scoreText' : 'Not completed',
+                style: TextStyle(
+                  color: completed
+                      ? AppColors.navy
+                      : Colors.black45,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+
+              const SizedBox(height: 5),
+
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: completed
+                      ? AppColors.mint.withValues(alpha: 0.13)
+                      : Colors.black.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  completed ? 'Completed' : 'Pending',
+                  style: TextStyle(
+                    color: completed
+                        ? AppColors.mint
+                        : Colors.black45,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRiskMessage(
+      String title,
+      String message,
+      IconData icon, {
+        VoidCallback? onRetry,
+      }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.borderMint),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: AppColors.navy),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: AppColors.navy,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: const TextStyle(
+              color: Colors.grey,
+              fontSize: 12,
+            ),
+          ),
+          if (onRetry != null)
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: onRetry,
+                child: const Text('Try again'),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   Future<void> _loadCheckIns() async {
@@ -874,6 +1684,28 @@ class _InsightsScreenState extends State<InsightsScreen> {
 
             SliverToBoxAdapter(
               child: _buildWellbeingGrid(),
+            ),
+
+            SliverToBoxAdapter(
+              child: _buildSectionTitle(
+                'Predictive risk analysis',
+                'A supportive overview based on your assessment results',
+              ),
+            ),
+
+            SliverToBoxAdapter(
+              child: _buildPredictiveRiskCard(),
+            ),
+
+            SliverToBoxAdapter(
+              child: _buildSectionTitle(
+                'All Assessment Results',
+                'Your latest results across all seven assessments',
+              ),
+            ),
+
+            SliverToBoxAdapter(
+              child: _buildAllAssessmentResultsCard(),
             ),
 
             SliverToBoxAdapter(

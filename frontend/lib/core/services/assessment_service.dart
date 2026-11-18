@@ -16,6 +16,10 @@ class AssessmentService {
     'who5': {'count': 5, 'maxAnswer': 5},
   };
 
+  // =========================================================
+  // SAVE ASSESSMENT
+  // =========================================================
+
   static Future<bool> saveAssessment({
     required String assessmentType,
     required List<int> answers,
@@ -30,9 +34,7 @@ class AssessmentService {
     final maxAnswer = rule['maxAnswer']!;
 
     if (answers.length != requiredCount ||
-        answers.any(
-              (answer) => answer < 0 || answer > maxAnswer,
-        )) {
+        answers.any((answer) => answer < 0 || answer > maxAnswer)) {
       throw Exception(
         'Please complete all $requiredCount assessment questions.',
       );
@@ -93,5 +95,129 @@ class AssessmentService {
     }
 
     return false;
+  }
+
+  // =========================================================
+  // FETCH ALL SEVEN ASSESSMENT RESULTS
+  // =========================================================
+
+  static Future<List<Map<String, dynamic>>>
+  fetchAllAssessmentResults() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+
+    if (token == null || token.isEmpty) {
+      throw Exception(
+        'Your session has expired. Please log in again.',
+      );
+    }
+
+    final baseUrl = dotenv.env['API_BASE_URL'];
+
+    if (baseUrl == null || baseUrl.isEmpty) {
+      throw Exception('API base URL is not configured.');
+    }
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/assessments'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      String message = 'Failed to retrieve assessment results.';
+
+      try {
+        final responseData = jsonDecode(response.body);
+
+        if (responseData is Map<String, dynamic> &&
+            responseData['message'] is String) {
+          message = responseData['message'] as String;
+        }
+      } catch (_) {
+        // Keep the default error message.
+      }
+
+      throw Exception(message);
+    }
+
+    final responseData = jsonDecode(response.body);
+
+    if (responseData is List) {
+      return responseData
+          .whereType<Map<String, dynamic>>()
+          .toList();
+    }
+
+    if (responseData is Map<String, dynamic>) {
+      final results = responseData['assessments'] ??
+          responseData['results'];
+
+      if (results is List) {
+        return results
+            .whereType<Map<String, dynamic>>()
+            .toList();
+      }
+    }
+
+    throw Exception('Invalid assessment history response.');
+  }
+
+  // =========================================================
+  // FR-14: PREDICTIVE RISK ANALYSIS
+  // =========================================================
+
+  static Future<Map<String, dynamic>>
+  fetchPredictiveRiskAnalysis() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+
+    if (token == null || token.isEmpty) {
+      throw Exception(
+        'Your session has expired. Please log in again.',
+      );
+    }
+
+    final baseUrl = dotenv.env['API_BASE_URL'];
+
+    if (baseUrl == null || baseUrl.isEmpty) {
+      throw Exception('API base URL is not configured.');
+    }
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/assessments/predictive-risk'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      String message = 'Failed to retrieve predictive risk analysis.';
+
+      try {
+        final responseData = jsonDecode(response.body);
+
+        if (responseData is Map<String, dynamic> &&
+            responseData['message'] is String) {
+          message = responseData['message'] as String;
+        }
+      } catch (_) {
+        // Keep the default error message.
+      }
+
+      throw Exception(message);
+    }
+
+    final responseData = jsonDecode(response.body);
+
+    if (responseData is! Map<String, dynamic> ||
+        responseData['analysis'] is! Map<String, dynamic>) {
+      throw Exception('Invalid predictive risk analysis response.');
+    }
+
+    return responseData['analysis'] as Map<String, dynamic>;
   }
 }
