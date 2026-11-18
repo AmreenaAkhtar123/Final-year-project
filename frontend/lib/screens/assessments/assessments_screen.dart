@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
@@ -5,6 +6,9 @@ import 'anxiety_stress_screen.dart';
 import 'depression_mood_screen.dart';
 import 'student_wellbeing_screen.dart';
 import 'general_wellbeing_screen.dart';
+import 'phq9_screen.dart';
+import 'gad7_screen.dart';
+import 'who5_screen.dart';
 
 class AssessmentsScreen extends StatelessWidget {
   const AssessmentsScreen({super.key});
@@ -13,25 +17,17 @@ class AssessmentsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(64),
         child: Container(
           color: AppColors.background,
-          padding: const EdgeInsets.fromLTRB(
-            18,
-            30,
-            18,
-            10,
-          ),
+          padding: const EdgeInsets.fromLTRB(18, 30, 18, 10),
           child: Row(
             children: [
               Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
+                  onTap: () => Navigator.pop(context),
                   borderRadius: BorderRadius.circular(10),
                   child: Container(
                     width: 40,
@@ -39,19 +35,16 @@ class AssessmentsScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: AppColors.borderMint,
-                      ),
+                      border: Border.all(color: AppColors.borderMint),
                     ),
                     child: const Icon(
                       Icons.arrow_back_ios_new_rounded,
                       color: AppColors.navy,
-                      size: 15,
+                      size: 18,
                     ),
                   ),
                 ),
               ),
-
               const Expanded(
                 child: Center(
                   child: Text(
@@ -64,27 +57,19 @@ class AssessmentsScreen extends StatelessWidget {
                   ),
                 ),
               ),
-
               const SizedBox(width: 34),
             ],
           ),
         ),
       ),
-
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(
-            22,
-            12,
-            22,
-            30,
-          ),
+          padding: const EdgeInsets.fromLTRB(22, 12, 22, 30),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(),
-
               const SizedBox(height: 25),
 
               const Text(
@@ -96,9 +81,7 @@ class AssessmentsScreen extends StatelessWidget {
                   letterSpacing: -0.3,
                 ),
               ),
-
               const SizedBox(height: 5),
-
               Text(
                 'Select a topic to explore your current wellbeing.',
                 style: TextStyle(
@@ -107,11 +90,96 @@ class AssessmentsScreen extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 18),
+              const SizedBox(height: 25),
+
+              _buildSectionHeading(
+                title: 'Validated Assessments',
+                subtitle: 'Standardized mental wellbeing questionnaires',
+                icon: Icons.verified_outlined,
+              ),
+              const SizedBox(height: 14),
 
               _buildAssessmentCard(
                 context: context,
                 icon: Icons.psychology_outlined,
+                title: 'PHQ-9',
+                description:
+                'Patient Health Questionnaire for screening depressive symptoms.',
+                questions: '9 questions',
+                duration: '3 min',
+                iconColor: const Color(0xFF6B7FD7),
+                backgroundColor: const Color(0xFFF1F3FC),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const Phq9Screen(),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 14),
+
+              _buildAssessmentCard(
+                context: context,
+                icon: Icons.self_improvement_rounded,
+                title: 'GAD-7',
+                description:
+                'Generalized Anxiety Disorder questionnaire for anxiety symptoms.',
+                questions: '7 questions',
+                duration: '3 min',
+                iconColor: const Color(0xFFE29A45),
+                backgroundColor: const Color(0xFFFFF5E9),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const Gad7Screen(),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 14),
+
+              _buildAssessmentCard(
+                context: context,
+                icon: Icons.favorite_outline_rounded,
+                title: 'WHO-5',
+                description:
+                'World Health Organization questionnaire measuring general mental wellbeing.',
+                questions: '5 questions',
+                duration: '2 min',
+                iconColor: AppColors.mint,
+                backgroundColor: AppColors.lightMint,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const Who5Screen(),
+                    ),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 28),
+
+              _buildSectionHeading(
+                title: 'MindMate Wellbeing Assessments',
+                subtitle: 'Additional topic-specific questionnaires',
+                icon: Icons.spa_outlined,
+              ),
+              const SizedBox(height: 14),
+
+              _buildAssessmentCard(
+                context: context,
+                icon: Icons.psychology_outlined,
+                title: 'Anxiety & Stress',
+                description:
+                'Explore your current levels of anxiety, stress and emotional pressure.',
+                questions: '20 questions',
+                duration: '5 min',
+                iconColor: const Color(0xFF6B7FD7),
+                backgroundColor: const Color(0xFFF1F3FC),
                 onTap: () {
                   Navigator.push(
                     context,
@@ -120,20 +188,19 @@ class AssessmentsScreen extends StatelessWidget {
                     ),
                   );
                 },
-                title: 'Anxiety & Stress',
-                description:
-                'Explore your current levels of anxiety, stress and emotional pressure.',
-                questions: '20 questions',
-                duration: '5 min',
-                iconColor: const Color(0xFF6B7FD7),
-                backgroundColor: const Color(0xFFF1F3FC),
               ),
-
               const SizedBox(height: 14),
 
               _buildAssessmentCard(
                 context: context,
                 icon: Icons.mood_outlined,
+                title: 'Depression & Mood',
+                description:
+                'Reflect on your mood, motivation and emotional wellbeing.',
+                questions: '20 questions',
+                duration: '5 min',
+                iconColor: const Color(0xFFE29A45),
+                backgroundColor: const Color(0xFFFFF5E9),
                 onTap: () {
                   Navigator.push(
                     context,
@@ -142,20 +209,19 @@ class AssessmentsScreen extends StatelessWidget {
                     ),
                   );
                 },
-                title: 'Depression & Mood',
-                description:
-                'Reflect on your mood, motivation and emotional wellbeing.',
-                questions: '20 questions',
-                duration: '5 min',
-                iconColor: const Color(0xFFE29A45),
-                backgroundColor: const Color(0xFFFFF5E9),
               ),
-
               const SizedBox(height: 14),
 
               _buildAssessmentCard(
                 context: context,
                 icon: Icons.school_outlined,
+                title: 'Student Wellbeing',
+                description:
+                'Explore study pressure, academic stress and burnout.',
+                questions: '20 questions',
+                duration: '5 min',
+                iconColor: AppColors.mint,
+                backgroundColor: AppColors.lightMint,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -164,20 +230,19 @@ class AssessmentsScreen extends StatelessWidget {
                     ),
                   );
                 },
-                title: 'Student Wellbeing',
-                description:
-                'Explore study pressure, academic stress and burnout.',
-                questions: '20 questions',
-                duration: '5 min',
-                iconColor: AppColors.mint,
-                backgroundColor: AppColors.lightMint,
               ),
-
               const SizedBox(height: 14),
 
               _buildAssessmentCard(
                 context: context,
                 icon: Icons.favorite_outline_rounded,
+                title: 'General Wellbeing',
+                description:
+                'Get a broader picture of your current emotional wellbeing.',
+                questions: '20 questions',
+                duration: '5 min',
+                iconColor: const Color(0xFF5C8FA8),
+                backgroundColor: const Color(0xFFEDF5F8),
                 onTap: () {
                   Navigator.push(
                     context,
@@ -186,17 +251,9 @@ class AssessmentsScreen extends StatelessWidget {
                     ),
                   );
                 },
-                title: 'General Wellbeing',
-                description:
-                'Get a broader picture of your current emotional wellbeing.',
-                questions: '20 questions',
-                duration: '5 min',
-                iconColor: const Color(0xFF5C8FA8),
-                backgroundColor: const Color(0xFFEDF5F8),
               ),
 
               const SizedBox(height: 20),
-
               _buildPrivacyNote(),
             ],
           ),
@@ -213,10 +270,7 @@ class AssessmentsScreen extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            AppColors.navy,
-            Color(0xFF294253),
-          ],
+          colors: [AppColors.navy, Color(0xFF294253)],
         ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
@@ -242,9 +296,7 @@ class AssessmentsScreen extends StatelessWidget {
               size: 28,
             ),
           ),
-
           const SizedBox(width: 14),
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -257,9 +309,7 @@ class AssessmentsScreen extends StatelessWidget {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-
                 const SizedBox(height: 5),
-
                 Text(
                   'Take a few minutes to understand how you have been feeling.',
                   style: TextStyle(
@@ -273,6 +323,43 @@ class AssessmentsScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSectionHeading({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: AppColors.mint, size: 21),
+        const SizedBox(width: 9),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: AppColors.navy,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  color: AppColors.navy.withValues(alpha: 0.50),
+                  fontSize: 10.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -298,9 +385,7 @@ class AssessmentsScreen extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: AppColors.borderMint,
-            ),
+            border: Border.all(color: AppColors.borderMint),
             boxShadow: [
               BoxShadow(
                 color: AppColors.navy.withValues(alpha: 0.035),
@@ -319,15 +404,9 @@ class AssessmentsScreen extends StatelessWidget {
                   color: backgroundColor,
                   borderRadius: BorderRadius.circular(17),
                 ),
-                child: Icon(
-                  icon,
-                  color: iconColor,
-                  size: 28,
-                ),
+                child: Icon(icon, color: iconColor, size: 28),
               ),
-
               const SizedBox(width: 14),
-
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -344,7 +423,6 @@ class AssessmentsScreen extends StatelessWidget {
                             ),
                           ),
                         ),
-
                         const Icon(
                           Icons.arrow_forward_ios_rounded,
                           color: AppColors.navy,
@@ -352,9 +430,7 @@ class AssessmentsScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-
                     const SizedBox(height: 6),
-
                     Text(
                       description,
                       maxLines: 3,
@@ -365,18 +441,14 @@ class AssessmentsScreen extends StatelessWidget {
                         height: 1.4,
                       ),
                     ),
-
                     const SizedBox(height: 12),
-
                     Row(
                       children: [
                         _buildInfoChip(
                           icon: Icons.quiz_outlined,
                           text: questions,
                         ),
-
                         const SizedBox(width: 7),
-
                         _buildInfoChip(
                           icon: Icons.access_time_rounded,
                           text: duration,
@@ -398,10 +470,7 @@ class AssessmentsScreen extends StatelessWidget {
     required String text,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 9,
-        vertical: 5,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
         color: AppColors.lightMint,
         borderRadius: BorderRadius.circular(10),
@@ -409,14 +478,8 @@ class AssessmentsScreen extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            color: AppColors.mint,
-            size: 12,
-          ),
-
+          Icon(icon, color: AppColors.mint, size: 12),
           const SizedBox(width: 4),
-
           Text(
             text,
             style: const TextStyle(
@@ -446,9 +509,7 @@ class AssessmentsScreen extends StatelessWidget {
             color: AppColors.mint,
             size: 17,
           ),
-
           const SizedBox(width: 9),
-
           Expanded(
             child: Text(
               'Your assessment responses and results are securely saved to your account.',
@@ -460,26 +521,6 @@ class AssessmentsScreen extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  void _showComingSoonMessage(
-      BuildContext context,
-      String assessment,
-      ) {
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '$assessment selected. Questions will be added next.',
-        ),
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
       ),
     );
   }

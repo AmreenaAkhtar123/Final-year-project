@@ -18,6 +18,9 @@ const assessmentResultSchema = new mongoose.Schema(
         'depression_mood',
         'student_wellbeing',
         'general_wellbeing',
+        'phq9',
+        'gad7',
+        'who5',
       ],
     },
 
@@ -25,16 +28,32 @@ const assessmentResultSchema = new mongoose.Schema(
       type: [Number],
       required: true,
       validate: {
-        validator: (answers) =>
-          Array.isArray(answers) &&
-          answers.length === 20 &&
-          answers.every(
-            (answer) =>
-              Number.isInteger(answer) &&
-              answer >= 0 &&
-              answer <= 3,
-          ),
-        message: 'Exactly 20 valid answers are required. Each answer must be between 0 and 3.',
+        validator: function (answers) {
+          const rules = {
+            anxiety_stress: { count: 20, max: 3 },
+            depression_mood: { count: 20, max: 3 },
+            student_wellbeing: { count: 20, max: 3 },
+            general_wellbeing: { count: 20, max: 3 },
+            phq9: { count: 9, max: 3 },
+            gad7: { count: 7, max: 3 },
+            who5: { count: 5, max: 5 },
+          };
+
+          const rule = rules[this.assessmentType];
+
+          return (
+            rule !== undefined &&
+            Array.isArray(answers) &&
+            answers.length === rule.count &&
+            answers.every(
+              (answer) =>
+                Number.isInteger(answer) &&
+                answer >= 0 &&
+                answer <= rule.max,
+            )
+          );
+        },
+        message: 'Invalid answers or answer count for this assessment.',
       },
     },
 
@@ -42,7 +61,28 @@ const assessmentResultSchema = new mongoose.Schema(
       type: Number,
       required: true,
       min: 0,
-      max: 60,
+      validate: {
+        validator: function (score) {
+          const maximumScores = {
+            anxiety_stress: 60,
+            depression_mood: 60,
+            student_wellbeing: 60,
+            general_wellbeing: 60,
+            phq9: 27,
+            gad7: 21,
+            who5: 25,
+          };
+
+          const maximum = maximumScores[this.assessmentType];
+
+          return (
+            maximum !== undefined &&
+            Number.isInteger(score) &&
+            score <= maximum
+          );
+        },
+        message: 'Invalid total score for this assessment.',
+      },
     },
 
     resultLevel: {
