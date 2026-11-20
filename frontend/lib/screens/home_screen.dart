@@ -30,6 +30,7 @@ import 'exercise/mood_lift_screen.dart';
 import 'exercise/grounding_screen.dart';
 import 'exercise/box_breathing_screen.dart';
 import 'exercise/digital_detox_screen.dart';
+import '../core/services/student_mode_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -40,7 +41,55 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  bool _studentModeEnabled = true;
 
+
+  @override
+  void initState() {
+    super.initState();
+
+    StudentModeService.isEnabled.addListener(_onStudentModeChanged);
+
+    _loadStudentMode();
+  }
+
+  Future<void> _loadStudentMode() async {
+    await StudentModeService.load();
+
+    if (!mounted) return;
+
+    setState(() {
+      _studentModeEnabled = StudentModeService.isEnabled.value;
+    });
+  }
+
+  void _onStudentModeChanged() {
+    if (!mounted) return;
+
+    final enabled = StudentModeService.isEnabled.value;
+
+    setState(() {
+      if (_studentModeEnabled && !enabled) {
+        if (_selectedIndex == 2) {
+          _selectedIndex = 0;
+        } else if (_selectedIndex > 2) {
+          _selectedIndex--;
+        }
+      } else if (!_studentModeEnabled && enabled) {
+        if (_selectedIndex >= 2) {
+          _selectedIndex++;
+        }
+      }
+
+      _studentModeEnabled = enabled;
+    });
+  }
+
+  @override
+  void dispose() {
+    StudentModeService.isEnabled.removeListener(_onStudentModeChanged);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,13 +109,14 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
 
-            StudentWellbeingScreen(
-              onBackToHome: () {
-                setState(() {
-                  _selectedIndex = 0;
-                });
-              },
-            ),
+            if (_studentModeEnabled)
+              StudentWellbeingScreen(
+                onBackToHome: () {
+                  setState(() {
+                    _selectedIndex = 0;
+                  });
+                },
+              ),
 
             InsightsScreen(
               onBackToHome: () {
@@ -98,32 +148,33 @@ class _HomeScreenState extends State<HomeScreen> {
         height: 72,
         indicatorColor: AppColors.lightMint,
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        destinations: const [
-          NavigationDestination(
+        destinations: [
+          const NavigationDestination(
             icon: Icon(Icons.home_outlined),
             selectedIcon: Icon(Icons.home_rounded),
             label: 'Home',
           ),
 
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.favorite_outline_rounded),
             selectedIcon: Icon(Icons.favorite_rounded),
             label: 'Check-in',
           ),
 
-          NavigationDestination(
-            icon: Icon(Icons.school_outlined),
-            selectedIcon: Icon(Icons.school_rounded),
-            label: 'Student',
-          ),
+          if (_studentModeEnabled)
+            const NavigationDestination(
+              icon: Icon(Icons.school_outlined),
+              selectedIcon: Icon(Icons.school_rounded),
+              label: 'Student',
+            ),
 
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.insights_outlined),
             selectedIcon: Icon(Icons.insights_rounded),
             label: 'Insights',
           ),
 
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.person_outline_rounded),
             selectedIcon: Icon(Icons.person_rounded),
             label: 'Profile',

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/services/notification_service.dart';
+import '../../core/services/student_mode_service.dart';
 
 class WellbeingPreferencesScreen extends StatefulWidget {
   const WellbeingPreferencesScreen({super.key});
@@ -37,6 +38,7 @@ class _WellbeingPreferencesScreenState
           prefs.getBool('mindmate_exercise_suggestions') ?? true;
       _weeklyInsights = prefs.getBool('mindmate_weekly_insights') ?? true;
       _studentMode = prefs.getBool('mindmate_student_mode') ?? true;
+      StudentModeService.isEnabled.value = _studentMode;
       _preferredTime =
           prefs.getString('mindmate_preferred_time') ?? 'Evening';
     });
@@ -93,27 +95,131 @@ class _WellbeingPreferencesScreenState
     return await notificationService.requestPermission();
   }
 
+
   Future<bool> _showNotificationPermissionDialog() async {
     final shouldContinue = await showDialog<bool>(
       context: context,
+      barrierDismissible: true,
       builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Enable MindMate reminders?'),
-          content: const Text(
-            'Allow notifications to receive your daily check-in, '
-                'exercise suggestions, and weekly wellbeing insights, '
-                'even when MindMate is closed.',
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 28),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(26),
+              border: Border.all(
+                color: AppColors.borderMint,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.navy.withValues(alpha: 0.10),
+                  blurRadius: 25,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: AppColors.lightMint,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Icon(
+                    Icons.notifications_active_outlined,
+                    color: AppColors.mint,
+                    size: 30,
+                  ),
+                ),
+
+                const SizedBox(height: 18),
+
+                const Text(
+                  'Enable MindMate reminders?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.navy,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                Text(
+                  'Allow notifications to receive your daily check-in, '
+                      'exercise suggestions, and weekly wellbeing insights, '
+                      'even when MindMate is closed.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.navy.withValues(alpha: 0.58),
+                    fontSize: 12,
+                    height: 1.55,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(dialogContext, true);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.mint,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                    ),
+                    child: const Text(
+                      'Continue',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.pop(dialogContext, false);
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.navy,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: Text(
+                      'Not now',
+                      style: TextStyle(
+                        color: AppColors.navy.withValues(alpha: 0.60),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('Not now'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Continue'),
-            ),
-          ],
         );
       },
     );
@@ -122,6 +228,7 @@ class _WellbeingPreferencesScreenState
 
     return _requestNotificationPermission();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -620,7 +727,7 @@ class _WellbeingPreferencesScreenState
                 _studentMode = value;
               });
 
-              await _saveBoolPreference('mindmate_student_mode', value);
+              await StudentModeService.setEnabled(value);
             },
           ),
         ],
