@@ -16,7 +16,6 @@ import 'settings/help_support_screen.dart';
 import 'settings/password_security_screen.dart';
 import 'settings/email_address_screen.dart';
 import 'settings/personal_information_screen.dart';
-import 'settings/privacy_data_screen.dart';
 import 'settings/wellbeing_preferences_screen.dart';
 import 'safety_support_screen.dart';
 
@@ -983,22 +982,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _buildDivider(),
 
         _buildSettingsTile(
-          icon: Icons.privacy_tip_outlined,
-          title: 'Privacy & Data',
-          subtitle: 'Review how your wellbeing information is handled',
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const PrivacyDataScreen(),
-              ),
-            );
-          },
-        ),
-
-        _buildDivider(),
-
-        _buildSettingsTile(
           icon: Icons.shield_outlined,
           title: 'Safety & Support',
           subtitle: 'Access support options when you need them',
@@ -1330,51 +1313,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  // ============================================================
-  // PRIVACY DIALOG
-  // ============================================================
-
-  void _showPrivacyDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: AppColors.background,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(22),
-          ),
-          title: const Text(
-            'Privacy & Data',
-            style: TextStyle(
-              color: AppColors.navy,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          content: Text(
-            'MindMate currently uses demo data for wellbeing features. '
-                'Your information is not connected to a backend yet.',
-            style: TextStyle(
-              color: AppColors.navy.withValues(alpha: 0.60),
-              fontSize: 13,
-              height: 1.45,
-            ),
-          ),
-          actions: [
-            FilledButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.mint,
-              ),
-              child: const Text('Close'),
-            ),
-          ],
-        );
-      },
     );
   }
 
