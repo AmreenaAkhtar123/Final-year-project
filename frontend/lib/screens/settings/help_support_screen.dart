@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
@@ -53,9 +54,9 @@ class HelpSupportScreen extends StatelessWidget {
                       question: 'What can I do on the Home screen?',
                       answer:
                       'The Home screen gives you quick access to your '
-                          'daily pulse, mental wellbeing tools, guided '
-                          'exercises, student-focused support and your '
-                          'weekly progress.',
+                          'daily check-in, mental wellbeing tools, guided '
+                          'exercises and weekly progress. Student Wellbeing '
+                          'is also available when Student Mode is enabled.',
                     ),
 
                     _buildFaq(
@@ -152,24 +153,14 @@ class HelpSupportScreen extends StatelessWidget {
                     const SizedBox(height: 22),
 
                     _buildSectionTitle(
-                      'ACCOUNT & PRIVACY',
-                      'Manage your information and understand how your data is handled.',
+                      'ACCOUNT & SETTINGS',
+                      'Manage your account and customize your MindMate experience.',
                     ),
 
                     const SizedBox(height: 12),
 
                     _buildFaq(
                       icon: Icons.lock_outline_rounded,
-                      question: 'Is my MindMate information private?',
-                      answer:
-                      'MindMate is designed with privacy in mind. '
-                          'You can review the available privacy and data '
-                          'settings from your Profile to understand and '
-                          'manage your preferences.',
-                    ),
-
-                    _buildFaq(
-                      icon: Icons.security_outlined,
                       question: 'Can I change my password?',
                       answer:
                       'Yes. Open Profile, go to Password & Security, '
@@ -182,29 +173,10 @@ class HelpSupportScreen extends StatelessWidget {
                       question: 'Can I change my wellbeing preferences?',
                       answer:
                       'Yes. Wellbeing Preferences lets you adjust '
-                          'available reminder and personalization options '
-                          'so MindMate better matches the way you want to '
-                          'use the app.',
-                    ),
-
-                    _buildFaq(
-                      icon: Icons.delete_outline_rounded,
-                      question: 'Can I delete my data?',
-                      answer:
-                      'The Privacy & Data section provides options for '
-                          'managing your information. Available deletion '
-                          'and data-management actions depend on the current '
-                          'version and backend implementation of MindMate.',
-                    ),
-
-                    _buildFaq(
-                      icon: Icons.download_outlined,
-                      question: 'Can I export my data?',
-                      answer:
-                      'If data export is available in your current '
-                          'version of MindMate, you can access it from '
-                          'Privacy & Data. Export functionality may depend '
-                          'on the backend implementation.',
+                          'available reminder and personalization options. '
+                          'You can also enable or disable Student Mode '
+                          'to control whether Student Wellbeing appears '
+                          'in your app navigation.',
                     ),
 
                     const SizedBox(height: 22),
@@ -228,7 +200,8 @@ class HelpSupportScreen extends StatelessWidget {
 
                     _buildFaq(
                       icon: Icons.people_outline_rounded,
-                      question: 'Can MindMate replace a mental health professional?',
+                      question:
+                      'Can MindMate replace a mental health professional?',
                       answer:
                       'No. MindMate is a wellbeing support tool and is '
                           'not a replacement for a qualified mental health '
@@ -535,8 +508,7 @@ class HelpSupportScreen extends StatelessWidget {
       child: Theme(
         data: ThemeData(
           splashColor: AppColors.lightMint,
-          highlightColor:
-          AppColors.lightMint.withValues(
+          highlightColor: AppColors.lightMint.withValues(
             alpha: 0.45,
           ),
           dividerColor: Colors.transparent,
@@ -555,8 +527,7 @@ class HelpSupportScreen extends StatelessWidget {
             16,
           ),
           iconColor: AppColors.mint,
-          collapsedIconColor:
-          AppColors.navy.withValues(
+          collapsedIconColor: AppColors.navy.withValues(
             alpha: 0.45,
           ),
           shape: RoundedRectangleBorder(
@@ -669,8 +640,9 @@ class HelpSupportScreen extends StatelessWidget {
                 const SizedBox(height: 4),
 
                 Text(
-                  'Support contact functionality can be connected '
-                      'here when the backend and support system are implemented.',
+                  'For additional guidance, explore the Safety & Support '
+                      'section in MindMate or consider reaching out to someone '
+                      'you trust.',
                   style: TextStyle(
                     color: AppColors.navy.withValues(
                       alpha: 0.50,
