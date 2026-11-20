@@ -49,6 +49,8 @@ class _WellbeingPreferencesScreenState
 
     if (notificationsEnabled) {
       await _syncNotifications();
+    } else {
+      await NotificationService.instance.cancelAllReminders();
     }
   }
 
@@ -66,6 +68,18 @@ class _WellbeingPreferencesScreenState
     final notificationService = NotificationService.instance;
 
     await notificationService.initialize();
+
+    // Do not schedule reminders without notification permission.
+    final permissionGranted =
+    await notificationService.areNotificationsEnabled();
+
+    if (!permissionGranted) {
+      await notificationService.cancelAllReminders();
+      debugPrint(
+        'MindMate: Notifications disabled. All reminders cancelled.',
+      );
+      return;
+    }
 
     if (_dailyCheckIn) {
       await notificationService.scheduleDailyCheckIn(_preferredTime);

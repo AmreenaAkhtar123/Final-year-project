@@ -33,8 +33,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  bool _notificationsEnabled = true;
-  bool _privateModeEnabled = true;
+
 
   double _wellbeingScore = 0;
   int _currentStreak = 0;
@@ -334,17 +333,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 12),
 
                     _buildAccountCard(),
-
-                    const SizedBox(height: 28),
-
-                    _buildSectionHeader(
-                      'Preferences',
-                      'Customize how MindMate works for you',
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    _buildPreferencesCard(),
 
                     const SizedBox(height: 28),
 
@@ -969,45 +957,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+
   // ============================================================
-  // PREFERENCES
+  // PRIVACY & SAFETY
   // ============================================================
 
-  Widget _buildPreferencesCard() {
+
+  Widget _buildPrivacySafetyCard() {
     return _buildSettingsCard(
       children: [
-        _buildSwitchTile(
-          icon: Icons.notifications_none_rounded,
-          title: 'Notifications',
-          subtitle: 'Check-in reminders and wellbeing updates',
-          value: _notificationsEnabled,
-          onChanged: (value) {
-            setState(() {
-              _notificationsEnabled = value;
-            });
-          },
-        ),
-
-        _buildDivider(),
-
-        _buildSwitchTile(
-          icon: Icons.visibility_off_outlined,
-          title: 'Private Mode',
-          subtitle: 'Keep wellbeing information discreet',
-          value: _privateModeEnabled,
-          onChanged: (value) {
-            setState(() {
-              _privateModeEnabled = value;
-            });
-          },
-        ),
-
-        _buildDivider(),
-
         _buildSettingsTile(
           icon: Icons.tune_rounded,
           title: 'Wellbeing Preferences',
-          subtitle: 'Personalize your MindMate experience',
+          subtitle: 'Manage reminders and personalize your experience',
           onTap: () {
             Navigator.push(
               context,
@@ -1017,17 +979,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             );
           },
         ),
-      ],
-    );
-  }
 
-  // ============================================================
-  // PRIVACY & SAFETY
-  // ============================================================
+        _buildDivider(),
 
-  Widget _buildPrivacySafetyCard() {
-    return _buildSettingsCard(
-      children: [
         _buildSettingsTile(
           icon: Icons.privacy_tip_outlined,
           title: 'Privacy & Data',
@@ -1092,6 +1046,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ],
     );
   }
+
 
   // ============================================================
   // SETTINGS CARD

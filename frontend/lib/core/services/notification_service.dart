@@ -26,6 +26,40 @@ class NotificationService {
 
   bool _initialized = false;
 
+  Future<bool> _scheduleSafely({
+    required int notificationId,
+    required String notificationName,
+    required Future<void> Function() schedule,
+  }) async {
+    try {
+      final permissionGranted = await areNotificationsEnabled();
+
+      if (!permissionGranted) {
+        debugPrint(
+          'MindMate: $notificationName was not scheduled. '
+              'Notification permission is disabled.',
+        );
+        return false;
+      }
+
+      await schedule();
+
+      debugPrint(
+        'MindMate: $notificationName scheduled successfully.',
+      );
+
+      return true;
+    } catch (e, stackTrace) {
+      debugPrint(
+        'MindMate: Failed to schedule $notificationName '
+            '(ID: $notificationId): $e',
+      );
+      debugPrintStack(stackTrace: stackTrace);
+
+      return false;
+    }
+  }
+
   Future<void> initialize() async {
     if (_initialized) return;
 
@@ -154,61 +188,79 @@ class NotificationService {
   }
 
   Future<void> scheduleDailyCheckIn(String preferredTime) async {
-    await initialize();
+
 
     final time = _getPreferredTime(preferredTime);
 
-    await _notifications.zonedSchedule(
-      id: dailyCheckInId,
-      title: 'A moment for yourself',
-      body: 'Take a moment to check in with how you are feeling today.',
-      payload: jsonEncode({
-        'type': 'daily_check_in',
-        'title': 'A moment for yourself',
-        'message': 'Take a moment to check in with how you are feeling today.',
-      }),
-      scheduledDate: _nextTime(time.$1, time.$2),
-      notificationDetails: _notificationDetails,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.time,
+    await _scheduleSafely(
+      notificationId: dailyCheckInId,
+      notificationName: 'Daily check-in',
+      schedule: () async {
+        await _notifications.zonedSchedule(
+          id: dailyCheckInId,
+          title: 'A moment for yourself',
+          body: 'Take a moment to check in with how you are feeling today.',
+          payload: jsonEncode({
+            'type': 'daily_check_in',
+            'title': 'A moment for yourself',
+            'message': 'Take a moment to check in with how you are feeling today.',
+          }),
+          scheduledDate: _nextTime(time.$1, time.$2),
+          notificationDetails: _notificationDetails,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          matchDateTimeComponents: DateTimeComponents.time,
+        );
+      },
     );
   }
 
   Future<void> scheduleExerciseSuggestion() async {
-    await initialize();
 
-    await _notifications.zonedSchedule(
-      id: exerciseSuggestionId,
-      title: 'A little movement can help',
-      body: 'Take a short break and try a gentle wellbeing exercise.',
-      payload: jsonEncode({
-        'type': 'exercise_suggestion',
-        'title': 'A little movement can help',
-        'message': 'Take a short break and try a gentle wellbeing exercise.',
-      }),
-      scheduledDate: _nextTime(17, 0),
-      notificationDetails: _notificationDetails,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.time,
+
+    await _scheduleSafely(
+      notificationId: exerciseSuggestionId,
+      notificationName: 'Exercise suggestion',
+      schedule: () async {
+        await _notifications.zonedSchedule(
+          id: exerciseSuggestionId,
+          title: 'A little movement can help',
+          body: 'Take a short break and try a gentle wellbeing exercise.',
+          payload: jsonEncode({
+            'type': 'exercise_suggestion',
+            'title': 'A little movement can help',
+            'message': 'Take a short break and try a gentle wellbeing exercise.',
+          }),
+          scheduledDate: _nextTime(17, 0),
+          notificationDetails: _notificationDetails,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          matchDateTimeComponents: DateTimeComponents.time,
+        );
+      },
     );
   }
 
   Future<void> scheduleWeeklyInsights() async {
-    await initialize();
 
-    await _notifications.zonedSchedule(
-      id: weeklyInsightsId,
-      title: 'Your weekly wellbeing reflection',
-      body: 'Take a moment to reflect on your wellbeing this week.',
-      payload: jsonEncode({
-        'type': 'weekly_insights',
-        'title': 'Your weekly wellbeing reflection',
-        'message': 'Take a moment to reflect on your wellbeing this week.',
-      }),
-      scheduledDate: _nextSundayAtSix(),
-      notificationDetails: _notificationDetails,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+
+    await _scheduleSafely(
+      notificationId: weeklyInsightsId,
+      notificationName: 'Weekly insights',
+      schedule: () async {
+        await _notifications.zonedSchedule(
+          id: weeklyInsightsId,
+          title: 'Your weekly wellbeing reflection',
+          body: 'Take a moment to reflect on your wellbeing this week.',
+          payload: jsonEncode({
+            'type': 'weekly_insights',
+            'title': 'Your weekly wellbeing reflection',
+            'message': 'Take a moment to reflect on your wellbeing this week.',
+          }),
+          scheduledDate: _nextSundayAtSix(),
+          notificationDetails: _notificationDetails,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+        );
+      },
     );
   }
 
