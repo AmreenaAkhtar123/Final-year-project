@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-
 import '../../core/constants/app_colors.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/services/notification_service.dart';
 
 class WellbeingPreferencesScreen extends StatefulWidget {
   const WellbeingPreferencesScreen({super.key});
@@ -18,6 +19,109 @@ class _WellbeingPreferencesScreenState
   bool _studentMode = true;
 
   String _preferredTime = 'Evening';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    if (!mounted) return;
+
+    setState(() {
+      _dailyCheckIn = prefs.getBool('mindmate_daily_check_in') ?? true;
+      _exerciseSuggestions =
+          prefs.getBool('mindmate_exercise_suggestions') ?? true;
+      _weeklyInsights = prefs.getBool('mindmate_weekly_insights') ?? true;
+      _studentMode = prefs.getBool('mindmate_student_mode') ?? true;
+      _preferredTime =
+          prefs.getString('mindmate_preferred_time') ?? 'Evening';
+    });
+    final notificationsEnabled =
+    await NotificationService.instance.areNotificationsEnabled();
+
+    if (!mounted) return;
+
+    if (notificationsEnabled) {
+      await _syncNotifications();
+    }
+  }
+
+  Future<void> _saveBoolPreference(String key, bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(key, value);
+  }
+
+  Future<void> _savePreferredTime(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('mindmate_preferred_time', value);
+  }
+
+  Future<void> _syncNotifications() async {
+    final notificationService = NotificationService.instance;
+
+    await notificationService.initialize();
+
+    if (_dailyCheckIn) {
+      await notificationService.scheduleDailyCheckIn(_preferredTime);
+    } else {
+      await notificationService.cancelDailyCheckIn();
+    }
+
+    if (_exerciseSuggestions) {
+      await notificationService.scheduleExerciseSuggestion();
+    } else {
+      await notificationService.cancelExerciseSuggestion();
+    }
+
+    if (_weeklyInsights) {
+      await notificationService.scheduleWeeklyInsights();
+    } else {
+      await notificationService.cancelWeeklyInsights();
+    }
+  }
+
+
+  Future<bool> _requestNotificationPermission() async {
+    final notificationService = NotificationService.instance;
+
+    await notificationService.initialize();
+
+    return await notificationService.requestPermission();
+  }
+
+  Future<bool> _showNotificationPermissionDialog() async {
+    final shouldContinue = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Enable MindMate reminders?'),
+          content: const Text(
+            'Allow notifications to receive your daily check-in, '
+                'exercise suggestions, and weekly wellbeing insights, '
+                'even when MindMate is closed.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Not now'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Continue'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted || shouldContinue != true) return false;
+
+    return _requestNotificationPermission();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -413,10 +517,21 @@ class _WellbeingPreferencesScreenState
             title: 'Daily check-in',
             subtitle: 'A gentle reminder to check in with yourself.',
             value: _dailyCheckIn,
-            onChanged: (value) {
+            onChanged: (value) async {
+              if (value) {
+                final granted = await _showNotificationPermissionDialog();
+
+                if (!mounted) return;
+
+                if (!granted) return;
+              }
+
               setState(() {
                 _dailyCheckIn = value;
               });
+
+              await _saveBoolPreference('mindmate_daily_check_in', value);
+              await _syncNotifications();
             },
           ),
           _divider(),
@@ -425,10 +540,21 @@ class _WellbeingPreferencesScreenState
             title: 'Exercise suggestions',
             subtitle: 'Get short exercises based on your wellbeing.',
             value: _exerciseSuggestions,
-            onChanged: (value) {
+            onChanged: (value) async {
+              if (value) {
+                final granted = await _showNotificationPermissionDialog();
+
+                if (!mounted) return;
+
+                if (!granted) return;
+              }
+
               setState(() {
                 _exerciseSuggestions = value;
               });
+
+              await _saveBoolPreference('mindmate_exercise_suggestions', value);
+              await _syncNotifications();
             },
           ),
           _divider(),
@@ -437,10 +563,21 @@ class _WellbeingPreferencesScreenState
             title: 'Weekly insights',
             subtitle: 'Receive a summary of your wellbeing patterns.',
             value: _weeklyInsights,
-            onChanged: (value) {
+            onChanged: (value) async {
+              if (value) {
+                final granted = await _showNotificationPermissionDialog();
+
+                if (!mounted) return;
+
+                if (!granted) return;
+              }
+
               setState(() {
                 _weeklyInsights = value;
               });
+
+              await _saveBoolPreference('mindmate_weekly_insights', value);
+              await _syncNotifications();
             },
           ),
         ],
@@ -478,10 +615,12 @@ class _WellbeingPreferencesScreenState
             title: 'Student mode',
             subtitle: 'Show student-focused wellbeing content.',
             value: _studentMode,
-            onChanged: (value) {
+            onChanged: (value) async {
               setState(() {
                 _studentMode = value;
               });
+
+              await _saveBoolPreference('mindmate_student_mode', value);
             },
           ),
         ],
@@ -891,12 +1030,18 @@ class _WellbeingPreferencesScreenState
                       child: Material(
                         color: Colors.transparent,
                         child: InkWell(
-                          onTap: () {
+                          onTap: () async {
                             setState(() {
                               _preferredTime = time;
                             });
+
+                            await _savePreferredTime(time);
+                            await _syncNotifications();
+
+                            if (!context.mounted) return;
                             Navigator.pop(context);
                           },
+
                           borderRadius:
                           BorderRadius.circular(16),
                           child: AnimatedContainer(

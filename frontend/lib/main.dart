@@ -10,10 +10,13 @@ import 'screens/auth/forgot_password_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/profile_screen.dart';
 
+import 'core/navigation/app_navigator.dart';
+import 'core/services/notification_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  await NotificationService.instance.initialize();
   await dotenv.load(fileName: '.env');
 
   SystemChrome.setSystemUIOverlayStyle(
@@ -34,6 +37,7 @@ class MindMateApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: AppNavigator.navigatorKey,
       debugShowCheckedModeBanner: false,
       title: 'MindMate',
 
