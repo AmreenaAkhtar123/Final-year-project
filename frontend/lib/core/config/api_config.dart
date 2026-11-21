@@ -35,4 +35,14 @@ class ApiConfig {
   // Emergency Contact Management
   static String get emergencyContactsUrl =>
       '$baseUrl/api/emergency-contacts';
+
+  // Profile Image Management
+  static String get profileImageUrl =>
+      '$baseUrl/api/profile/image';
+
+  static String get uploadProfileImageUrl =>
+      '$baseUrl/api/profile/image';
+
+  static String get deleteProfileImageUrl =>
+      '$baseUrl/api/profile/image';
 }

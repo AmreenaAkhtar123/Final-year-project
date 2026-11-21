@@ -50,6 +50,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     StudentModeService.isEnabled.addListener(_onStudentModeChanged);
 
+    ProfileImageService.initialize();
+
     _loadStudentMode();
   }
 

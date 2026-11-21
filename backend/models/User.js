@@ -46,6 +46,10 @@ const userSchema = new mongoose.Schema(
       trim: true,
       maxlength: 500,
     },
+    profileImage: {
+      type: String,
+      default: '',
+    },
 
     occupation: {
       type: String,

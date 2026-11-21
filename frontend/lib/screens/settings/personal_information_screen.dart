@@ -5,11 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:image/image.dart' as img;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/services/profile_image_service.dart';
+
 
 
 class PersonalInformationScreen extends StatefulWidget {
@@ -212,6 +214,8 @@ class _PersonalInformationScreenState
   // ===========================================================================
 
   Future<void> _showProfilePhotoOptions() async {
+    if (_isSavingProfileImage) return;
+
     FocusScope.of(context).unfocus();
 
     await showModalBottomSheet<void>(
@@ -349,6 +353,7 @@ class _PersonalInformationScreenState
       },
     );
   }
+
   Future<void> _loadSavedProfileImage() async {
     final File? savedImage =
     await ProfileImageService.getProfileImage();
@@ -439,7 +444,10 @@ class _PersonalInformationScreenState
     );
   }
 
+
   Future<void> _pickProfileImage(ImageSource source) async {
+    File? convertedFile;
+
     try {
       final XFile? pickedFile = await _imagePicker.pickImage(
         source: source,
@@ -448,49 +456,56 @@ class _PersonalInformationScreenState
         maxHeight: 1200,
       );
 
-      if (pickedFile == null) {
-        return;
-      }
-
+      if (pickedFile == null) return;
       if (!mounted) return;
 
       setState(() {
         _isSavingProfileImage = true;
       });
 
-      final Directory appDirectory =
-      await getApplicationDocumentsDirectory();
+      // Decode the selected image.
+      final imageBytes = await pickedFile.readAsBytes();
+      final decodedImage = img.decodeImage(imageBytes);
 
-      final Directory profileDirectory = Directory(
-        '${appDirectory.path}/mindmate_profile',
-      );
-
-      if (!await profileDirectory.exists()) {
-        await profileDirectory.create(recursive: true);
+      if (decodedImage == null) {
+        throw Exception('Could not decode the selected image.');
       }
 
-      // Use a unique filename for every newly selected photo.
-      final String fileName =
-          'profile_photo_${DateTime.now().millisecondsSinceEpoch}.jpg';
-
-      final File savedFile = File(
-        '${profileDirectory.path}/$fileName',
+      // Correct image orientation and encode it as JPEG.
+      final normalizedImage = img.bakeOrientation(decodedImage);
+      final jpegBytes = img.encodeJpg(
+        normalizedImage,
+        quality: 85,
       );
 
-      await File(pickedFile.path).copy(savedFile.path);
+      // Save the converted image as a temporary JPG file.
+      final tempDirectory = await getTemporaryDirectory();
 
-      await ProfileImageService.saveProfileImagePath(
-        savedFile.path,
+      convertedFile = File(
+        '${tempDirectory.path}/mindmate_profile_${DateTime.now().millisecondsSinceEpoch}.jpg',
+      );
+
+      await convertedFile.writeAsBytes(
+        jpegBytes,
+        flush: true,
+      );
+
+      // Upload the converted JPEG.
+      await ProfileImageService.uploadProfileImage(
+        convertedFile,
       );
 
       if (!mounted) return;
 
       setState(() {
-        _profileImage = savedFile;
+        _profileImage =
+            ProfileImageService.profileImageNotifier.value;
         _isSavingProfileImage = false;
         _hasChanges = true;
       });
     } catch (e) {
+      debugPrint('Profile image upload error: $e');
+
       if (!mounted) return;
 
       setState(() {
@@ -498,10 +513,15 @@ class _PersonalInformationScreenState
       });
 
       _showPhotoError(
-        'We could not access the selected photo. Please try again.',
+        'We could not upload your photo. Please check your connection and try again.',
       );
+    } finally {
+      if (convertedFile != null && await convertedFile.exists()) {
+        await convertedFile.delete();
+      }
     }
   }
+
 
   Future<void> _removeProfileImage() async {
     try {
@@ -1098,10 +1118,26 @@ class _PersonalInformationScreenState
               ],
             ),
             child: ClipOval(
-              child: _profileImage != null
+              child: _isLoadingProfileImage
+                  ? const Center(
+                child: SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.mint,
+                  ),
+                ),
+              )
+                  : _profileImage != null
                   ? Image.file(
                 _profileImage!,
+                key: ValueKey(
+                  '${_profileImage!.path}_${_profileImage!.lastModifiedSync().millisecondsSinceEpoch}',
+                ),
                 fit: BoxFit.cover,
+                width: size,
+                height: size,
               )
                   : const Icon(
                 Icons.person_rounded,
@@ -1132,128 +1168,6 @@ class _PersonalInformationScreenState
                 ),
               ),
             ),
-        ],
-      ),
-    );
-  }
-
-  // ===========================================================================
-  // PROFILE PHOTO SECTION
-  // ===========================================================================
-
-  Widget _buildProfilePhotoSection() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: AppColors.borderMint,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.navy.withValues(alpha: 0.035),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          _buildAvatar(
-            size: 76,
-            showEditBadge: false,
-            onTap: _showProfilePhotoOptions,
-            borderWidth: 2,
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _profileImage == null
-                      ? 'Add a profile photo'
-                      : 'Profile photo added',
-                  style: const TextStyle(
-                    color: AppColors.navy,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  _profileImage == null
-                      ? 'Add a photo so your profile feels more personal.'
-                      : 'You can replace or remove your current photo anytime.',
-                  style: TextStyle(
-                    color: AppColors.navy.withValues(alpha: 0.52),
-                    fontSize: 11.5,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    SizedBox(
-                      height: 36,
-                      child: OutlinedButton.icon(
-                        onPressed: _showProfilePhotoOptions,
-                        icon: Icon(
-                          _profileImage == null
-                              ? Icons.add_a_photo_outlined
-                              : Icons.edit_outlined,
-                          size: 15,
-                        ),
-                        label: Text(
-                          _profileImage == null
-                              ? 'Add Photo'
-                              : 'Change Photo',
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.navy,
-                          side: const BorderSide(
-                            color: AppColors.borderMint,
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(11),
-                          ),
-                          textStyle: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (_profileImage != null) ...[
-                      const SizedBox(width: 8),
-                      InkWell(
-                        onTap: _removeProfileImage,
-                        borderRadius: BorderRadius.circular(11),
-                        child: Container(
-                          height: 36,
-                          width: 36,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFCEEEE),
-                            borderRadius: BorderRadius.circular(11),
-                          ),
-                          child: const Icon(
-                            Icons.delete_outline_rounded,
-                            color: Color(0xFFB85C5C),
-                            size: 17,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
