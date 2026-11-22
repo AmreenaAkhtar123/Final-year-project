@@ -1,3 +1,4 @@
+
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema(
@@ -46,6 +47,7 @@ const userSchema = new mongoose.Schema(
       trim: true,
       maxlength: 500,
     },
+
     profileImage: {
       type: String,
       default: '',
@@ -67,10 +69,31 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+
+    // Password reset OTP fields
+    resetPasswordOtpHash: {
+      type: String,
+      default: null,
+    },
+
+    resetPasswordOtpExpires: {
+      type: Date,
+      default: null,
+    },
+
+    resetPasswordOtpAttempts: {
+      type: Number,
+      default: 0,
+    },
+
+    resetPasswordOtpVerifiedUntil: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 const User = mongoose.model('User', userSchema);

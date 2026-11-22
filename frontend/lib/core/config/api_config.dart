@@ -45,4 +45,17 @@ class ApiConfig {
 
   static String get deleteProfileImageUrl =>
       '$baseUrl/api/profile/image';
+
+
+  // Password Recovery (OTP)
+
+  static String get forgotPasswordUrl =>
+      '$baseUrl/api/auth/forgot-password';
+
+  static String get verifyResetOtpUrl =>
+      '$baseUrl/api/auth/verify-reset-otp';
+
+  static String get resetPasswordUrl =>
+      '$baseUrl/api/auth/reset-password';
 }
+
