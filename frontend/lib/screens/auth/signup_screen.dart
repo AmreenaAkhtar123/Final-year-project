@@ -459,12 +459,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
               ],
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: Color(0xFFC96F5C),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
               side: const BorderSide(
-                color: Colors.redAccent,
+                color: Color(0xFFC96F5C),
                 width: 1,
               ),
             ),
@@ -1144,7 +1144,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               child: Text(
                 'You must agree to the Terms and Privacy Policy.',
                 style: TextStyle(
-                  color: Colors.redAccent,
+                  color: Color(0xFFC96F5C),
                   fontSize: 12,
                 ),
               ),
