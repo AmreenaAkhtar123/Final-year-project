@@ -158,8 +158,6 @@ router.post('/api/auth/login', async (req, res) => {
   }
 });
 
-
-
 router.post('/api/auth/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
@@ -248,8 +246,6 @@ router.post('/api/auth/forgot-password', async (req, res) => {
     });
   }
 });
-
-
 
 router.post('/api/auth/verify-reset-otp', async (req, res) => {
   try {
@@ -341,7 +337,6 @@ router.post('/api/auth/verify-reset-otp', async (req, res) => {
   }
 });
 
-
 router.post('/api/auth/reset-password', async (req, res) => {
   try {
     const { email, newPassword, confirmPassword } = req.body;
@@ -428,7 +423,6 @@ router.post('/api/auth/reset-password', async (req, res) => {
     });
   }
 });
-
 
 router.get('/api/auth/profile', async (req, res) => {
   try {

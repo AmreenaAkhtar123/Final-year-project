@@ -28,6 +28,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _agreeToTerms = false;
+  bool _showTermsError = false;
   bool _isLoading = false;
 
   @override
@@ -332,7 +333,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
     final isValid = _formKey.currentState!.validate();
 
     if (!_agreeToTerms) {
-      setState(() {});
+      setState(() {
+        _showTermsError = true;
+      });
       return;
     }
 
@@ -390,11 +393,34 @@ class _SignUpScreenState extends State<SignUpScreen> {
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Account created successfully.',
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(
+                  Icons.check_circle_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Account created successfully.',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
             ),
+            backgroundColor: AppColors.mint,
             behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            margin: const EdgeInsets.all(16),
+            elevation: 4,
           ),
         );
 
@@ -412,11 +438,38 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              responseData['message'] ??
-                  'Unable to create your account.',
+            content: Row(
+              children: [
+                const Icon(
+                  Icons.error_outline_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    responseData['message'] ??
+                        'Unable to create your account.',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
             ),
+            backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: const BorderSide(
+                color: Colors.redAccent,
+                width: 1,
+              ),
+            ),
+            margin: const EdgeInsets.all(16),
+            elevation: 4,
           ),
         );
       }
@@ -465,17 +518,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 // BACK BUTTON
                 // ==================================================
 
-                IconButton(
-                  onPressed: _isLoading
-                      ? null
-                      : () {
-                    Navigator.pop(context);
-                  },
-                  icon: const Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: AppColors.navy,
+
+                InkWell(
+                  onTap: _isLoading ? null : () => Navigator.pop(context),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.borderMint,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: AppColors.navy,
+                      size: 18,
+                    ),
                   ),
                 ),
+
 
                 const SizedBox(height: 5),
 
@@ -891,12 +955,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                       activeColor: AppColors.mint,
 
-                      onChanged: _isLoading
-                          ? null
-                          : (value) {
+                      onChanged: (value) {
                         setState(() {
-                          _agreeToTerms =
-                              value ?? false;
+                          _agreeToTerms = value ?? false;
+
+                          if (_agreeToTerms) {
+                            _showTermsError = false;
+                          }
                         });
                       },
                     ),
@@ -956,7 +1021,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 // TERMS ERROR
                 // ==================================================
 
-                if (!_agreeToTerms)
+                if (!_agreeToTerms && _showTermsError)
                   const Padding(
                     padding: EdgeInsets.only(
                       left: 12,

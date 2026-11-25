@@ -5,7 +5,7 @@ import '../core/constants/app_colors.dart';
 import '../core/services/profile_image_service.dart';
 import '../core/services/check_in_service.dart';
 import '../models/check_in.dart';
-
+import '../core/widgets/responsive.dart';
 import 'ai_chat_screen.dart';
 import 'assessments/assessments_screen.dart';
 import 'check_in_screen.dart';
@@ -353,42 +353,50 @@ class _HomeFeedState extends State<_HomeFeed> {
     );
   }
 
+
   @override
   Widget build(BuildContext context) {
-    return CustomScrollView(
-      physics: const BouncingScrollPhysics(),
-      slivers: [
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
-          sliver: SliverList(
-            delegate: SliverChildListDelegate([
-              _buildHeader(context),
+    return Align(
+      alignment: Alignment.topCenter,
+      child: SizedBox(
+        width: Responsive.contentMaxWidth(context),
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  _buildHeader(context),
 
-              const SizedBox(height: 25),
+                  const SizedBox(height: 25),
 
-              _buildGreeting(),
+                  _buildGreeting(),
 
-              const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-              _buildDailyPulse(context),
+                  _buildDailyPulse(context),
 
-              const SizedBox(height: 27),
+                  const SizedBox(height: 27),
 
-              _buildQuickOrbit(context),
+                  _buildQuickOrbit(context),
 
-              const SizedBox(height: 30),
+                  const SizedBox(height: 30),
 
-              _buildExerciseSection(context),
+                  _buildExerciseSection(context),
 
-              const SizedBox(height: 30),
+                  const SizedBox(height: 30),
 
-              _buildPrivacyNote(),
-            ]),
-          ),
+                  _buildPrivacyNote(),
+                ]),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
+
 
   // ==========================================================
   // HEADER
@@ -1037,27 +1045,46 @@ class _HomeFeedState extends State<_HomeFeed> {
         const SizedBox(height: 12),
 
         // TWO ROWS OF THREE TOOL CARDS
-        GridView.builder(
-          itemCount: tools.length,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate:
-          const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            crossAxisSpacing: 9,
-            mainAxisSpacing: 9,
-            childAspectRatio: 0.93,
-          ),
-          itemBuilder: (context, index) {
-            final item = tools[index];
 
-            return _toolTile(
-              title: item.$1,
-              subtitle: item.$2,
-              icon: item.$3,
-              iconColor: item.$4,
-              background: item.$5,
-              onTap: item.$6,
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth;
+
+            final columns = width < 430
+                ? 2
+                : width < 850
+                ? 3
+                : 4;
+
+            final aspectRatio = width < 430
+                ? 1.05
+                : width < 850
+                ? 1.0
+                : 1.15;
+
+            return GridView.builder(
+              itemCount: tools.length,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate:
+              SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: columns,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: aspectRatio,
+              ),
+              itemBuilder: (context, index) {
+                final item = tools[index];
+
+                return _toolTile(
+                  title: item.$1,
+                  subtitle: item.$2,
+                  icon: item.$3,
+                  iconColor: item.$4,
+                  background: item.$5,
+                  onTap: item.$6,
+                );
+              },
             );
           },
         ),
